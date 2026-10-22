@@ -63,6 +63,114 @@ build and installation steps are in [the Android README](https://github.com/ezar
 Builds use local signing and are not notarized. No fork-specific prebuilt release
 is published yet; upstream downloads do not include this fork's changes.
 
+## Roadmap / implementation checklist
+
+Reviewed against this fork's source on **2026-10-22**. Checked items have an
+implementation and recorded build/device evidence; unchecked items are remaining
+work, not delivery promises. A visible setting, protocol identifier or buildable
+stub does not mean the feature works. The Android items require coordinated work
+in the [companion repository](https://github.com/ezariago/sapphire-android-companion).
+
+### Implemented foundation
+
+- [x] Local macOS build/signing workflow and separate editable Android companion/helper.
+- [x] Encrypted Bluetooth pairing, saved-key reconnection and transport recovery.
+- [x] Automatic Mac → Android text clipboard and manual Android → Mac text clipboard.
+- [x] Live phone battery, charging, carrier/signal and notch device panel; Android
+  internet hotspot start/credentials/stop through the authorized Shizuku helper.
+
+### FOSS foundation and distribution
+
+- [ ] Replace the inherited subscription/account gates with a FOSS feature-access
+  policy. The public shim currently denies every gated feature and disables
+  premium-wrapped controls; changing access alone will not implement missing code.
+- [ ] Audit bundled dependencies, licenses and source/build provenance; publish
+  reproducible builds or replacements for binary-only components, including
+  `MediaRemoteAdapter.framework`, `SapphireMediaQueue.framework` and compiled
+  Face ID models.
+- [ ] Replace the public app-update validation shim with actual code-signature
+  and signer identity verification; it currently checks bundle identifiers only.
+- [ ] Add automated macOS build/test CI and fork-specific release artifacts,
+  with a documented signing/notarization and update distribution workflow.
+
+Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
+[disabled feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),
+[update validation shim](Sapphire/Stubs/AppSecurity.swift), [build notes](BUILDING.md).
+
+### Missing or partial macOS features
+
+- [ ] Implement App Lock authentication/enforcement and the shared app shields
+  used by Focus app blocking. Existing Focus session and website-blocking code
+  does not supply the missing app-enforcement layer.
+- [ ] Implement Dock previews, window switcher, Dock click behavior, auto-quit,
+  quit protection, green-button maximize, context-menu enhancements, hinge
+  animations and Dock layout import/application.
+- [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
+  keyboard debounce, Super Key, emoji suggestions and text snippets; complete
+  their settings and shortcut configuration UI.
+- [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
+  and Finder cut/paste enhancements; retain the existing clipboard history code.
+- [ ] Implement media optimization and OCR, screenshot text monitoring and Circle
+  to Search. File conversion already has public source and is a separate feature.
+- [ ] Implement the DMG installer and its default-handler integration; complete
+  the archive settings UI around the existing archive extractor.
+- [ ] Complete storage workspace/detail/widget UI and monitoring settings,
+  adapter-power readings and menu-bar profile automation. Storage scanning and
+  system statistics already have public implementations.
+- [ ] Implement the missing 8D/surround audio views and verify their integration
+  with the existing audio engine after feature access is available.
+- [ ] Implement sports scores/commentary and finance quotes, including settings,
+  widgets, players and live activities; the current providers return no data.
+- [ ] Implement Intelligence task execution, screen perception, memory/monitoring
+  and Blip UI. Gemini Live has public source and is excluded from the legacy
+  Gemini stub by the local build helper.
+- [ ] Implement Smart Inbox OTP/parcel monitoring and actions around the existing
+  data models and verification-code detector.
+- [ ] Replace the camera, virtual microphone, File Provider and Finder Sync
+  extension placeholders with functional implementations and installation/setup.
+
+Evidence: [feature manager stubs](Sapphire/Stubs/PremiumFeatureManagers.swift),
+[feature model stubs](Sapphire/Stubs/PremiumFeatureModels.swift),
+[view stubs](Sapphire/Stubs/PremiumFeatureViews.swift),
+[remaining public stubs](Sapphire/Stubs), [extension placeholders](PublicExtensionStubs).
+The [older parity gap map](docs/parity/vorssaint-gap-map.md) is historical context;
+its individual findings need rechecking against the current source.
+
+### Android / Continuity feature parity
+
+- [ ] Implement phone media-state publishing and playback command handling in
+  the replacement companion, then complete Mac phone-media presentation.
+- [ ] Implement notification mirroring in the replacement companion and complete
+  Mac live activities, dismissal, actions and replies. The Mac can receive basic
+  previews from the legacy companion, but several UI/action bridges remain empty.
+- [ ] Implement SMS and calls, including the Mac message/call action bridges.
+- [ ] Implement authenticated Wi-Fi/bulk file transfer, phone storage browsing
+  and image/file clipboard delivery beyond the current text-only transport.
+- [ ] Implement screen mirroring, extended display and phone camera/microphone
+  streaming, including photo capture and document scanning.
+- [ ] Implement Android widgets/external live activities, handoff/browser-tab
+  sharing, universal keyboard/mouse, Focus synchronization and remote/relay access.
+- [ ] Implement phone-mediated earbud status/control/handoff and active-peer
+  selection; these compatibility methods currently do nothing.
+
+Evidence: [Continuity bridge](Sapphire/Stubs/ContinuityCore.swift),
+[compatibility methods](Sapphire/Stubs/PublicBuildCompatibility.swift),
+[phone implementation notes](PHONE-RECONSTRUCTION.md).
+
+### Implemented paths still awaiting end-to-end verification
+
+- [ ] Verify actual Mac Wi-Fi association and internet access through the phone
+  hotspot after Location permission is granted. Android cellular tethering and
+  encrypted credential delivery have been tested; full Mac internet access has not.
+- [ ] Verify reconnection after physical Mac sleep/lid-close and radio recovery
+  on real devices. The current sleep/wake handler test exercises notifications
+  without putting the Mac to sleep.
+- [ ] Record a feature-by-feature macOS smoke-test matrix, including permissions,
+  supported OS/hardware and failure recovery, before claiming upstream parity.
+
+See [recorded device checks and limitations](PHONE-RECONSTRUCTION.md) for the
+distinction between protocol tests, simulated lifecycle checks and hardware tests.
+
 ## License and attribution
 
 The upstream [GNU Affero General Public License v3](LICENSE) is retained. Fork
