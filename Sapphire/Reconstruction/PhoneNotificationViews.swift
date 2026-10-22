@@ -119,8 +119,8 @@ struct PhoneNotificationDismissButton: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .disabled(bridge.actionRequestID != nil)
-        .help("Dismiss on phone")
-        .accessibilityLabel("Dismiss on phone")
+        .help("Dismiss on Mac and phone")
+        .accessibilityLabel("Dismiss on Mac and phone")
     }
 }
 

@@ -339,7 +339,7 @@ click are outside this first implementation.
 The Mac protocol suite covers notification payload limits, Unicode, duplicate
 and excessive actions, duplicate events, revision updates/removals, silent
 snapshots, bounded storage, disconnect clearing and plaintext rejection.
-All 92 Mac protocol checks and 14 Android JVM tests pass. Android tests cover
+All 98 Mac protocol checks and 14 Android JVM tests pass. Android tests cover
 filtering, UTF-8 truncation, post/removal ordering, reposts, action-result ordering
 and queue backpressure. macOS and Android debug/release builds pass; the release
 APK manifest was checked to exclude the debug fixture.
@@ -387,3 +387,25 @@ fixed companion fixture and cannot take a notification key or arbitrary reply
 text. The reply is always `Sapphire reply fixture`. The script removes its own
 synthetic notification when finished; physical sleep and ordinary third-party
 app/OEM behavior still need separate checks.
+
+
+### Immediate Mac dismissal
+
+Dismiss now removes the Mac entry, queued alert, active notch activity and optional
+macOS banner immediately after queuing the phone request. It also closes an open
+reply editor. The Mac does not wait for the phone's acknowledgement or removal
+event. Delayed duplicates of the dismissed revision are suppressed; a genuinely
+new revision may still appear. Dismissing one item does not consume the next queued
+notification or close an unrelated activity.
+
+The device script now checks the actual selected notch activity as well as the
+notification list, and supports `--dismiss-only` to verify dismissal/removal
+without sending replies/actions or simulating sleep. It requires an ADB-connected
+phone even when the Mac/phone Bluetooth link is already secure.
+
+Validation for this change: all 98 protocol checks and the macOS build passed.
+A local harness using the production bridge and targeted activity-dismissal method
+confirmed immediate closure, reply-state cleanup, next-alert preservation,
+idempotent acknowledgement, duplicate suppression and unrelated-activity safety.
+The updated on-device script could not run because the phone was no longer
+connected to ADB; the encrypted Bluetooth connection remained available.

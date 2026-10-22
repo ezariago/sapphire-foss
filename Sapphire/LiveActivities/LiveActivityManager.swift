@@ -2599,6 +2599,17 @@ class LiveActivityManager {
     }
 
     // MARK: - Public Control Functions
+    func dismissContinuityNotification(id: String) {
+        guard currentActivity == .continuityNotification,
+              activityContent.id == AnyHashable("continuity-notif-\(id)") else { return }
+        (NSApp.delegate as? AppDelegate)?.revertNotchWindowFocus()
+        // The bridge has already removed this entry and promoted any next alert.
+        // Do not run handleActivityDismissal, which would consume that next entry.
+        setActivity(type: .none, content: .none)
+        lastEvalTime = 0
+        evaluateAndDisplayActivity(allowImmediateDismiss: true)
+    }
+
     func dismissCurrentActivity() {
         guard currentActivity != .none else { return }
         if settingsModel.current.hapticFeedbackEnabled { haptic() }

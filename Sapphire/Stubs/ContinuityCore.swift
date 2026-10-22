@@ -191,6 +191,7 @@ final class ContinuityNotificationBridge: ObservableObject {
 
     func accept(_ entry: PhoneNotification) {
         let alert = store.accept(entry)
+        guard store.contains(key: entry.key, revision: entry.revision) else { return }
         notifications = store.entries
         pending.removeAll { $0.key == entry.key || !store.contains(key: $0.key, revision: $0.revision) }
         if let latest, !store.contains(key: latest.key, revision: latest.revision), latest.key != entry.key { clearLatest() }
@@ -202,12 +203,26 @@ final class ContinuityNotificationBridge: ObservableObject {
     }
 
     func remove(key: String, revision: String) {
-        guard store.remove(key: key, revision: revision) else { return }
+        guard let entry = store.entries.first(where: { $0.key == key && $0.revision == revision }),
+              store.remove(key: key, revision: revision) else { return }
+        completeRemoval(entry)
+    }
+
+    func dismissLocally(_ entry: PhoneNotification) {
+        store.dismiss(entry)
+        completeRemoval(entry)
+    }
+
+    private func completeRemoval(_ entry: PhoneNotification) {
         notifications = store.entries
-        pending.removeAll { $0.key == key && $0.revision == revision }
-        if latest?.key == key && latest?.revision == revision { clearLatest() }
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [bannerID(key)])
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [bannerID(key)])
+        pending.removeAll { $0.id == entry.id }
+        if latest?.id == entry.id { clearLatest() }
+        if composingNotificationID == entry.id { composingNotificationID = nil }
+        if !notifications.contains(where: { $0.key == entry.key }) {
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [bannerID(entry.key)])
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [bannerID(entry.key)])
+        }
+        (NSApp.delegate as? AppDelegate)?.liveActivityManager.dismissContinuityNotification(id: entry.id)
     }
 
     func clearLatest() { latest = pending.isEmpty ? nil : pending.removeFirst() }

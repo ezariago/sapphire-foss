@@ -72,7 +72,9 @@ struct PhoneNotification: Equatable, Identifiable {
 /// Ephemeral, bounded state. Replayed events never trigger another alert.
 struct PhoneNotificationStore {
     private(set) var entries: [PhoneNotification] = []
+    private var dismissedIDs: [String] = []
     mutating func accept(_ entry: PhoneNotification) -> Bool {
+        guard !dismissedIDs.contains(entry.id) else { return false }
         if entries.contains(where: { $0.id == entry.id }) { return false }
         entries.removeAll { $0.key == entry.key }
         entries.insert(entry, at: 0)
@@ -84,7 +86,14 @@ struct PhoneNotificationStore {
         entries.removeAll { $0.key == key && $0.revision == revision }
         return entries.count != count
     }
-    mutating func reset() { entries.removeAll() }
+    mutating func dismiss(_ entry: PhoneNotification) {
+        if !dismissedIDs.contains(entry.id) {
+            dismissedIDs.append(entry.id)
+            if dismissedIDs.count > 128 { dismissedIDs.removeFirst() }
+        }
+        _ = remove(key: entry.key, revision: entry.revision)
+    }
+    mutating func reset() { entries.removeAll(); dismissedIDs.removeAll() }
     func contains(key: String, revision: String) -> Bool {
         entries.contains { $0.key == key && $0.revision == revision }
     }

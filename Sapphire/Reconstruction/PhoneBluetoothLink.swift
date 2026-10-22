@@ -188,6 +188,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
 
     private func writeDiagnosticSnapshot() {
         guard let diagnosticDirectory else { return }
+        let activityManager = (NSApp.delegate as? AppDelegate)?.liveActivityManager
+        let visibleID = activityManager?.activityContent.id?.base as? String
         let snapshot: [String: Any] = [
             "status": status, "error": lastError ?? "", "isScanning": isScanning,
             "isConnecting": isConnecting, "isSecure": isSecure, "pairingActive": pairing != nil,
@@ -198,6 +200,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             "lastMessageType": lastMessageType,
             "phoneNotificationCount": ContinuityManager.shared.notificationBridge.notifications.count,
             "hasPhoneNotificationAlert": ContinuityManager.shared.notificationBridge.latest != nil,
+            "phoneNotificationActivityVisible": activityManager?.currentActivity == .continuityNotification,
+            "notificationFixtureActivityVisible": activityManager?.currentActivity == .continuityNotification
+                && visibleID?.contains("|sapphire-notification-fixture|") == true,
             "notificationFixtureState": ContinuityManager.shared.notificationBridge.notifications.first(where: \.isDiagnosticFixture)?.diagnosticFixtureState ?? "absent",
             "phoneSignalLevel": phoneStatus.signalLevel ?? -1, "phoneCarrier": phoneStatus.carrier ?? "",
             "phoneCharging": phoneStatus.charging, "phoneNetwork": phoneStatus.network ?? "",
@@ -502,6 +507,11 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
 
     func notificationCommand(_ entry: PhoneNotification, action: PhoneNotification.Action?, reply: String?) {
         let bridge = ContinuityManager.shared.notificationBridge
+        // Closing on this Mac is immediate, even if the phone cannot acknowledge
+        // the request. Enqueue the phone command before removing its local entry.
+        defer {
+            if action == nil && entry.clearable { bridge.dismissLocally(entry) }
+        }
         guard isSecure, activeCompanion, SettingsModel.shared.current.continuityNotifications,
               bridge.contains(key: entry.key, revision: entry.revision) else { return }
         var payload: [String: PhoneJSON] = ["key": .string(entry.key), "revision": .string(entry.revision)]
