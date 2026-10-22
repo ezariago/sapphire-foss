@@ -1,5 +1,6 @@
 #if !SAPPHIRE_FULL_BUILD
 import SwiftUI
+import AppKit
 import UserNotifications
 
 struct PhoneNotificationCard: View {
@@ -8,6 +9,8 @@ struct PhoneNotificationCard: View {
     @ObservedObject private var bridge = ContinuityManager.shared.notificationBridge
     @State private var replyAction: PhoneNotification.Action?
     @State private var reply = ""
+    @FocusState private var isReplyFocused: Bool
+    @State private var ownsNotchFocus = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -32,11 +35,27 @@ struct PhoneNotificationCard: View {
             }
             if let action = replyAction {
                 HStack {
-                    TextField("Reply", text: $reply).textFieldStyle(.roundedBorder)
+                    TextField("Reply", text: $reply)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($isReplyFocused)
                         .onSubmit { sendReply(action) }
+                        .onAppear {
+                            if !showsHeader {
+                                bridge.composingNotificationID = entry.id
+                                requestNotchFocus()
+                            }
+                            // Focus after SwiftUI has attached the new field to
+                            // the panel, which has just become keyable.
+                            DispatchQueue.main.async { isReplyFocused = true }
+                        }
+                        .onChange(of: isReplyFocused) { _, focused in
+                            if focused { requestNotchFocus() }
+                            else { releaseNotchFocus() }
+                        }
+                        .onDisappear { finishReplyEditing() }
                     Button("Send") { sendReply(action) }
-                        .disabled(reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || reply.utf8.count > 4000)
-                    Button("Cancel") { replyAction = nil; reply = "" }
+                        .disabled(!canSendReply)
+                    Button("Cancel") { closeReply() }
                 }
             }
             if bridge.actionKey == entry.key, !bridge.actionStatus.isEmpty {
@@ -46,11 +65,43 @@ struct PhoneNotificationCard: View {
         .disabled(bridge.actionRequestID != nil)
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(entry.id)
+        .onDisappear { finishReplyEditing() }
+    }
+
+    private var canSendReply: Bool {
+        !reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && reply.utf8.count <= 4000 && bridge.actionRequestID == nil
+    }
+
+    private func requestNotchFocus() {
+        guard !showsHeader, !ownsNotchFocus,
+              let appDelegate = NSApp.delegate as? AppDelegate else { return }
+        ownsNotchFocus = true
+        appDelegate.makeNotchWindowFocusable()
+    }
+
+    private func releaseNotchFocus() {
+        guard ownsNotchFocus else { return }
+        ownsNotchFocus = false
+        (NSApp.delegate as? AppDelegate)?.revertNotchWindowFocus()
+    }
+
+    private func finishReplyEditing() {
+        isReplyFocused = false
+        if bridge.composingNotificationID == entry.id { bridge.composingNotificationID = nil }
+        releaseNotchFocus()
+    }
+
+    private func closeReply() {
+        finishReplyEditing()
+        replyAction = nil
+        reply = ""
     }
 
     private func sendReply(_ action: PhoneNotification.Action) {
+        guard canSendReply else { return }
         ReconstructedPhoneLink.shared.notificationCommand(entry, action: action, reply: reply)
-        reply = ""; replyAction = nil
+        closeReply()
     }
 }
 

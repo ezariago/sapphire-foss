@@ -1426,18 +1426,30 @@ class LiveActivityManager {
         if let duration = duration {
             self.dismissalTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    guard let self, self.currentActivity == type else { return }
-                    self.dismissalTimer = nil
-                    self.handleActivityDismissal(for: type)
-                    self.currentActivity = .none
-                    self.activityContent = .none
-                    if type == .music { Task { await self.musicWidget.setMusicLiveActivityActive(false) } }
-
-                    self.lastEvalTime = 0
-                    self.evaluateAndDisplayActivity()
+                    self?.finishTimedActivity(type)
                 }
             }
         }
+    }
+
+    private func finishTimedActivity(_ type: ActivityType) {
+        guard currentActivity == type else { return }
+        dismissalTimer = nil
+        let bridge = ContinuityManager.shared.notificationBridge
+        if type == .continuityNotification, let latest = bridge.latest,
+           bridge.composingNotificationID == latest.id {
+            // Keep the same view and draft alive while the reply editor is open.
+            dismissalTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in self?.finishTimedActivity(type) }
+            }
+            return
+        }
+        handleActivityDismissal(for: type)
+        currentActivity = .none
+        activityContent = .none
+        if type == .music { Task { await musicWidget.setMusicLiveActivityActive(false) } }
+        lastEvalTime = 0
+        evaluateAndDisplayActivity()
     }
 
     private func handleActivityDismissal(for type: ActivityType) {

@@ -181,6 +181,7 @@ final class ContinuityNotificationBridge: ObservableObject {
     @Published private(set) var latest: ContinuityMirroredNotification?
     @Published private(set) var notifications: [PhoneNotification] = []
     @Published var actionStatus = ""
+    @Published var composingNotificationID: String?
     @Published private(set) var actionKey: String?
     @Published private(set) var actionRequestID: String?
     private var actionTimeout: Task<Void, Never>?
@@ -216,6 +217,7 @@ final class ContinuityNotificationBridge: ObservableObject {
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
         store.reset(); notifications = []; pending = []; latest = nil; actionStatus = ""
+        composingNotificationID = nil
         actionTimeout?.cancel(); actionTimeout = nil; actionRequestID = nil; actionKey = nil
     }
 
