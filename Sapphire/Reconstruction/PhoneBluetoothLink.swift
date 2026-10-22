@@ -141,6 +141,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     private var lastReceived = Date.distantPast
     private var wantsScan = false
     private var reconnectAllowed = false
+    private var isSleeping = false
+    private var recoveryTask: Task<Void, Never>?
+    private var workspaceObservers: [NSObjectProtocol] = []
     private var diagnosticDirectory: URL?
     private var diagnosticTimer: Timer?
     private var diagnosticSubscription: AnyCancellable?
@@ -174,6 +177,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         let snapshot: [String: Any] = [
             "status": status, "error": lastError ?? "", "isScanning": isScanning,
             "isConnecting": isConnecting, "isSecure": isSecure, "pairingActive": pairing != nil,
+            "isSleeping": isSleeping, "reconnectAllowed": reconnectAllowed,
+            "recoveryPending": recoveryTask != nil,
             "hasConfirmationCode": sas != nil, "subscribed": subscribed,
             "bluetoothState": central?.state.rawValue ?? -1, "queuedChunks": chunks.count,
             "lastMessageType": lastMessageType,
@@ -207,6 +212,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         case "connect":
             if let id = command["id"].flatMap(UUID.init(uuidString:)) { connect(id) }
         case "disconnect": disconnect()
+        case "simulate-sleep": prepareForSleep()
+        case "simulate-wake": resumeAfterWake()
         case "hotspot": requestHotspot()
         case "hotspot-probe": beginHotspotRequest(probeOnly: true)
         case "hotspot-leave": leaveHotspot()
@@ -230,6 +237,15 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     override private init() {
         super.init()
         hotspotLocation.delegate = self
+        let notifications = NSWorkspace.shared.notificationCenter
+        workspaceObservers.append(notifications.addObserver(forName: NSWorkspace.willSleepNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.prepareForSleep() }
+            })
+        workspaceObservers.append(notifications.addObserver(forName: NSWorkspace.didWakeNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.resumeAfterWake() }
+            })
         do { trusted = try ReconstructedPhoneStore.load(); pairedName = trusted?.name }
         catch { lastError = "Could not read the saved phone pairing: \(error.localizedDescription)" }
     }
@@ -238,6 +254,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         wantsScan = true
         reconnectAllowed = true
         lastError = nil
+        guard !isSleeping else { return }
+        recoveryTask?.cancel(); recoveryTask = nil
         if central == nil {
             central = CBCentralManager(delegate: self, queue: .main,
                 options: [CBCentralManagerOptionShowPowerAlertKey: true])
@@ -289,10 +307,12 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     }
 
     func disconnect() {
+        recoveryTask?.cancel(); recoveryTask = nil
         wantsScan = false
         reconnectAllowed = false
         central?.stopScan()
         isScanning = false
+        peripheral?.delegate = nil
         if let peripheral { central?.cancelPeripheralConnection(peripheral) }
         peripheral = nil
         pairing = nil; qrPayload = nil; sas = nil; pendingSAS = nil; pendingPeer = nil
@@ -435,7 +455,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     }
 
     private func scanIfReady() {
-        guard wantsScan, central?.state == .poweredOn, peripheral == nil else { return }
+        guard !isSleeping, wantsScan, central?.state == .poweredOn, peripheral == nil else { return }
         central?.scanForPeripherals(withServices: [Self.companionService, Self.service],
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
         isScanning = true
@@ -459,15 +479,51 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         publishSnapshot()
     }
 
+    // Retire the manager as well as GATT handles. CoreBluetooth can retain a
+    // connection across sleep even though Android has discarded its session.
+    private func retireTransport() {
+        central?.delegate = nil
+        central?.stopScan()
+        peripheral?.delegate = nil
+        if let peripheral { central?.cancelPeripheralConnection(peripheral) }
+        peripheral = nil
+        central = nil
+        peripherals.removeAll()
+        nearby.removeAll()
+        isScanning = false
+        clearConnection()
+    }
+
+    private func prepareForSleep() {
+        let shouldResume = wantsScan && reconnectAllowed
+        disconnect() // Expire an unfinished pairing challenge and all timers.
+        isSleeping = true
+        wantsScan = shouldResume
+        reconnectAllowed = shouldResume
+        retireTransport()
+        if shouldResume { status = "Phone connection paused while this Mac sleeps." }
+    }
+
+    private func resumeAfterWake() {
+        isSleeping = false
+        guard wantsScan, reconnectAllowed else { return }
+        recoverTransport("Reconnecting to your phone after wake…")
+    }
+
     private func recoverTransport(_ message: String) {
         guard pairing == nil, reconnectAllowed else { disconnect(); return }
-        clearConnection()
+        recoveryTask?.cancel()
+        retireTransport()
         status = message
-        // A restarted Android GATT server can leave the physical BLE connection
-        // alive while its subscriptions and crypto session have disappeared.
-        // Reopen the transport rather than reusing stale characteristic handles.
-        if let peripheral { central?.cancelPeripheralConnection(peripheral) }
-        else { scanIfReady() }
+        // Give the radio time to return after wake or a failed GATT connection.
+        // poweredOn then starts a fresh scan; a later power-on does the same.
+        recoveryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled, let self, !self.isSleeping,
+                  self.wantsScan, self.reconnectAllowed else { return }
+            self.recoveryTask = nil
+            self.start()
+        }
     }
 
     private func armTimeout() {
@@ -679,6 +735,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
 
 extension ReconstructedPhoneLink: @preconcurrency CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        guard central === self.central, !isSleeping else { return }
         switch central.state {
         case .poweredOn: scanIfReady()
         case .unauthorized: status = "Allow Bluetooth access for Sapphire in System Settings → Privacy & Security → Bluetooth."
@@ -696,6 +753,7 @@ extension ReconstructedPhoneLink: @preconcurrency CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        guard central === self.central, !isSleeping, wantsScan else { return }
         peripherals[peripheral.identifier] = peripheral
         let advertisement = (advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data).flatMap(PhoneAdvertisement.init)
         let isCompanion = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.contains(Self.companionService) == true
@@ -716,50 +774,51 @@ extension ReconstructedPhoneLink: @preconcurrency CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
+        guard central === self.central, peripheral === self.peripheral else { return }
         status = "Discovering phone services…"
         peripheral.discoverServices([serviceUUID])
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
+        guard central === self.central, peripheral === self.peripheral else { return }
         self.peripheral = nil; clearConnection()
         status = "Could not connect. Keep the phone unlocked and try again."
         if let error { fail(error) }
+        recoverTransport("Retrying the phone connection…")
     }
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
+        guard central === self.central, peripheral === self.peripheral else { return }
         self.peripheral = nil; clearConnection()
         status = "The phone disconnected."
         if let error { fail(error) }
-        if reconnectAllowed && pairing == nil { scanIfReady() }
+        if reconnectAllowed && pairing == nil { recoverTransport("Reconnecting to your phone…") }
     }
 }
 
 extension ReconstructedPhoneLink: @preconcurrency CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
-        guard peripheral.identifier == self.peripheral?.identifier,
+        guard peripheral === self.peripheral,
               invalidatedServices.contains(where: { $0.uuid == serviceUUID }) else { return }
         recoverTransport("The phone restarted its Bluetooth service. Reconnecting…")
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
-        if let error { fail(error); disconnect(); return }
+        guard peripheral === self.peripheral else { return }
+        if let error { fail(error); recoverTransport("Reopening the phone connection…"); return }
         guard let service = peripheral.services?.first(where: { $0.uuid == serviceUUID }) else {
-            fail(PhoneWireError.malformed); disconnect(); return
+            fail(PhoneWireError.malformed); recoverTransport("Reopening the phone connection…"); return
         }
         peripheral.discoverCharacteristics([inboxUUID, outboxUUID, controlUUID], for: service)
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
-        if let error { fail(error); disconnect(); return }
+        guard peripheral === self.peripheral else { return }
+        if let error { fail(error); recoverTransport("Reopening the phone connection…"); return }
         guard let characteristics = service.characteristics,
               let inbox = characteristics.first(where: { $0.uuid == inboxUUID }),
               let outbox = characteristics.first(where: { $0.uuid == outboxUUID }) else {
-            fail(PhoneWireError.malformed); disconnect(); return
+            fail(PhoneWireError.malformed); recoverTransport("Reopening the phone connection…"); return
         }
         writeCharacteristic = inbox
         peripheral.setNotifyValue(true, for: outbox)
@@ -767,8 +826,8 @@ extension ReconstructedPhoneLink: @preconcurrency CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
-        if let error { fail(error); disconnect(); return }
+        guard peripheral === self.peripheral else { return }
+        if let error { fail(error); recoverTransport("Reopening the phone connection…"); return }
         guard characteristic.uuid == outboxUUID, characteristic.isNotifying else { return }
         subscribed = true
         status = pairing == nil ? "Authenticating your phone…" : "Connected. Scan the code with Sapphire on your phone."
@@ -776,7 +835,7 @@ extension ReconstructedPhoneLink: @preconcurrency CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
+        guard peripheral === self.peripheral else { return }
         if let error { fail(error); return }
         guard characteristic.uuid == outboxUUID || characteristic.uuid == controlUUID,
               let value = characteristic.value else { return }
@@ -785,7 +844,7 @@ extension ReconstructedPhoneLink: @preconcurrency CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard peripheral.identifier == self.peripheral?.identifier else { return }
+        guard peripheral === self.peripheral else { return }
         writeInFlight = false
         if let error { fail(error); recoverTransport("Reopening the phone connection…"); return }
         if let writeCharacteristic { drain(peripheral, writeCharacteristic) }

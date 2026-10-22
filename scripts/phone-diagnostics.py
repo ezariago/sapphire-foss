@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("action", choices=["state", "pair", "scan", "connect", "disconnect", "quit", "qr", "hotspot", "hotspot-probe", "hotspot-leave", "clipboard-on", "clipboard-off"])
+parser.add_argument("action", choices=["state", "pair", "scan", "connect", "disconnect", "quit", "qr", "hotspot", "hotspot-probe", "hotspot-leave", "clipboard-on", "clipboard-off", "simulate-sleep", "simulate-wake"])
 parser.add_argument("id", nargs="?", help="Discovered peripheral UUID for connect")
 parser.add_argument("--pid", type=int)
 args = parser.parse_args()

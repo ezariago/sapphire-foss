@@ -5,7 +5,7 @@
   <p><b>Working toward a fully free and open-source Sapphire.</b></p>
   <p>
     <a href="BUILDING.md">Build for macOS</a> ·
-    <a href="AndroidCompanion/README.md">Android companion</a> ·
+    <a href="https://github.com/ezariago/sapphire-android-companion/blob/main/README.md">Android companion</a> ·
     <a href="https://github.com/cshariq/Sapphire">Original project</a>
   </p>
 </div>
@@ -38,9 +38,14 @@ for the foundation this work builds on.
   Mac verification is still pending.
 
 See [Phone / Android implementation notes](PHONE-RECONSTRUCTION.md) and
-[device verification](AndroidCompanion/VERIFICATION.md) for tested behavior and
+[device verification](https://github.com/ezariago/sapphire-android-companion/blob/main/VERIFICATION.md) for tested behavior and
 remaining limitations. Calls, notification mirroring, media control, file browsing,
 camera streaming and screen sharing are not implemented in the replacement companion.
+
+## Repositories
+
+- [sapphire-foss](https://github.com/ezariago/sapphire-foss) — macOS app.
+- [sapphire-android-companion](https://github.com/ezariago/sapphire-android-companion) — Android companion and hotspot helper in one Gradle project, including their shared Binder interface.
 
 ## Build and install
 
@@ -53,7 +58,7 @@ open build/DerivedData/Build/Products/Release/Sapphire.app
 
 Full Xcode and its initial setup are required. Read [BUILDING.md](BUILDING.md) for
 requirements, signing, permissions and troubleshooting. Android companion/helper
-build and installation steps are in [AndroidCompanion/README.md](AndroidCompanion/README.md).
+build and installation steps are in [the Android README](https://github.com/ezariago/sapphire-android-companion/blob/main/README.md).
 
 Builds use local signing and are not notarized. No fork-specific prebuilt release
 is published yet; upstream downloads do not include this fork's changes.
@@ -62,7 +67,7 @@ is published yet; upstream downloads do not include this fork's changes.
 
 The upstream [GNU Affero General Public License v3](LICENSE) is retained. Fork
 additions are provided under the same license; third-party components retain their
-respective notices (see also [Android third-party notices](AndroidCompanion/THIRD-PARTY.md)).
+respective notices (see also [Android third-party notices](https://github.com/ezariago/sapphire-android-companion/blob/main/THIRD-PARTY.md)).
 Sapphire FOSS is independently maintained and is not an official upstream release.
 
 ## Sapphire features

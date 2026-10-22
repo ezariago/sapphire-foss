@@ -1,5 +1,5 @@
 > Update: an independent editable Android companion and real hotspot helper now
-> live in [AndroidCompanion](AndroidCompanion/README.md). The local-only hotspot
+> live in [sapphire-android-companion](https://github.com/ezariago/sapphire-android-companion/blob/main/README.md). The local-only hotspot
 > limits below describe the original Play Store APK, not the new companion.
 
 # Phone / Android reconstruction
@@ -224,7 +224,7 @@ normal mode with automatic clipboard sending enabled.
 
 ## Independent Android replacement
 
-`AndroidCompanion/` is a standalone Android Studio/Gradle project. Its main app
+[sapphire-android-companion](https://github.com/ezariago/sapphire-android-companion) is the separate Android Studio/Gradle repository. Its main app
 (`dev.sapphire.companion`, target SDK 36) and narrow hotspot helper
 (`dev.sapphire.companion.hotspothelper`, target SDK 28) coexist with the original
 Play Store package. On Android 16 the helper uses the user's authorized Shizuku
@@ -244,8 +244,8 @@ reconnection, and an app-update recovery test. A restarted Android GATT service
 can leave a stale physical BLE link alive; service-invalidation handling and
 heartbeat/write-failure recovery now reopen that transport automatically.
 
-See `AndroidCompanion/README.md` for build/setup/modification instructions and
-`AndroidCompanion/VERIFICATION.md` for the precise tested scope. Actual Mac Wi-Fi
+See [the Android README](https://github.com/ezariago/sapphire-android-companion/blob/main/README.md) for build/setup/modification instructions and
+[Android device verification](https://github.com/ezariago/sapphire-android-companion/blob/main/VERIFICATION.md) for the precise tested scope. Actual Mac Wi-Fi
 association still requires Location approval; no network switch was performed by
 the diagnostic hotspot probe.
 
@@ -255,3 +255,29 @@ the diagnostic hotspot probe.
 The replacement companion broadcasts changed battery/charging, mobile provider, 0–4 modem signal level and active network summaries over the encrypted Bluetooth connection. It checks every two seconds; periodic refresh requests remain supported. Carrier/signal use the public Android telephony summary APIs without runtime phone or location permission. Unknown telemetry stays unavailable rather than appearing as a fabricated signal strength.
 
 The former empty `ContinuityNotchDetailView` now opens a live device panel with status and Instant Hotspot controls. The compact notch status shows carrier and four independently filled signal bars. Hotspot actions reuse the existing authenticated helper/CoreWLAN flow, including permission handling, busy states and disconnect.
+
+
+### Mac sleep/wake recovery (2026-10-22)
+
+The Mac observes workspace sleep/wake notifications. Sleep drops the BLE manager,
+peripheral, GATT handles, session keys and queued writes, cancels pending timers,
+and expires any unfinished pairing challenge. Wake creates a fresh manager after
+a two-second radio recovery delay and scans for the saved phone. Transient
+connection/discovery/subscription failures use the same delayed recovery.
+Callbacks from retired managers are ignored. An explicit Disconnect or disabled
+Continuity cancels recovery and suppresses reconnection, including during sleep.
+
+To exercise the real handlers without putting the Mac to sleep, launch a local
+build with `--phone-diagnostics`, then run:
+
+```sh
+./scripts/test-phone-lifecycle.py PID
+```
+
+The test covers repeated sleep/wake, cleared session state, explicit disconnect
+while asleep and during recovery, and another sleep during the wake delay.
+It leaves scanning enabled, never approves pairing and never switches Wi-Fi.
+Validation: the macOS build and strict signature verification passed; the live
+handler lifecycle test passed, as did all 67 protocol checks. Both Android APKs
+and JVM tests passed in the separate Android checkout. Physical lid-close/radio
+recovery still requires a real-device smoke test.

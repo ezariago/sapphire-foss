@@ -115,8 +115,9 @@ optimization for faster device-test iterations; omit it for optimized builds.
 
 ## Clone on another Mac
 
-The fork includes the build helpers, compatibility code, Android companion and
-phone integration. No separate local patch is needed:
+The Mac repository includes the build helpers, compatibility code and phone
+integration. The Android companion and helper share a separate
+[sapphire-android-companion](https://github.com/ezariago/sapphire-android-companion) repository. No separate local patch is needed:
 
 ```bash
 git clone https://github.com/ezariago/sapphire-foss.git
@@ -149,3 +150,17 @@ Select the Sapphire scheme and My Mac as the destination.
 The upstream `Sapphire.pkg` at the recorded commit is empty; it is not a usable
 installer. The upstream README points users to its GitHub releases for official
 prebuilt installers.
+
+## Android companion and helper
+
+Clone the Android repository beside this Mac checkout, then build both APKs:
+
+```sh
+git clone https://github.com/ezariago/sapphire-android-companion.git ../sapphire-android-companion
+./scripts/build-android-companion.sh
+```
+
+The wrapper uses `../sapphire-android-companion` by default. Set
+`SAPPHIRE_ANDROID_SOURCE` to use another checkout. APKs are copied to
+`build/android/`. Android Studio can open the Android repository independently.
+Both Android apps must use the same signing certificate for their Binder service.
