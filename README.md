@@ -1,36 +1,74 @@
 <div align="center">
-<img width="220" height="220" alt="Group 31" src="https://github.com/user-attachments/assets/1e3ef88f-9849-4896-88d2-5294841a0062" />
+<img width="220" height="220" alt="Sapphire" src="https://github.com/user-attachments/assets/1e3ef88f-9849-4896-88d2-5294841a0062" />
 
-  <h1>Sapphire</h1>
-  <p><b>The all-in-one mac app that redefines the notch</b></p>
-  <a href="https://sapphire-app.tech" style="text-decoration: none; margin-right: 10px;">
-    <div style="background-color: #007aff; color: white; padding: 10px 20px; border-radius: 8px; display: inline-block; font-weight: bold;">
-      Official Website
-    </div>
-  </a>
-  <a href="https://github.com/cshariq/Sapphire/releases/latest" style="text-decoration: none;">
-    <div style="background-color: #007aff; color: white; padding: 10px 20px; border-radius: 8px; display: inline-block; font-weight: bold;">
-      Download Latest Release
-    </div>
-  </a>
-  <a href="https://discord.gg/Ryuea8vM2h" style="text-decoration: none;">
-    <div style="background-color: #007aff; color: white; padding: 10px 20px; border-radius: 8px; display: inline-block; font-weight: bold;">
-      Join Discord
-    </div>
-  </a>
+  <h1>Sapphire FOSS</h1>
+  <p><b>Working toward a fully free and open-source Sapphire.</b></p>
+  <p>
+    <a href="BUILDING.md">Build for macOS</a> ·
+    <a href="AndroidCompanion/README.md">Android companion</a> ·
+    <a href="https://github.com/cshariq/Sapphire">Original project</a>
+  </p>
 </div>
 
 <br>
 
-Sapphire is a sleek notch app that displays current activities neatly around the notch on newer MacBooks. It also includes a suite of convenient features, from nearby share compatibility for easy file transfers to a versatile window snapping system.
+Sapphire FOSS is an independent fork of [Sapphire](https://github.com/cshariq/Sapphire),
+the macOS notch app created by Shariq Charolia and its contributors. Our goal is
+to make Sapphire fully FOSS: publish the code needed to build it, replace missing
+private implementations with open-source alternatives, and let anyone inspect,
+modify and share the Mac app and its Android companion.
 
-## Installation
+This is a work in progress. Several upstream features still have compatibility
+placeholders, and a complete source/dependency audit and replacement of bundled
+binary-only components remain to be done. The project is not yet a complete
+replacement for every feature of the original app. Thanks to the upstream authors
+for the foundation this work builds on.
 
-1.  **Download:** Download the latest package release from the [releases page](https://github.com/cshariq/Sapphire/releases/latest).
-2.  **Install:** Open the downloaded package and follow the installation process.
-3.  **Permissions:** On first launch, you may need to grant accessibility and other permissions in `System Settings` for all features to work correctly.
+## What this fork adds
 
-## Features
+- A documented macOS build workflow with local signing and compatibility code for
+  unavailable upstream modules.
+- An editable Android companion and hotspot helper, with encrypted Bluetooth
+  pairing and reconnection.
+- Automatic Mac → Android text clipboard delivery and manual Android → Mac delivery.
+- Live phone battery/charging, carrier and signal strength in the notch, with a
+  device-status panel and instant hotspot controls.
+- Real Android mobile hotspot start/stop through a user-authorized Shizuku helper.
+  Automatic Mac Wi-Fi joining requires Location permission; full internet-through-
+  Mac verification is still pending.
+
+See [Phone / Android implementation notes](PHONE-RECONSTRUCTION.md) and
+[device verification](AndroidCompanion/VERIFICATION.md) for tested behavior and
+remaining limitations. Calls, notification mirroring, media control, file browsing,
+camera streaming and screen sharing are not implemented in the replacement companion.
+
+## Build and install
+
+```sh
+git clone https://github.com/ezariago/sapphire-foss.git
+cd sapphire-foss
+./scripts/build-local.sh
+open build/DerivedData/Build/Products/Release/Sapphire.app
+```
+
+Full Xcode and its initial setup are required. Read [BUILDING.md](BUILDING.md) for
+requirements, signing, permissions and troubleshooting. Android companion/helper
+build and installation steps are in [AndroidCompanion/README.md](AndroidCompanion/README.md).
+
+Builds use local signing and are not notarized. No fork-specific prebuilt release
+is published yet; upstream downloads do not include this fork's changes.
+
+## License and attribution
+
+The upstream [GNU Affero General Public License v3](LICENSE) is retained. Fork
+additions are provided under the same license; third-party components retain their
+respective notices (see also [Android third-party notices](AndroidCompanion/THIRD-PARTY.md)).
+Sapphire FOSS is independently maintained and is not an official upstream release.
+
+## Sapphire features
+
+The overview below is inherited from upstream. Availability varies in this fork;
+it is not a claim that every feature has been rebuilt or tested.
 
 <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;">
 

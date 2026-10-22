@@ -55,7 +55,7 @@ struct ContinuityConnectivitySnapshot: Equatable {
     var phoneCharging = false
     var phoneNetwork: ContinuityNetworkKind?
     var phoneSSID: String?
-    var phoneSignalLevel: Int = 0
+    var phoneSignalLevel: Int?
     var phoneCarrier: String?
     var rssi: Int?
     var isRelayed = false
@@ -192,7 +192,12 @@ final class ContinuityMediaBridge: ObservableObject {
     @Published private(set) var phoneMedia: ContinuityMediaState?
     @Published private(set) var phoneArtwork: NSImage?
     @Published private(set) var phoneDeviceName: String?
-    var shouldSurfacePhoneMedia: Bool { false }
+    var shouldSurfacePhoneMedia: Bool { phoneMedia != nil }
+    func acceptReconstructed(_ state: ContinuityMediaState?, deviceName: String?) {
+        phoneMedia = state
+        phoneDeviceName = deviceName
+        phoneArtwork = nil
+    }
 }
 
 final class ContinuityHandoffBridge {
@@ -207,8 +212,8 @@ final class ContinuityManager {
 
     private(set) var peers: [ContinuityPeer] = []
     private(set) var connectivity: ContinuityConnectivitySnapshot = .none
-    var connectedPeer: ContinuityPeer? { nil }
-    var activePeerID: String? { nil }
+    var connectedPeer: ContinuityPeer? { peers.first { $0.linkState.isUsable } }
+    var activePeerID: String? { connectedPeer?.id }
 
     let notificationBridge = ContinuityNotificationBridge()
     let liveActivityBridge = ContinuityExternalActivityBridge()
@@ -217,16 +222,39 @@ final class ContinuityManager {
 
     private init() {}
 
-    func startIfEnabled() {}
-    func stop() {}
-    func sendMediaCommand(_ action: ContinuityMediaAction, seekMs: Int? = nil) {}
+    func startIfEnabled() {
+        if SettingsModel.shared.current.continuityEnabled { ReconstructedPhoneLink.shared.start() }
+    }
+    func stop() { ReconstructedPhoneLink.shared.disconnect() }
+    func sendMediaCommand(_ action: ContinuityMediaAction, seekMs: Int? = nil) {
+        ReconstructedPhoneLink.shared.sendMedia(action.rawValue, seekMs: seekMs)
+    }
+    func acceptReconstructedConnection(_ snapshot: ContinuityConnectivitySnapshot, record: ContinuityPairedPeer?) {
+        connectivity = snapshot
+        if let record {
+            if peers.first?.id != record.id {
+                let peer = ContinuityPeer(record: record)
+                peer.capabilities = [.clipboard, .media, .status, .notifications]
+                peer.linkState = .connected
+                peers = [peer]
+            }
+        } else {
+            peers = []
+            mediaBridge.acceptReconstructed(nil, deviceName: nil)
+        }
+    }
+    func acceptReconstructedMedia(_ state: ContinuityMediaState, deviceName: String?) {
+        mediaBridge.acceptReconstructed(state, deviceName: deviceName)
+    }
     func sendFiles(_ urls: [URL], toPeerID peerID: String) {}
     func dismissNotificationOnPhone(peerID: String, key: String) {}
     func invokeNotificationAction(peerID: String, key: String, actionId: String, replyText: String?) {}
     func takePhoto() {}
     func scanDocument() {}
     func setActivePeer(id: String) {}
-    func unpair(peerID: String) {}
+    func unpair(peerID: String) {
+        if connectedPeer?.id == peerID { ReconstructedPhoneLink.shared.forget() }
+    }
 }
 
 @MainActor
@@ -237,7 +265,7 @@ final class ContinuityServicesProvider: NSObject {
 
 struct ContinuityNotchDetailView: View {
     @Binding var navigationStack: [NotchWidgetMode]
-    var body: some View { EmptyView() }
+    var body: some View { PhoneNotchStatusView() }
 }
 
 struct ContinuityExternalActivityDetailView: View {
@@ -246,8 +274,15 @@ struct ContinuityExternalActivityDetailView: View {
 }
 
 enum ContinuityNotchActivityView {
-    @ViewBuilder static func left(for snapshot: ContinuityConnectivitySnapshot) -> some View { EmptyView() }
-    @ViewBuilder static func right(for snapshot: ContinuityConnectivitySnapshot) -> some View { EmptyView() }
+    @ViewBuilder static func left(for snapshot: ContinuityConnectivitySnapshot) -> some View {
+        Image(systemName: "iphone").foregroundStyle(snapshot.severity.tint)
+    }
+    @ViewBuilder static func right(for snapshot: ContinuityConnectivitySnapshot) -> some View {
+        HStack(spacing: 4) {
+            PhoneSignalBars(level: snapshot.phoneSignalLevel)
+            if let carrier = snapshot.phoneCarrier { Text(carrier).font(.caption2).lineLimit(1) }
+        }
+    }
 }
 
 enum ContinuityExternalActivityView {

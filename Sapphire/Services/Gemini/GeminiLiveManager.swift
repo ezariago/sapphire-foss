@@ -27,8 +27,23 @@ final class GeminiLiveManager: NSObject, AVCaptureAudioDataOutputSampleBufferDel
     private let liveSession = GeminiLiveSession()
     @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
-    private let playbackEngine = AVAudioEngine()
-    private let playerNode = AVAudioPlayerNode()
+    // Audio component discovery can wait on macOS services. Defer it until a session uses audio.
+    @ObservationIgnored private var playbackEngineStorage: AVAudioEngine?
+    @ObservationIgnored private var playerNodeStorage: AVAudioPlayerNode?
+
+    private var playbackEngine: AVAudioEngine {
+        if let playbackEngineStorage { return playbackEngineStorage }
+        let engine = AVAudioEngine()
+        playbackEngineStorage = engine
+        return engine
+    }
+
+    private var playerNode: AVAudioPlayerNode {
+        if let playerNodeStorage { return playerNodeStorage }
+        let player = AVAudioPlayerNode()
+        playerNodeStorage = player
+        return player
+    }
     @ObservationIgnored private var playerAttached = false
     @ObservationIgnored private var audioLevelTimer: Timer?
     @ObservationIgnored private var setupTimeoutTask: Task<Void, Never>?
@@ -687,13 +702,13 @@ final class GeminiLiveManager: NSObject, AVCaptureAudioDataOutputSampleBufferDel
         }
     }
 
-    deinit {
+    isolated deinit {
         audioLevelTimer?.invalidate()
         setupTimeoutTask?.cancel()
         screenCaptureTask?.cancel()
         if captureSession.isRunning { captureSession.stopRunning() }
-        playerNode.stop()
-        if playbackEngine.isRunning { playbackEngine.stop() }
+        playerNodeStorage?.stop()
+        if let engine = playbackEngineStorage, engine.isRunning { engine.stop() }
     }
 
     private func sanitizedConnectionError(_ error: Error) -> String {

@@ -90,3 +90,7 @@ Sapphire.xcodeproj/xcuserdata/Shariq.xcuserdatad/xcschemes/xcschememanagement.pl
 /SapphireTests/AppStorageModelsTests.swift
 /SapphireTests/ClipboardPickerPositioningTests.swift
 /SapphireTests/ContinuityStatusProtocolTests.swift
+
+# Local build products and developer caches
+/build/
+/scripts/__pycache__/

@@ -1,0 +1,14 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'dev.sapphire.companion'
+    compileSdk 36
+    defaultConfig { applicationId 'dev.sapphire.companion'; minSdk 28; targetSdk 36; versionCode 1; versionName '0.1.0'; testInstrumentationRunner 'dev.sapphire.companion.DeviceChecks' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests.returnDefaultValues = false }
+}
+dependencies {
+    implementation project(':ipc')
+    implementation 'com.google.zxing:core:3.5.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20250517'
+}

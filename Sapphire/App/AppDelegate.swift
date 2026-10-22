@@ -485,6 +485,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             if !didRoute { self.routeAfterLaunch() }
         }
         StartupHealthMarker.shared.scheduleHealthyCheckpoint()
+        #if !SAPPHIRE_FULL_BUILD
+        if CommandLine.arguments.contains("--phone-diagnostics") {
+            ReconstructedPhoneLink.shared.enableDiagnostics()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+                self?.openSettingsWindow()
+                let phone = ReconstructedPhoneLink.shared
+                if phone.pairedName == nil { phone.beginPairing() } else { phone.start() }
+            }
+        }
+        #endif
     }
 
     @discardableResult

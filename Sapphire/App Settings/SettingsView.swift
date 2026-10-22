@@ -16,6 +16,11 @@ struct SettingsView: View {
     init(settings: SettingsModel = .shared) {
         self.settings = settings
         self._editingSession = State(initialValue: SettingsEditingSession(model: settings))
+        #if !SAPPHIRE_FULL_BUILD
+        if CommandLine.arguments.contains("--phone-diagnostics") {
+            self._selectedSection = State(initialValue: .continuity)
+        }
+        #endif
     }
 
     var body: some View {

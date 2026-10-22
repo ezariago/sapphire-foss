@@ -513,10 +513,11 @@ private struct ContinuityPhoneStatusItem: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(snapshot.severity.tint)
 
-                Image(systemName: "cellularbars")
-                    .font(.system(size: 10, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(snapshot.phoneSignalLevel > 0 ? Color.white.opacity(0.9) : Color.white.opacity(0.35))
+                PhoneSignalBars(level: snapshot.phoneSignalLevel)
+                if let carrier = snapshot.phoneCarrier, snapshot.linkState.isUsable {
+                    Text(carrier).font(.system(size: 9, weight: .medium))
+                        .lineLimit(1).frame(maxWidth: 70)
+                }
 
                 if let battery = snapshot.phoneBatteryPercent {
                     HStack(spacing: 2) {
