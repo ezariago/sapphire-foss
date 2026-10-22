@@ -67,6 +67,7 @@ struct NotchActivityContentView: View {
             switch content {
             case .full(let view, _, _):
                 view
+                    .environment(\.notchActivityCenterGap, config.activityCenterGap)
                     .padding(.horizontal, config.activityContentHorizontalPadding)
             case .standard, .none:
                 EmptyView()

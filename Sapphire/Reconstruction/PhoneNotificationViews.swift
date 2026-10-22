@@ -4,19 +4,18 @@ import UserNotifications
 
 struct PhoneNotificationCard: View {
     let entry: PhoneNotification
+    var showsHeader = true
     @ObservedObject private var bridge = ContinuityManager.shared.notificationBridge
     @State private var replyAction: PhoneNotification.Action?
     @State private var reply = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(entry.appName, systemImage: "iphone").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                if entry.clearable {
-                    Button { ReconstructedPhoneLink.shared.notificationCommand(entry, action: nil, reply: nil) } label: {
-                        Image(systemName: "xmark.circle")
-                    }.buttonStyle(.plain).help("Dismiss on phone").accessibilityLabel("Dismiss on phone")
+            if showsHeader {
+                HStack {
+                    Label(entry.appName, systemImage: "iphone").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    if entry.clearable { PhoneNotificationDismissButton(entry: entry) }
                 }
             }
             if !entry.title.isEmpty { Text(entry.title).font(.headline).lineLimit(2) }
@@ -52,6 +51,25 @@ struct PhoneNotificationCard: View {
     private func sendReply(_ action: PhoneNotification.Action) {
         ReconstructedPhoneLink.shared.notificationCommand(entry, action: action, reply: reply)
         reply = ""; replyAction = nil
+    }
+}
+
+struct PhoneNotificationDismissButton: View {
+    let entry: PhoneNotification
+    @ObservedObject private var bridge = ContinuityManager.shared.notificationBridge
+
+    var body: some View {
+        Button { ReconstructedPhoneLink.shared.notificationCommand(entry, action: nil, reply: nil) } label: {
+            Image(systemName: "xmark.circle")
+                .font(.system(size: 14))
+                .padding(4)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .disabled(bridge.actionRequestID != nil)
+        .help("Dismiss on phone")
+        .accessibilityLabel("Dismiss on phone")
     }
 }
 

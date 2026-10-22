@@ -201,7 +201,16 @@ private struct NotchBandHeightKey: EnvironmentKey {
     static let defaultValue: CGFloat = 32
 }
 
+private struct NotchActivityCenterGapKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
 extension EnvironmentValues {
+    var notchActivityCenterGap: CGFloat {
+        get { self[NotchActivityCenterGapKey.self] }
+        set { self[NotchActivityCenterGapKey.self] = newValue }
+    }
+
     var notchBandHeight: CGFloat {
         get { self[NotchBandHeightKey.self] }
         set { self[NotchBandHeightKey.self] = newValue }

@@ -417,15 +417,43 @@ enum ContinuityMediaActivityView {
 
 struct ContinuityNotificationActivityView: View {
     @Environment(\.notchBandHeight) private var notchBandHeight
+    @Environment(\.notchActivityCenterGap) private var notchCenterGap
     let entry: ContinuityMirroredNotification
-    let bridge: ContinuityNotificationBridge
+    @ObservedObject var bridge: ContinuityNotificationBridge
     @Binding var isHovered: Bool
+
+    private var centerClearance: CGFloat { notchCenterGap > 0 ? notchCenterGap + 24 : 0 }
+    private var panelWidth: CGFloat { max(400, centerClearance + 2 * 120 + 40) }
+    private var sideWidth: CGFloat { (panelWidth - 40 - centerClearance) / 2 }
+
     var body: some View {
-        PhoneNotificationCard(entry: entry)
-            .frame(width: 360)
-            .padding(12)
-            .padding(.top, notchBandHeight)
-            .onHover { isHovered = $0 }
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Label(entry.appName, systemImage: "iphone")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .help(entry.appName)
+                    .frame(width: sideWidth, alignment: .leading)
+                Color.clear.frame(width: centerClearance)
+                    .accessibilityHidden(true)
+                HStack {
+                    Spacer(minLength: 0)
+                    if entry.clearable { PhoneNotificationDismissButton(entry: entry) }
+                }
+                .frame(width: sideWidth)
+            }
+            .padding(.horizontal, 20)
+            .frame(height: notchBandHeight)
+
+            PhoneNotificationCard(entry: entry, showsHeader: false)
+                .padding(.horizontal, 24)
+                .padding(.top, 18)
+                .padding(.bottom, 20)
+        }
+        .frame(width: panelWidth)
+        .onHover { isHovered = $0 }
     }
 }
 
