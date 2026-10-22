@@ -1,3 +1,7 @@
+> Notification update (2026-10-22): the independent companion now includes opt-in
+> notification mirroring. The early scope lists below describe earlier milestones;
+> see [Notification mirroring](#notification-mirroring-2026-10-22) for current behavior.
+
 > Update: an independent editable Android companion and real hotspot helper now
 > live in [sapphire-android-companion](https://github.com/ezariago/sapphire-android-companion/blob/main/README.md). The local-only hotspot
 > limits below describe the original Play Store APK, not the new companion.
@@ -281,3 +285,105 @@ Validation: the macOS build and strict signature verification passed; the live
 handler lifecycle test passed, as did all 67 protocol checks. Both Android APKs
 and JVM tests passed in the separate Android checkout. Physical lid-close/radio
 recovery still requires a real-device smoke test.
+
+
+## Notification mirroring (2026-10-22)
+
+The independent companion now implements Android `NotificationListenerService`.
+Sharing defaults to off. In the Android companion, enable **Share phone
+notifications with paired Mac**, tap **Allow notification access**, and grant
+Sapphire access in Android Settings. Notification access is separate from the
+permission to show the companion's own foreground notification.
+
+The Mac Phone / Android pane includes notification controls and a list of up to
+30 active notifications. New posts and updates appear in the notch. Dismissal,
+app-provided buttons and free-form reply actions are sent back to Android;
+replies/actions require the phone to be unlocked. macOS banners are optional and
+request their own Mac permission when enabled. Existing notifications synchronize
+quietly after reconnect, without replaying old alerts. Removal on either side
+clears the corresponding active item; dismissing a notch alert alone only hides
+that alert and leaves the phone notification active.
+
+Only authenticated Bluetooth frames carry notification content or commands.
+Disconnect, disabling mirroring or a listener reset clears Mac notification state.
+No notification history is written to the reconstruction's diagnostics; those
+snapshots expose only the count, whether a notch alert exists, and the state of
+the fixed synthetic debug notification. Optional macOS
+banners are stored by macOS Notification Center until removed. The Android side
+excludes secret, ongoing, group-summary, other-user/work-profile and Sapphire
+service notifications. Low-priority and Android system notifications are excluded
+by default and have Mac controls. Android/OEM redaction remains in effect. Images,
+attachments, notification icons and launching phone apps from a default banner
+click are outside this first implementation.
+
+### Wire behavior
+
+- Mac sends encrypted `notif.subscribe` with `enabled`, `includeGeneral` and
+  `includeSystem` after authentication and when notification preferences change.
+- Android sends `notif.reset`, then up to 30 `notif.postedV2` snapshot entries;
+  future posts use `snapshot: false`. Each entry has `key`, `revision`, `appId`,
+  `appName`, `title`, `text`, `postTimeMs`, `clearable`, `isGeneral`, `isSystem` and
+  up to four `actions` (`id`, `title`, `allowsReply`).
+- `notif.removed` carries the key/revision. `notif.dismiss` and `notif.action`
+  reference the same revision; action requests also carry `actionId` and optional
+  `replyText`. Android rejects stale revisions and keeps PendingIntents locally.
+  Authentication-required and unsupported non-text input actions are omitted.
+- Commands include a unique `requestId`, echoed by `notif.actionResult` for action
+  feedback. The Mac prevents concurrent submissions and times out unanswered
+  requests without automatically resending a reply. Text is bounded to
+  4,096 UTF-8 bytes; replies to 4,000 bytes. The BLE event queue coalesces updates,
+  preserves removals, and reconnects for a fresh snapshot on capacity overflow.
+
+### Validation
+
+The Mac protocol suite covers notification payload limits, Unicode, duplicate
+and excessive actions, duplicate events, revision updates/removals, silent
+snapshots, bounded storage, disconnect clearing and plaintext rejection.
+All 92 Mac protocol checks and 14 Android JVM tests pass. Android tests cover
+filtering, UTF-8 truncation, post/removal ordering, reposts, action-result ordering
+and queue backpressure. macOS and Android debug/release builds pass; the release
+APK manifest was checked to exclude the debug fixture.
+On the connected Galaxy S24 Ultra, with notification access explicitly granted
+and sharing enabled, the real encrypted link passed: quiet initial synchronization,
+new notification arrival, update replacement, Mac-triggered app actions, free-form
+reply delivery, dismissal from Mac, removal from phone, disconnect clearing and
+quiet restoration after simulated sleep/wake. The Android fixture receiver
+independently confirmed the action and exact synthetic reply. The fixture was
+removed after the checks. No real messages were sent.
+
+Third-party app compatibility, notification-access revocation, locked-phone/OEM
+behavior and optional macOS banners have not yet been exercised end to end.
+Physical lid-close/radio recovery remains a separate test from simulated handlers.
+Native UI automation became unavailable during this run; the settings window
+was observed before that failure, and the later notification lifecycle/actions
+were verified through production bridge/transport state and the Android receiver,
+not by visually checking every notch/button state.
+
+Debug Android builds include `NotificationFixtureActivity`, an exported test
+activity that posts one fixed synthetic notification. Its non-exported receiver
+handles replies/actions locally; it never messages another person. Only this
+fixed, tagged fixture is exempted from the debug build's own-app filter. It is
+absent from release APKs. With sharing and notification access enabled, run:
+
+```sh
+adb shell am start -n dev.sapphire.companion/.NotificationFixtureActivity
+```
+
+Verify arrival/update on Mac, **Test action**, a reply of `Sapphire reply fixture`,
+and dismissal. The fixture stores only success booleans, never reply text.
+
+
+With a securely connected debug companion and an unlocked phone, the automated
+synthetic check can exercise arrival, update, Android action/reply delivery,
+dismissal, phone removal and quiet reconnect:
+
+```sh
+python3 scripts/test-phone-notifications.py MAC_DIAGNOSTIC_PID
+```
+
+It uses the opt-in Mac diagnostic commands `notification-test-action`,
+`notification-test-reply` and `notification-test-dismiss`. These only target the
+fixed companion fixture and cannot take a notification key or arbitrary reply
+text. The reply is always `Sapphire reply fixture`. The script removes its own
+synthetic notification when finished; physical sleep and ordinary third-party
+app/OEM behavior still need separate checks.

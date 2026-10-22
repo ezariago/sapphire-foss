@@ -128,4 +128,55 @@ for invalid in [-1.0, 5.0, 2.5, Double.infinity] {
 }
 try expect(PhoneDeviceStatus(payload: ["carrier": .string("bad\ncarrier"), "network": .string("unexpected")]).carrier == nil, "Control characters cannot enter carrier UI")
 try expect(PhoneDeviceStatus(payload: ["network": .string("unexpected")]).network == nil, "Unknown network kind stays unavailable")
+func notificationPayload(key: String = "test-key", revision: String = "v1", snapshot: Bool = false) -> [String: PhoneJSON] {
+    ["key": .string(key), "revision": .string(revision), "appId": .string("test.app"),
+     "appName": .string("Test app"), "title": .string("Test notification"), "text": .string("Hello 🔔"),
+     "clearable": .bool(true), "snapshot": .bool(snapshot),
+     "actions": .array([.object(["id": .string("reply-1"), "title": .string("Reply"), "allowsReply": .bool(true)])])]
+}
+let notification = PhoneNotification(payload: notificationPayload())!
+try expect(notification.actions.first?.allowsReply == true && notification.text == "Hello 🔔", "Notification actions and Unicode decode")
+try expect(PhoneNotification(payload: [:]) == nil, "Notification requires stable key and revision")
+var oversizedNotification = notificationPayload()
+oversizedNotification["text"] = .string(String(repeating: "🔔", count: 1025))
+try expect(PhoneNotification(payload: oversizedNotification) == nil, "Notification limits count UTF-8 bytes")
+var malformedNotification = notificationPayload()
+malformedNotification["actions"] = .string("not an action list")
+try expect(PhoneNotification(payload: malformedNotification) == nil, "Malformed action container rejected")
+malformedNotification = notificationPayload()
+malformedNotification["title"] = .number(42)
+try expect(PhoneNotification(payload: malformedNotification) == nil, "Wrong notification field types rejected")
+var duplicateActions = notificationPayload()
+duplicateActions["actions"] = .array(Array(repeating: .object(["id": .string("duplicate"), "title": .string("Action")]), count: 2))
+try expect(PhoneNotification(payload: duplicateActions) == nil, "Duplicate action IDs rejected")
+var tooManyActions = notificationPayload()
+tooManyActions["actions"] = .array((0..<5).map { .object(["id": .string("action-\($0)"), "title": .string("Action")]) })
+try expect(PhoneNotification(payload: tooManyActions) == nil, "Too many notification actions rejected")
+var notificationStore = PhoneNotificationStore()
+try expect(notificationStore.accept(notification), "Fresh notification triggers alert")
+try expect(!notificationStore.accept(notification), "Duplicate notification does not re-alert")
+let updatedNotification = PhoneNotification(payload: notificationPayload(revision: "v2"))!
+try expect(notificationStore.accept(updatedNotification) && notificationStore.entries.count == 1, "Update replaces same notification key")
+try expect(!notificationStore.remove(key: "test-key", revision: "v1") && notificationStore.entries.count == 1, "Stale removal cannot delete newer revision")
+try expect(notificationStore.remove(key: "test-key", revision: "v2"), "Phone removal clears matching notification")
+try expect(!notificationStore.accept(PhoneNotification(payload: notificationPayload(snapshot: true))!), "Reconnect snapshot does not trigger alerts")
+for index in 0..<40 {
+    _ = notificationStore.accept(PhoneNotification(payload: notificationPayload(key: "key-\(index)"))!)
+}
+try expect(notificationStore.entries.count == 30 && notificationStore.entries.first?.key == "key-39", "Notification state is bounded and newest first")
+try expect(!notificationStore.contains(key: "key-0", revision: "v1"), "Evicted notifications cannot receive actions")
+notificationStore.reset()
+try expect(notificationStore.entries.isEmpty, "Disconnect clears notification content")
+for kind in ["notif.postedV2", "notif.removed", "notif.reset", "notif.action", "notif.dismiss", "notif.subscribe"] {
+    try expect(!PhoneHandshakePolicy.acceptsPlaintext(type: kind, isSecure: false), "Notification protocol refuses plaintext \(kind)")
+}
+var fixtureNotificationPayload = notificationPayload(key: "0|dev.sapphire.companion|2001|sapphire-notification-fixture|fixture")
+fixtureNotificationPayload["appId"] = .string("dev.sapphire.companion")
+fixtureNotificationPayload["title"] = .string("Sapphire mirroring test")
+try expect(PhoneNotification(payload: fixtureNotificationPayload)!.isDiagnosticFixture, "Diagnostic commands recognize only the fixed companion fixture")
+fixtureNotificationPayload["appId"] = .string("other.app")
+try expect(!PhoneNotification(payload: fixtureNotificationPayload)!.isDiagnosticFixture, "Diagnostic commands cannot target other apps")
+fixtureNotificationPayload["appId"] = .string("dev.sapphire.companion")
+fixtureNotificationPayload["title"] = .string("Real notification")
+try expect(!PhoneNotification(payload: fixtureNotificationPayload)!.isDiagnosticFixture, "Diagnostic commands cannot target ordinary companion notifications")
 print("Passed \(checks) phone protocol checks, including independent Java crypto fixtures.")

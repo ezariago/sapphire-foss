@@ -31,6 +31,9 @@ for the foundation this work builds on.
 - An editable Android companion and hotspot helper, with encrypted Bluetooth
   pairing and reconnection.
 - Automatic Mac → Android text clipboard delivery and manual Android → Mac delivery.
+- Opt-in Android notification mirroring with a Mac list, notch alerts, dismissal,
+  supported actions/replies and optional macOS banners. Android notification access
+  and explicit sharing must be enabled on the phone.
 - Live phone battery/charging, carrier and signal strength in the notch, with a
   device-status panel and instant hotspot controls.
 - Real Android mobile hotspot start/stop through a user-authorized Shizuku helper.
@@ -39,7 +42,7 @@ for the foundation this work builds on.
 
 See [Phone / Android implementation notes](PHONE-RECONSTRUCTION.md) and
 [device verification](https://github.com/ezariago/sapphire-android-companion/blob/main/VERIFICATION.md) for tested behavior and
-remaining limitations. Calls, notification mirroring, media control, file browsing,
+remaining limitations. Calls, media control, file browsing,
 camera streaming and screen sharing are not implemented in the replacement companion.
 
 ## Repositories
@@ -140,9 +143,12 @@ its individual findings need rechecking against the current source.
 
 - [ ] Implement phone media-state publishing and playback command handling in
   the replacement companion, then complete Mac phone-media presentation.
-- [ ] Implement notification mirroring in the replacement companion and complete
-  Mac live activities, dismissal, actions and replies. The Mac can receive basic
-  previews from the legacy companion, but several UI/action bridges remain empty.
+- [x] Implement opt-in notification posts/updates/removals, reconnect snapshots,
+  Mac list/notch alerts, optional banners and supported dismissal/actions/replies.
+- [x] Verify notification arrival/update/removal, actions, replies, dismissal
+  and quiet reconnect using the debug fixture on a real Android phone and Mac.
+- [ ] Extend notification verification to third-party apps, permission revocation,
+  locked-phone/OEM behavior and optional macOS banners.
 - [ ] Implement SMS and calls, including the Mac message/call action bridges.
 - [ ] Implement authenticated Wi-Fi/bulk file transfer, phone storage browsing
   and image/file clipboard delivery beyond the current text-only transport.

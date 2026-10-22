@@ -54,6 +54,19 @@ enum ReconstructedPhoneStore {
     }
 }
 
+private struct PhoneNotificationPreferences: Equatable {
+    let enabled: Bool
+    let general: Bool
+    let system: Bool
+    let banners: Bool
+    init(_ settings: Settings) {
+        enabled = settings.continuityEnabled && settings.continuityNotifications
+        general = settings.continuityNotificationsGeneral
+        system = settings.continuityNotificationsSystem
+        banners = settings.continuityNotificationsAsBanners
+    }
+}
+
 @MainActor
 final class ReconstructedPhoneLink: NSObject, ObservableObject {
     static let shared = ReconstructedPhoneLink()
@@ -107,6 +120,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var hotspotConnected = false
     @Published private(set) var hotspotInternet = false
     @Published private(set) var hotspotCanStop = false
+    private var notificationSettings: AnyCancellable?
     private var clipboardToken: PasteboardChangeMonitor.Token?
     private var clipboardChanges = PhoneClipboardChanges(baseline: 0)
     private let hotspotJoiner = PhoneHotspotJoiner()
@@ -182,6 +196,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             "hasConfirmationCode": sas != nil, "subscribed": subscribed,
             "bluetoothState": central?.state.rawValue ?? -1, "queuedChunks": chunks.count,
             "lastMessageType": lastMessageType,
+            "phoneNotificationCount": ContinuityManager.shared.notificationBridge.notifications.count,
+            "hasPhoneNotificationAlert": ContinuityManager.shared.notificationBridge.latest != nil,
+            "notificationFixtureState": ContinuityManager.shared.notificationBridge.notifications.first(where: \.isDiagnosticFixture)?.diagnosticFixtureState ?? "absent",
             "phoneSignalLevel": phoneStatus.signalLevel ?? -1, "phoneCarrier": phoneStatus.carrier ?? "",
             "phoneCharging": phoneStatus.charging, "phoneNetwork": phoneStatus.network ?? "",
             "automaticClipboard": automaticClipboard, "hotspotStatus": hotspotStatus,
@@ -219,10 +236,26 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         case "hotspot-leave": leaveHotspot()
         case "clipboard-on": automaticClipboard = true
         case "clipboard-off": automaticClipboard = false
+        case "notification-test-action": notificationFixtureCommand("action")
+        case "notification-test-reply": notificationFixtureCommand("reply")
+        case "notification-test-dismiss": notificationFixtureCommand("dismiss")
         case "quit": NSApp.terminate(nil)
         default: break
         }
         writeDiagnosticSnapshot()
+    }
+
+    // These developer commands can only act on our fixed debug Android fixture.
+    // They cannot select arbitrary notifications or supply arbitrary reply text.
+    private func notificationFixtureCommand(_ kind: String) {
+        guard diagnosticDirectory != nil,
+              let entry = ContinuityManager.shared.notificationBridge.notifications.first(where: \.isDiagnosticFixture) else { return }
+        if kind == "dismiss" { notificationCommand(entry, action: nil, reply: nil) }
+        else if let action = entry.actions.first(where: {
+            kind == "reply" ? ($0.title == "Reply" && $0.allowsReply) : ($0.title == "Test action" && !$0.allowsReply)
+        }) {
+            notificationCommand(entry, action: action, reply: kind == "reply" ? "Sapphire reply fixture" : nil)
+        }
     }
 
     private var macID: String {
@@ -237,6 +270,10 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     override private init() {
         super.init()
         hotspotLocation.delegate = self
+        notificationSettings = SettingsModel.shared.changes(of: PhoneNotificationPreferences.init)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.subscribeNotifications() }
+            }
         let notifications = NSWorkspace.shared.notificationCenter
         workspaceObservers.append(notifications.addObserver(forName: NSWorkspace.willSleepNotification,
             object: nil, queue: .main) { [weak self] _ in
@@ -454,6 +491,36 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         Task { [hotspotJoiner] in await hotspotJoiner.leave() }
     }
 
+    private func subscribeNotifications() {
+        lastNotification = ""
+        ContinuityManager.shared.notificationBridge.reset()
+        guard isSecure, activeCompanion else { return }
+        let preferences = PhoneNotificationPreferences(SettingsModel.shared.current)
+        send("notif.subscribe", ["enabled": .bool(preferences.enabled),
+            "includeGeneral": .bool(preferences.general), "includeSystem": .bool(preferences.system)])
+    }
+
+    func notificationCommand(_ entry: PhoneNotification, action: PhoneNotification.Action?, reply: String?) {
+        let bridge = ContinuityManager.shared.notificationBridge
+        guard isSecure, activeCompanion, SettingsModel.shared.current.continuityNotifications,
+              bridge.contains(key: entry.key, revision: entry.revision) else { return }
+        var payload: [String: PhoneJSON] = ["key": .string(entry.key), "revision": .string(entry.revision)]
+        if let action {
+            guard entry.actions.contains(action) else { return }
+            payload["actionId"] = .string(action.id)
+            if action.allowsReply {
+                guard let reply, !reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, reply.utf8.count <= 4000 else {
+                    bridge.actionStatus = "Enter a reply under 4 KB."
+                    return
+                }
+                payload["replyText"] = .string(reply)
+            }
+        } else if !entry.clearable { return }
+        guard let requestID = bridge.beginAction(for: entry) else { return }
+        payload["requestId"] = .string(requestID)
+        send(action == nil ? "notif.dismiss" : "notif.action", payload)
+    }
+
     private func scanIfReady() {
         guard !isSleeping, wantsScan, central?.state == .poweredOn, peripheral == nil else { return }
         central?.scanForPeripherals(withServices: [Self.companionService, Self.service],
@@ -473,6 +540,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         hotspotNeedsLocation = false; isHotspotBusy = false
         hotspotInternet = false; hotspotCanStop = false
         phoneStatus = PhoneDeviceStatus()
+        ContinuityManager.shared.notificationBridge.reset()
         batteryPercent = nil; mediaTitle = ""; receivedText = nil; lastNotification = ""
         connectionTimeout?.cancel(); connectionTimeout = nil
         heartbeat?.cancel(); heartbeat = nil
@@ -663,7 +731,27 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             acceptHotspotStatus(p["state"]?.string ?? "", message: p["message"]?.string)
         case "notif.posted", "notif.postedV2":
             guard encrypted else { throw PhoneWireError.unauthenticated }
-            lastNotification = [p["appName"]?.string, p["title"]?.string, p["text"]?.string].compactMap { $0 }.joined(separator: " — ")
+            let preferences = PhoneNotificationPreferences(SettingsModel.shared.current)
+            if preferences.enabled, let entry = PhoneNotification(payload: p),
+               (!entry.isGeneral || preferences.general), (!entry.isSystem || preferences.system) {
+                lastNotification = [entry.appName, entry.title, entry.text].filter { !$0.isEmpty }.joined(separator: " — ")
+                ContinuityManager.shared.notificationBridge.accept(entry)
+            }
+        case "notif.removed":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            if let key = p["key"]?.string, let revision = p["revision"]?.string {
+                ContinuityManager.shared.notificationBridge.remove(key: key, revision: revision)
+            }
+        case "notif.reset":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            lastNotification = ""
+            ContinuityManager.shared.notificationBridge.reset()
+        case "notif.actionResult":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            if let requestID = p["requestId"]?.string {
+                ContinuityManager.shared.notificationBridge.finishAction(requestID: requestID,
+                    message: p["message"]?.string.map { String($0.prefix(256)) } ?? "Phone action completed.")
+            }
         case "ping": send("pong", p)
         case "pair.classicStart":
             send("pair.classicDecline", ["reason": .string("Use QR pairing in this local build.")], plaintext: true)
@@ -679,7 +767,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             }
             let justConnected = !isSecure
             isSecure = true; isConnecting = false
-            if justConnected { lastError = nil; updateClipboardMonitoring() }
+            if justConnected { lastError = nil; updateClipboardMonitoring(); subscribeNotifications() }
             status = "Connected securely over Bluetooth."
             connectionTimeout?.cancel(); connectionTimeout = nil
             publishSnapshot()

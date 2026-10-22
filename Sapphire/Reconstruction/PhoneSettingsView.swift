@@ -74,14 +74,11 @@ struct ContinuitySettingsView: View {
                                 Text(text).lineLimit(5).textSelection(.enabled)
                                 Button("Copy received text on Mac", action: link.copyReceivedText)
                             }
-                            if !link.lastNotification.isEmpty {
-                                Text("Latest phone notification").font(.headline)
-                                Text(link.lastNotification).textSelection(.enabled)
-                            }
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
                     }
                 }
-                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, media controls, short text clipboard messages and notification previews. Wi-Fi transfer, phone storage, screen mirroring, calls, widgets and camera/microphone support are not implemented yet.")
+                PhoneNotificationsSettingsView()
+                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, text clipboard messages, hotspot control and notification mirroring with supported actions/replies. Wi-Fi transfer, phone storage, screen mirroring, calls, widgets and camera/microphone support are not implemented yet.")
                     .font(.caption).foregroundStyle(.secondary)
                 if !link.isSecure && link.hotspotConnected {
                     Button("Disconnect phone hotspot", action: link.leaveHotspot)

@@ -2328,14 +2328,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if let peerID = info["continuityPeerID"] as? String, let key = info["continuityKey"] as? String {
             switch response.actionIdentifier {
             case UNNotificationDismissActionIdentifier:
-                continuityManager.dismissNotificationOnPhone(peerID: peerID, key: key)
+                continuityManager.dismissNotificationOnPhone(peerID: peerID, key: key, revision: info["continuityRevision"] as? String)
             case UNNotificationDefaultActionIdentifier:
                 break
             default:
                 let replyText = (response as? UNTextInputNotificationResponse)?.userText
                 continuityManager.invokeNotificationAction(
                     peerID: peerID, key: key,
-                    actionId: response.actionIdentifier, replyText: replyText)
+                    actionId: response.actionIdentifier, replyText: replyText, revision: info["continuityRevision"] as? String)
             }
         }
         completionHandler()

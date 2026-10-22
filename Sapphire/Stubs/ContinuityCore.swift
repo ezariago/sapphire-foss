@@ -8,6 +8,8 @@
 import AppKit
 import Combine
 import SwiftUI
+import CryptoKit
+import UserNotifications
 
 enum ContinuityDeviceType: String, Codable, Sendable {
     case phone, tablet, mac, unknown
@@ -172,14 +174,121 @@ struct ContinuityLiveExternalActivity: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.activity == rhs.activity }
 }
 
-struct ContinuityMirroredNotification: Identifiable, Equatable {
-    var id: String
-}
+typealias ContinuityMirroredNotification = PhoneNotification
 
 @MainActor
 final class ContinuityNotificationBridge: ObservableObject {
     @Published private(set) var latest: ContinuityMirroredNotification?
-    func clearLatest() { latest = nil }
+    @Published private(set) var notifications: [PhoneNotification] = []
+    @Published var actionStatus = ""
+    @Published private(set) var actionKey: String?
+    @Published private(set) var actionRequestID: String?
+    private var actionTimeout: Task<Void, Never>?
+    private var store = PhoneNotificationStore()
+    private var pending: [PhoneNotification] = []
+    private var bannerTask: Task<Void, Never>?
+
+    func accept(_ entry: PhoneNotification) {
+        let alert = store.accept(entry)
+        notifications = store.entries
+        pending.removeAll { $0.key == entry.key || !store.contains(key: $0.key, revision: $0.revision) }
+        if let latest, !store.contains(key: latest.key, revision: latest.revision), latest.key != entry.key { clearLatest() }
+        if alert {
+            if latest == nil || latest?.key == entry.key { latest = entry }
+            else { pending.append(entry); pending = Array(pending.suffix(30)) }
+            if SettingsModel.shared.current.continuityNotificationsAsBanners { postBanner(entry) }
+        }
+    }
+
+    func remove(key: String, revision: String) {
+        guard store.remove(key: key, revision: revision) else { return }
+        notifications = store.entries
+        pending.removeAll { $0.key == key && $0.revision == revision }
+        if latest?.key == key && latest?.revision == revision { clearLatest() }
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [bannerID(key)])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [bannerID(key)])
+    }
+
+    func clearLatest() { latest = pending.isEmpty ? nil : pending.removeFirst() }
+    func contains(key: String, revision: String) -> Bool { store.contains(key: key, revision: revision) }
+    func reset() {
+        let identifiers = notifications.map { bannerID($0.key) }
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+        store.reset(); notifications = []; pending = []; latest = nil; actionStatus = ""
+        actionTimeout?.cancel(); actionTimeout = nil; actionRequestID = nil; actionKey = nil
+    }
+
+    func beginAction(for entry: PhoneNotification) -> String? {
+        guard actionRequestID == nil else { return nil }
+        let requestID = UUID().uuidString
+        actionKey = entry.key; actionRequestID = requestID
+        actionStatus = "Waiting for phone…"
+        actionTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled, let self, self.actionRequestID == requestID else { return }
+            self.actionStatus = "The phone did not respond. Check its connection and unlock it before retrying."
+            self.actionRequestID = nil
+        }
+        return requestID
+    }
+
+    func finishAction(requestID: String, message: String) {
+        guard requestID == actionRequestID else { return }
+        actionTimeout?.cancel(); actionTimeout = nil
+        actionRequestID = nil; actionStatus = message
+    }
+
+    private func bannerID(_ key: String) -> String {
+        "sapphire-phone-" + SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func category(for entry: PhoneNotification) -> UNNotificationCategory {
+        let actions: [UNNotificationAction] = entry.actions.map { action in
+            if action.allowsReply {
+                return UNTextInputNotificationAction(identifier: action.id, title: action.title,
+                    options: [], textInputButtonTitle: "Send", textInputPlaceholder: "Reply")
+            }
+            return UNNotificationAction(identifier: action.id, title: action.title, options: [])
+        }
+        return UNNotificationCategory(identifier: bannerID(entry.id), actions: actions,
+            intentIdentifiers: [], options: entry.clearable ? [.customDismissAction] : [])
+    }
+
+    private func postBanner(_ entry: PhoneNotification) {
+        let previous = bannerTask
+        bannerTask = Task { @MainActor [weak self] in
+            await previous?.value
+            guard let self, self.contains(key: entry.key, revision: entry.revision),
+                  SettingsModel.shared.current.continuityNotificationsAsBanners,
+                  let peerID = ContinuityManager.shared.activePeerID else { return }
+            let center = UNUserNotificationCenter.current()
+            let existing = await center.notificationCategories()
+            guard self.contains(key: entry.key, revision: entry.revision),
+                  SettingsModel.shared.current.continuityNotificationsAsBanners else { return }
+            var categories = Set(existing.filter { !$0.identifier.hasPrefix("sapphire-phone-") })
+            for active in self.notifications { categories.insert(self.category(for: active)) }
+            center.setNotificationCategories(categories)
+            let content = UNMutableNotificationContent()
+            content.title = entry.appName
+            content.subtitle = entry.title
+            content.body = entry.text
+            content.userInfo = ["continuityPeerID": peerID, "continuityKey": entry.key,
+                                "continuityRevision": entry.revision]
+            content.categoryIdentifier = self.bannerID(entry.id)
+            let id = self.bannerID(entry.key)
+            do {
+                try await center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
+                if !self.contains(key: entry.key, revision: entry.revision) {
+                    center.removeDeliveredNotifications(withIdentifiers: [id])
+                    center.removePendingNotificationRequests(withIdentifiers: [id])
+                }
+            } catch {
+                self.actionStatus = "macOS banners are unavailable. Allow notifications for Sapphire in System Settings."
+            }
+        }
+    }
+
 }
 
 @MainActor
@@ -247,8 +356,19 @@ final class ContinuityManager {
         mediaBridge.acceptReconstructed(state, deviceName: deviceName)
     }
     func sendFiles(_ urls: [URL], toPeerID peerID: String) {}
-    func dismissNotificationOnPhone(peerID: String, key: String) {}
-    func invokeNotificationAction(peerID: String, key: String, actionId: String, replyText: String?) {}
+    func dismissNotificationOnPhone(peerID: String, key: String, revision: String? = nil) {
+        guard peerID == activePeerID,
+              let entry = notificationBridge.notifications.first(where: { $0.key == key }),
+              revision == nil || revision == entry.revision else { return }
+        ReconstructedPhoneLink.shared.notificationCommand(entry, action: nil, reply: nil)
+    }
+    func invokeNotificationAction(peerID: String, key: String, actionId: String, replyText: String?, revision: String? = nil) {
+        guard peerID == activePeerID,
+              let entry = notificationBridge.notifications.first(where: { $0.key == key }),
+              revision == nil || revision == entry.revision,
+              let action = entry.actions.first(where: { $0.id == actionId }) else { return }
+        ReconstructedPhoneLink.shared.notificationCommand(entry, action: action, reply: replyText)
+    }
     func takePhoto() {}
     func scanDocument() {}
     func setActivePeer(id: String) {}
@@ -299,7 +419,12 @@ struct ContinuityNotificationActivityView: View {
     let entry: ContinuityMirroredNotification
     let bridge: ContinuityNotificationBridge
     @Binding var isHovered: Bool
-    var body: some View { EmptyView() }
+    var body: some View {
+        PhoneNotificationCard(entry: entry)
+            .frame(width: 360)
+            .padding(12)
+            .onHover { isHovered = $0 }
+    }
 }
 
 extension Notification.Name {
