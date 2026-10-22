@@ -144,6 +144,7 @@ struct PhoneNotchStatusView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                Text("Phone status").font(.headline)
                 HStack(spacing: 10) {
                     Image(systemName: "iphone").font(.system(size: 28)).foregroundStyle(link.isSecure ? Color.green : Color.gray)
                     VStack(alignment: .leading, spacing: 3) {
@@ -194,7 +195,10 @@ struct PhoneNotchStatusView: View {
                 }
             }.padding(20)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // The widget plane reserves the notch band above this scroll viewport.
+        // A finite ideal size lets its host expand instead of collapsing to the
+        // ScrollView's small unconstrained measurement beneath the camera cutout.
+        .frame(width: 420, height: 300, alignment: .topLeading)
         .foregroundStyle(.white)
     }
 }

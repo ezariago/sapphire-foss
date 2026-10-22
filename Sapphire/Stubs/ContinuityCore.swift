@@ -416,6 +416,7 @@ enum ContinuityMediaActivityView {
 }
 
 struct ContinuityNotificationActivityView: View {
+    @Environment(\.notchBandHeight) private var notchBandHeight
     let entry: ContinuityMirroredNotification
     let bridge: ContinuityNotificationBridge
     @Binding var isHovered: Bool
@@ -423,6 +424,7 @@ struct ContinuityNotificationActivityView: View {
         PhoneNotificationCard(entry: entry)
             .frame(width: 360)
             .padding(12)
+            .padding(.top, notchBandHeight)
             .onHover { isHovered = $0 }
     }
 }

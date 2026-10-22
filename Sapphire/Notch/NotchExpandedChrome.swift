@@ -106,7 +106,6 @@ enum NotchExpandedChrome {
         case .musicDevices: return "Devices"
         case .musicQueueAndPlaylists: return "Queue & Playlists"
         case .multiAudio: return "Audio Devices"
-        case .continuityDetail: return "Phone"
         default: return nil
         }
     }
