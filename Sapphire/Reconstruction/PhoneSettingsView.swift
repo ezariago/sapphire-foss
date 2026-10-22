@@ -198,7 +198,7 @@ struct PhoneNotchStatusView: View {
         // The widget plane reserves the notch band above this scroll viewport.
         // A finite ideal size lets its host expand instead of collapsing to the
         // ScrollView's small unconstrained measurement beneath the camera cutout.
-        .frame(width: 420, height: 300, alignment: .topLeading)
+        .frame(width: 420, height: 250, alignment: .topLeading)
         .foregroundStyle(.white)
     }
 }
