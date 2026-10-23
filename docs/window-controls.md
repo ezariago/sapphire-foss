@@ -6,7 +6,7 @@ Added 2026-10-24. All controls remain opt-in.
 | --- | --- | --- |
 | Dock presets | Capture pinned applications and Dock position/size/autohide/magnification; validated, versioned import/export; atomic preference backup before application; restart Dock | Isolated preference-domain tests pass. Actual Dock appearance and restoration need a manual smoke test. Legacy name-only presets cannot be applied until recaptured. Preset shortcuts can be recorded/cleared, persist locally and use the shared conflict-aware dispatcher; real key routing remains manual. |
 | Window switcher | AX window enumeration, Command/Option-Tab cycling, reverse cycling, modifier-release activation, Escape cancellation | Full app compiles. Accessibility permission and real input/Spaces behavior remain manual checks. |
-| Dock previews | AX Dock item hit testing and delayed window picker; ScreenCaptureKit window thumbnails when Screen Recording is allowed; icon/title fallback otherwise | Full app compiles. Alternate trigger/layout variants and live thumbnail refresh remain open. |
+| Dock previews | AX Dock item hit testing and delayed window picker; ScreenCaptureKit window thumbnails when Screen Recording is allowed; icon/title fallback otherwise | Full app compiles. Grid/list/carousel layouts, larger thumbnails, compact title lists above six windows, and hover/middle-click/Option-click triggers now have public code. Live thumbnail refresh and real input/permission checks remain open. |
 | Dock clicks | Minimize or hide a frontmost app after its Dock icon is clicked; cycle through a stable ring of windows starting after the focused AX window, including reordered/new/closed windows; delayed actions recheck app focus, exclusions and selected action | Isolated cycle and thumbnail-association tests pass; full app integration compiles. Real Dock timing, Accessibility approval and alternate-display behavior need manual checks. |
 | Auto-quit | Track apps that had windows; request normal termination after their last window remains closed; excluded apps and AX-query failures are respected | No force termination. Save dialogs remain under the target app's control. Manual app compatibility checks remain open. |
 | Quit/close protection | Shared event hook with hold, double-press and extra-modifier policies, app exclusions and per-close configuration | Isolated state-machine tests pass for timing, repeat suppression and app isolation. Hold uses keyboard repeat events; actual keyboard/input-method verification remains open. Menu/app-initiated exits are outside this hook. |
@@ -47,3 +47,20 @@ roundtrips, unsafe bare/Shift-only key rejection, disabled/deleted/reassigned
 action guards and import sanitation. Tests use a fresh CFPreferences domain;
 no real Dock was changed or restarted. Real shortcut routing, permission denial,
 conflicts with other apps and actual Dock appearance still need an unlocked Mac.
+
+The window switcher also honors its grid/list/carousel selection. Keyboard
+selection scrolls into view, including reverse selection when first opening.
+Dock preview controls are exposed in Dock settings. List mode uses app icons and
+window titles without requesting thumbnail capture; compact mode switches to that
+list above six windows. Enhanced mode requests larger snapshot thumbnails.
+Middle-click means mouse button 2; Option-click requires Option without other
+shortcut modifiers. Click triggers observe the event and preserve native Dock
+behavior. The custom Dock minimize/hide/cycle action skips the preview's
+Option-click gesture so those two Sapphire actions do not run together.
+
+These UI and monitor paths passed a full local build, but were not exercised in
+the locked overnight session. All layouts, trigger delivery, native click
+coexistence, initial/reverse scrolling and capture permission changes still need
+manual visual/input checks. Thumbnails are snapshots, not a live stream.
+Arrow-key navigation and Q/W window-switcher commands remain unimplemented;
+the Settings description now lists only the supported keyboard actions.

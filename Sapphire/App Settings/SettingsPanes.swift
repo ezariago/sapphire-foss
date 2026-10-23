@@ -442,7 +442,7 @@ struct SystemEnhanceSettingsView: View {
                     PremiumFeatureView(feature: .windowsPreview) {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("App Switching").font(.headline).padding([.top, .horizontal])
-                            ToggleRow(title: "Window Switcher", description: "Replace the switcher with a keyboard-driven, window-aware overlay. Hold the shortcut and press Tab to cycle, arrows to move, Q to quit an app, W to close a window.", isOn: $settings.settings.systemEnhanceWindowSwitcherEnabled)
+                            ToggleRow(title: "Window Switcher", description: "Show a window picker with Command/Option-Tab. Hold the modifier and press Tab to cycle or Shift-Tab to reverse; release to activate, or press Escape to cancel. Use panel buttons to minimize or close windows.", isOn: $settings.settings.systemEnhanceWindowSwitcherEnabled)
                             if settings.settings.systemEnhanceWindowSwitcherEnabled {
                                 Divider().padding(.leading, 20)
                                 HStack { Text("Activate With"); Spacer(); Picker("", selection: Binding(

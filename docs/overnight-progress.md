@@ -127,3 +127,23 @@ Global key routing and actual Dock application remain manual verification work.
 The expanded Dock tests and full local app build/signature verification passed
 (`build/dock-shortcuts-build.log`). No real Dock preferences were changed. The
 Android checkout is clean and the phone remains Dozing with stay-on disabled.
+
+## Window preview presentation checkpoint
+
+Implemented grid/list/carousel presentation for Dock previews and the window
+switcher, compact title lists above six windows, larger snapshot thumbnails,
+and hover/middle-click/Option-click preview triggers. Dock settings now expose
+these controls. The custom Dock-click action excludes the preview's Option-click
+gesture, while native Dock click behavior is preserved. Selection scrolls into
+view, including the initial reverse-selection case. The switcher description
+no longer advertises unsupported arrow/Q/W keyboard commands.
+
+This checkpoint is UI/monitor implementation with full-build verification;
+native input, visual layout, permission changes and multi-display behavior still
+require an unlocked session. No screenshots, actual input, or personal app
+window actions were performed for these changes. Live thumbnail refresh, Dock
+locking, context-menu services and hinge animation remain open.
+
+The final full local app build and signature checks passed
+(`build/window-preview-layouts-build.log`). The companion checkout remains clean
+and the phone still reports Dozing with stay-on disabled.

@@ -118,6 +118,24 @@ struct DockLayoutsSettingsView: View {
                 }
                 if let status = manager.status { Text(status).textSelection(.enabled) }
             }
+            Section("Window previews") {
+                Toggle("Enable Dock window previews", isOn: $settings.settings.systemEnhanceDockPreviewsEnabled)
+                Picker("Show previews", selection: $settings.settings.systemEnhancePreviewTriggerRaw) {
+                    Text("Hover").tag("hover")
+                    Text("Middle click").tag("middleClick")
+                    Text("Option-click").tag("modifierClick")
+                }
+                Picker("Layout", selection: $settings.settings.systemEnhancePreviewLayoutRaw) {
+                    Text("Grid").tag("grid")
+                    Text("List").tag("list")
+                    Text("Carousel").tag("carousel")
+                }
+                Toggle("Use a compact list above six windows", isOn: $settings.settings.systemEnhanceCompactPreviewEnabled)
+                Toggle("Larger thumbnails", isOn: $settings.settings.systemEnhanceEnhancedPreviewsEnabled)
+                Slider(value: $settings.settings.systemEnhancePreviewDelay, in: 0...1) { Text("Hover delay") }
+                Text("Accessibility is needed to find windows; Screen Recording enables thumbnails. Click triggers preserve native Dock click actions. List mode shows titles and icons without screen capture.")
+                    .foregroundStyle(.secondary)
+            }
             Section("Saved presets") {
                 ForEach($settings.settings.dockLayoutsPresets) { $layout in
                     VStack(alignment: .leading) {

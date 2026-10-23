@@ -108,6 +108,7 @@ private final class WindowPickerState: ObservableObject {
 
 private struct WindowThumbnail: View {
     let window: SapphireWindow
+    var enhanced = false
     @State private var image: NSImage?
     var body: some View {
         Group {
@@ -121,7 +122,7 @@ private struct WindowThumbnail: View {
                 }
             }
         }
-        .frame(width: 190, height: 110)
+        .frame(width: enhanced ? 280 : 190, height: enhanced ? 160 : 110)
         .task(id: window.id) {
             guard CGPreflightScreenCaptureAccess(), let number = window.windowID else { return }
             do {
@@ -129,8 +130,8 @@ private struct WindowThumbnail: View {
                 guard let target = content.windows.first(where: { $0.windowID == number }) else { return }
                 let filter = SCContentFilter(desktopIndependentWindow: target)
                 let config = SCStreamConfiguration()
-                config.width = 380
-                config.height = 220
+                config.width = enhanced ? 560 : 380
+                config.height = enhanced ? 320 : 220
                 config.showsCursor = false
                 let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
                 guard !Task.isCancelled else { return }
@@ -143,6 +144,8 @@ private struct WindowThumbnail: View {
 private struct WindowPickerView: View {
     @ObservedObject var state: WindowPickerState
     let title: String
+    let layout: SEPreviewLayout
+    let enhanced: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -154,26 +157,20 @@ private struct WindowPickerView: View {
                 Text(AXIsProcessTrusted() ? "No accessible windows." : "Allow Accessibility in System Settings to list and activate windows.")
                     .foregroundStyle(.secondary).padding()
             }
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 210))], spacing: 12) {
-                    ForEach(Array(state.windows.enumerated()), id: \.element.id) { index, window in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Button { state.choose(window) } label: {
-                                VStack(alignment: .leading) {
-                                    WindowThumbnail(window: window)
-                                    Text(window.app.localizedName ?? "Application").font(.caption.bold())
-                                    Text(window.title).font(.caption).lineLimit(1)
-                                }
-                                .frame(width: 200)
-                                .padding(8)
-                                .background(index == state.selected ? Color.accentColor.opacity(0.25) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
-                            }.buttonStyle(.plain)
-                            HStack {
-                                Button("Minimize") { SystemEnhanceWindowRegistry.shared.minimize(window); state.cancel() }
-                                Button("Close window") { SystemEnhanceWindowRegistry.shared.close(window); state.cancel() }
-                            }.font(.caption)
+            ScrollViewReader { proxy in
+                Group {
+                    if layout == .carousel {
+                        ScrollView(.horizontal) { LazyHStack(alignment: .top, spacing: 12) { cards } }
+                    } else if layout == .list {
+                        ScrollView { LazyVStack(alignment: .leading, spacing: 8) { cards } }
+                    } else {
+                        ScrollView {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: enhanced ? 300 : 210))], spacing: 12) { cards }
                         }
                     }
+                }
+                .onChange(of: state.selected, initial: true) { _, index in
+                    if state.windows.indices.contains(index) { proxy.scrollTo(state.windows[index].id, anchor: .center) }
                 }
             }
         }
@@ -181,13 +178,46 @@ private struct WindowPickerView: View {
         .frame(width: 700, height: 430)
         .background(.regularMaterial)
     }
+    private var cards: some View {
+        ForEach(Array(state.windows.enumerated()), id: \.element.id) { index, window in
+            VStack(alignment: .leading, spacing: 6) {
+                Button { state.choose(window) } label: {
+                    Group {
+                        if layout == .list {
+                            HStack {
+                                Image(nsImage: window.app.icon ?? NSImage()).resizable().frame(width: 28, height: 28)
+                                VStack(alignment: .leading) {
+                                    Text(window.app.localizedName ?? "Application").font(.caption.bold())
+                                    Text(window.title).font(.caption).lineLimit(1)
+                                }
+                                Spacer()
+                            }.frame(maxWidth: .infinity)
+                        } else {
+                            VStack(alignment: .leading) {
+                                WindowThumbnail(window: window, enhanced: enhanced)
+                                Text(window.app.localizedName ?? "Application").font(.caption.bold())
+                                Text(window.title).font(.caption).lineLimit(1)
+                            }.frame(width: enhanced ? 290 : 200)
+                        }
+                    }
+                    .padding(8)
+                    .background(index == state.selected ? Color.accentColor.opacity(0.25) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                HStack {
+                    Button("Minimize") { SystemEnhanceWindowRegistry.shared.minimize(window); state.cancel() }
+                    Button("Close window") { SystemEnhanceWindowRegistry.shared.close(window); state.cancel() }
+                }.font(.caption)
+            }.id(window.id)
+        }
+    }
 }
 
 @MainActor
 private final class WindowPicker {
     let state = WindowPickerState()
     private var panel: NSPanel?
-    func show(windows: [SapphireWindow], title: String, near point: NSPoint? = nil) {
+    func show(windows: [SapphireWindow], title: String, near point: NSPoint? = nil, layout: SEPreviewLayout = .grid, enhanced: Bool = false, compact: Bool = false) {
         dismiss()
         state.windows = windows
         state.selected = 0
@@ -200,7 +230,7 @@ private final class WindowPicker {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        panel.contentView = NSHostingView(rootView: WindowPickerView(state: state, title: title))
+        panel.contentView = NSHostingView(rootView: WindowPickerView(state: state, title: title, layout: compact && windows.count > 6 ? .list : layout, enhanced: enhanced))
         if let point, let frame = NSScreen.screens.first(where: { $0.frame.contains(point) })?.visibleFrame {
             panel.setFrameOrigin(NSPoint(x: min(max(frame.minX, point.x - 350), frame.maxX - 700), y: min(max(frame.minY, point.y + 20), frame.maxY - 430)))
         } else { panel.center() }
@@ -270,7 +300,7 @@ final class SystemEnhanceWindowSwitcher {
                 else if action == 3 { self.dismiss() }
                 else {
                     if !self.picker.isVisible {
-                        self.picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(), title: "Windows")
+                        self.picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(), title: "Windows", layout: SettingsModel.shared.current.systemEnhanceWindowSwitcherLayout)
                     }
                     self.picker.advance(reverse: action == -1)
                 }
@@ -286,15 +316,34 @@ final class SystemEnhanceDockPreviewController {
     static let shared = SystemEnhanceDockPreviewController()
     private let picker = WindowPicker()
     private var timer: Timer?
+    private var clickMonitor: Any?
     private var hovered: pid_t?
     private var hoverStarted = Date.distantPast
     private var lastDockHover = Date.distantPast
     private init() {}
     func start() {
         guard timer == nil else { return }
+        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.otherMouseDown, .leftMouseDown]) { [weak self] event in
+            MainActor.assumeIsolated { self?.handleClick(event) }
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+    }
+    private func handleClick(_ event: NSEvent) {
+        let config = SettingsModel.shared.current
+        let matches = config.systemEnhancePreviewTriggerRaw == "middleClick" && event.type == .otherMouseDown && event.buttonNumber == 2
+            || config.systemEnhancePreviewTriggerRaw == "modifierClick" && event.type == .leftMouseDown && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .option
+        guard matches, config.systemEnhanceDockPreviewsEnabled, AXIsProcessTrusted(),
+              let app = DockElementUnderPointer.application() else { return }
+        hovered = app.processIdentifier
+        lastDockHover = .now
+        show(app, config: config)
+    }
+    private func show(_ app: NSRunningApplication, config: Settings) {
+        picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(for: app), title: app.localizedName ?? "Windows", near: NSEvent.mouseLocation,
+                    layout: config.systemEnhancePreviewLayout, enhanced: config.systemEnhanceEnhancedPreviewsEnabled,
+                    compact: config.systemEnhanceCompactPreviewEnabled)
     }
     private func tick() {
         let config = SettingsModel.shared.current
@@ -311,11 +360,16 @@ final class SystemEnhanceDockPreviewController {
             hoverStarted = .now
             picker.dismiss()
         }
-        if !picker.isVisible && Date().timeIntervalSince(hoverStarted) >= max(0.1, config.systemEnhancePreviewDelay) {
-            picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(for: app), title: app.localizedName ?? "Windows", near: NSEvent.mouseLocation)
+        if config.systemEnhancePreviewTrigger == .hover, !picker.isVisible,
+           Date().timeIntervalSince(hoverStarted) >= max(0.1, config.systemEnhancePreviewDelay) {
+            show(app, config: config)
         }
     }
-    func dismiss() { timer?.invalidate(); timer = nil; picker.dismiss(); hovered = nil }
+    func dismiss() {
+        timer?.invalidate(); timer = nil
+        if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }; clickMonitor = nil
+        picker.dismiss(); hovered = nil
+    }
 }
 
 @MainActor
@@ -349,10 +403,11 @@ final class SystemEnhanceDockClicks {
     func start() {
         guard monitor == nil else { return }
         // Observe mouse-down before the Dock activates a different application.
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { _ in
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
             MainActor.assumeIsolated {
                 let config = SettingsModel.shared.current
                 guard config.systemEnhanceDockClicksEnabled,
+                      !(config.systemEnhanceDockPreviewsEnabled && config.systemEnhancePreviewTrigger == .modifierClick && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .option),
                       let app = DockElementUnderPointer.application(), let id = app.bundleIdentifier,
                       config.isDockClickEnabled(for: id), NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
                 let action = config.systemEnhanceDockClickActionRaw
