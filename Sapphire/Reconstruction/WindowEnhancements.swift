@@ -245,9 +245,21 @@ private final class WindowPicker {
         panel = nil
         state.windows = []
     }
-    func advance(reverse: Bool) {
+    func advance(reverse: Bool) { move(by: reverse ? -1 : 1) }
+    func move(by offset: Int) {
         let count = state.windows.count
-        if count > 0 { state.selected = (state.selected + (reverse ? count - 1 : 1)) % count }
+        if count > 0 { state.selected = ((state.selected + offset) % count + count) % count }
+    }
+    func closeSelection(quitApp: Bool) {
+        guard state.windows.indices.contains(state.selected) else { dismiss(); return }
+        let window = state.windows[state.selected]
+        dismiss()
+        if quitApp {
+            guard !window.app.isTerminated, window.app.activationPolicy == .regular,
+                  window.app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+                  !["com.apple.finder", "com.apple.dock", "com.apple.loginwindow", "com.apple.systempreferences", "com.apple.SystemSettings"].contains(window.app.bundleIdentifier ?? "") else { return }
+            _ = window.app.terminate() // Respect save dialogs; never force termination.
+        } else { SystemEnhanceWindowRegistry.shared.close(window) }
     }
     func commit() {
         guard state.windows.indices.contains(state.selected) else { dismiss(); return }
@@ -258,10 +270,7 @@ private final class WindowPicker {
 /// The event tap reads only a locked value snapshot; AX work happens on main.
 private final class SwitcherKeyState: @unchecked Sendable {
     let lock = NSLock()
-    var enabled = false
-    var activation = "both"
-    var active = false
-    var modifier: CGEventFlags = .maskAlternate
+    var policy = WindowSwitcherKeyPolicy()
 }
 
 @MainActor
@@ -274,41 +283,68 @@ final class SystemEnhanceWindowSwitcher {
     private init() {}
     func start() {
         guard settings == nil else { return }
-        settings = SettingsModel.shared.$settings.receive(on: RunLoop.main).sink { [weak self] config in
-            guard let self else { return }
-            self.keys.lock.withLock { self.keys.enabled = config.systemEnhanceWindowSwitcherEnabled; self.keys.activation = config.systemEnhanceSwitcherActivationRaw }
-            if !config.systemEnhanceWindowSwitcherEnabled { self.dismiss() }
-        }
         let keys = keys
-        tap = GlobalEventTap.shared.register(name: "FOSSWindowSwitcher", mask: (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue), priority: EventTapPriority.shortcut) { [weak self] type, event in
-            let action: Int = keys.lock.withLock {
-                guard keys.enabled else { return 0 }
-                if type == .flagsChanged, keys.active, !event.flags.contains(keys.modifier) { keys.active = false; return 2 }
-                guard type == .keyDown else { return 0 }
-                let key = event.getIntegerValueField(.keyboardEventKeycode)
-                if key == 53, keys.active { keys.active = false; return 3 }
-                guard key == 48, !event.flags.contains(.maskControl),
-                      (keys.activation != "option" && event.flags.contains(.maskCommand)) || (keys.activation != "command" && event.flags.contains(.maskAlternate)) else { return 0 }
-                keys.active = true
-                keys.modifier = event.flags.contains(.maskCommand) ? .maskCommand : .maskAlternate
-                return event.flags.contains(.maskShift) ? -1 : 1
+        // Record configuration synchronously so queued input from an old policy
+        // cannot reopen the picker after a disable/re-enable sequence.
+        settings = SettingsModel.shared.$settings.sink { [weak self] config in
+            let update = keys.lock.withLock { () -> (Bool, UInt64) in
+                let changed = keys.policy.configure(enabled: config.systemEnhanceWindowSwitcherEnabled,
+                    activation: config.systemEnhanceSwitcherActivationRaw,
+                    columns: config.systemEnhanceWindowSwitcherLayout == .grid ? 3 : 1)
+                return (changed, keys.policy.epoch)
             }
-            guard action != 0 else { return .pass }
-            Task { @MainActor in
-                guard let self else { return }
-                if action == 2 { self.picker.commit() }
-                else if action == 3 { self.dismiss() }
-                else {
-                    if !self.picker.isVisible {
-                        self.picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(), title: "Windows", layout: SettingsModel.shared.current.systemEnhanceWindowSwitcherLayout)
-                    }
-                    self.picker.advance(reverse: action == -1)
+            if update.0 {
+                DispatchQueue.main.async {
+                    guard keys.lock.withLock({ keys.policy.epoch == update.1 }) else { return }
+                    self?.picker.dismiss()
                 }
             }
-            return type == .flagsChanged ? .pass : .swallow
+        }
+        let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+        tap = GlobalEventTap.shared.register(name: "FOSSWindowSwitcher", mask: mask, priority: EventTapPriority.shortcut, reset: { [weak self] in
+            let epoch = keys.lock.withLock { keys.policy.reset(); return keys.policy.epoch }
+            DispatchQueue.main.async {
+                guard keys.lock.withLock({ keys.policy.epoch == epoch }) else { return }
+                self?.picker.dismiss()
+            }
+        }) { [weak self] type, event in
+            let effect = keys.lock.withLock { () -> (WindowSwitcherKeyPolicy.Action, UInt64)? in
+                let action: WindowSwitcherKeyPolicy.Action?
+                let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
+                if type == .flagsChanged {
+                    action = keys.policy.flagsChanged(command: event.flags.contains(.maskCommand), option: event.flags.contains(.maskAlternate))
+                } else if type == .keyUp { action = keys.policy.keyUp(code) }
+                else if type == .keyDown {
+                    action = keys.policy.keyDown(code, command: event.flags.contains(.maskCommand), option: event.flags.contains(.maskAlternate),
+                        control: event.flags.contains(.maskControl), shift: event.flags.contains(.maskShift))
+                } else { action = nil }
+                return action.map { ($0, keys.policy.epoch) }
+            }
+            guard let (action, epoch) = effect else { return .pass }
+            if action != .suppress {
+                // The event tap is serial. Main-queue FIFO keeps rapid Tab/release
+                // events ordered while AX work is pending.
+                DispatchQueue.main.async {
+                    guard let self, keys.lock.withLock({ keys.policy.enabled && keys.policy.epoch == epoch }) else { return }
+                    switch action {
+                    case .commit: self.picker.commit()
+                    case .cancel, .cancelAndPass: self.picker.dismiss()
+                    case .move(let offset): self.picker.move(by: offset)
+                    case .close: self.picker.closeSelection(quitApp: false)
+                    case .quit: self.picker.closeSelection(quitApp: true)
+                    case .advance(let reverse):
+                        if !self.picker.isVisible {
+                            self.picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(), title: "Windows", layout: SettingsModel.shared.current.systemEnhanceWindowSwitcherLayout)
+                        }
+                        self.picker.advance(reverse: reverse)
+                    case .suppress: break
+                    }
+                }
+            }
+            return type == .flagsChanged || action == .cancelAndPass ? .pass : .swallow
         }
     }
-    func dismiss() { picker.dismiss(); keys.lock.withLock { keys.active = false } }
+    func dismiss() { picker.dismiss(); keys.lock.withLock { keys.policy.reset() } }
 }
 
 @MainActor

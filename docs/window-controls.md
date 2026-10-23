@@ -62,5 +62,21 @@ These UI and monitor paths passed a full local build, but were not exercised in
 the locked overnight session. All layouts, trigger delivery, native click
 coexistence, initial/reverse scrolling and capture permission changes still need
 manual visual/input checks. Thumbnails are snapshots, not a live stream.
-Arrow-key navigation and Q/W window-switcher commands remain unimplemented;
-the Settings description now lists only the supported keyboard actions.
+Arrow keys now move selection (up/down by three items in the grid and one in
+list/carousel); Return activates. W requests closing the selected window through
+its AX close button; Q requests normal application termination, excluding
+Sapphire and essential system apps. Both dismiss the picker and respect native
+save dialogs. There is no force termination. These commands still require real
+input/permission and app-compatibility verification, including quit protection.
+
+The switcher input policy tracks the activation modifier, suppresses repeats and
+key-up events of consumed commands, and cancels safely if a modifier-release
+event was missed. Input actions run in main-queue FIFO order, with configuration
+epoch checks preventing old queued actions after disable/re-enable or event-tap
+reset. Isolated `test-window-cycling.sh` fixtures cover navigation, command/repeat
+suppression, modifier choice, lost-release recovery, cancellation and epoch
+invalidation. No real application was closed or quit by these tests.
+
+Unsupported keys and Control-modified commands cancel the switcher and pass
+through to macOS; they cannot leave a pending selector commit behind. Fixtures
+also cover these cancellation/pass-through paths.

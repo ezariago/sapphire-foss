@@ -147,3 +147,29 @@ locking, context-menu services and hinge animation remain open.
 The final full local app build and signature checks passed
 (`build/window-preview-layouts-build.log`). The companion checkout remains clean
 and the phone still reports Dozing with stay-on disabled.
+
+## Window switcher input checkpoint
+
+Implemented arrow navigation, Return activation and selected-window W / normal
+app-quit Q actions in the existing switcher. Q/W dismiss the picker and preserve
+native save-dialog handling; essential system apps and Sapphire are excluded
+from Q. The event tap uses a pure locked policy and schedules AX/UI work in
+main-queue FIFO order. Epoch checks discard stale actions after configuration
+changes or tap resets. Consumed command repeats/key-up events do not leak into
+the newly selected app; missing modifier releases cancel safely and pass ordinary
+typing through instead of interpreting it as a window command.
+
+Expanded isolated policy tests cover these transitions without sending real
+input or closing/quitting apps. Native keyboard behavior, AX close/quit dialogs,
+interaction with quit protection, Spaces and permission changes remain pending.
+
+Several expensive hosted builds were superseded before completing during the
+30-minute implementation cadence. CI now queues the latest run instead of
+cancelling the active run on every push, allowing complete verification to
+finish. A queued/successful local build is not recorded as a successful hosted
+run; hosted conclusions still require checking the actual run.
+
+The expanded switcher/cycling policy fixtures and final full local app build
+with signature verification passed (`build/window-switcher-input-build.log`).
+The Android checkout remains clean and the phone remains Dozing; no personal
+window actions or device input were used for validation.
