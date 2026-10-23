@@ -68,7 +68,7 @@ is published yet; upstream downloads do not include this fork's changes.
 
 ## Roadmap / implementation checklist
 
-Reviewed against this fork's source on **2026-10-22**. Checked items have an
+Reviewed against this fork's source on **2026-10-24**. Checked items have an
 implementation and recorded build/device evidence; unchecked items are remaining
 work, not delivery promises. A visible setting, protocol identifier or buildable
 stub does not mean the feature works. The Android items require coordinated work
@@ -84,20 +84,23 @@ in the [companion repository](https://github.com/ezariago/sapphire-android-compa
 
 ### FOSS foundation and distribution
 
-- [ ] Replace the inherited subscription/account gates with a FOSS feature-access
-  policy. The public shim currently denies every gated feature and disables
-  premium-wrapped controls; changing access alone will not implement missing code.
+- [x] Replace inherited subscription/account gates with a FOSS feature-access
+  policy. Implemented features are available without an account or subscription;
+  this does not implement the missing feature code.
 - [ ] Audit bundled dependencies, licenses and source/build provenance; publish
   reproducible builds or replacements for binary-only components, including
   `MediaRemoteAdapter.framework`, `SapphireMediaQueue.framework` and compiled
-  Face ID models.
-- [ ] Replace the public app-update validation shim with actual code-signature
-  and signer identity verification; it currently checks bundle identifiers only.
+  Face ID models. An initial [hashed input inventory and blocker audit](docs/audit/README.md)
+  is available; source replacements and full license review remain open.
+- [x] Replace the public app-update validation shim with actual code-signature
+  and installed signer requirement verification, including rejection fixtures.
 - [ ] Add automated macOS build/test CI and fork-specific release artifacts,
   with a documented signing/notarization and update distribution workflow.
+  [Build/test CI](.github/workflows/macos.yml) and development artifacts are added;
+  a verified hosted run and public signed release remain pending.
 
 Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
-[disabled feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),
+[FOSS feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),
 [update validation shim](Sapphire/Stubs/AppSecurity.swift), [build notes](BUILDING.md).
 
 ### Missing or partial macOS features

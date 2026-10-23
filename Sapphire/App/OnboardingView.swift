@@ -570,6 +570,20 @@ private struct SubscriptionOverviewStepView: View {
     }
 
     var body: some View {
+        #if !SAPPHIRE_FULL_BUILD
+        VStack(spacing: 24) {
+            Image(systemName: "heart.circle.fill").font(.system(size: 64)).foregroundStyle(.purple)
+            Text("Sapphire FOSS").font(.largeTitle.bold())
+            Text("All implemented features are free to use. No account or subscription required.")
+                .font(.title3).multilineTextAlignment(.center)
+            Text("This fork is a work in progress. The roadmap records which features are implemented and tested.")
+                .foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Link("View roadmap", destination: URL(string: "https://github.com/ezariago/sapphire-foss#roadmap--implementation-checklist")!)
+            OnboardingButton(title: "Continue", action: onNext)
+        }
+        .padding(50)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #else
         VStack(spacing: 20) {
             Spacer()
 
@@ -658,6 +672,7 @@ private struct SubscriptionOverviewStepView: View {
         .onAppear {
             Task { await subscriptionManager.bootstrap() }
         }
+        #endif
     }
 
     private func beginCheckout(for tier: SubscriptionTier) {

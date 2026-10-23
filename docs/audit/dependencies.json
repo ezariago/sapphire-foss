@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "package_resolved_sha256": "90a82a9a90549df5acb8f58f861595bb51a1c7ea3e323469408aa74700343dc8",
+  "packages": [
+    {
+      "identity": "abseil-cpp-binary",
+      "source": "https://github.com/google/abseil-cpp-binary.git",
+      "revision": "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
+      "version": "1.2024072200.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "app-check",
+      "source": "https://github.com/google/app-check.git",
+      "revision": "97f7d74dd0e8f3d0fe5fc75cc8957aa73bdc948a",
+      "version": "11.3.2",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "asn1",
+      "source": "https://github.com/leif-ibsen/ASN1",
+      "revision": "e38d1b8b43d8b53ffadde9836f34289176bb7a0c",
+      "version": "2.7.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "662f57f519d373edbb7207782707fd261e406eaab4915671c99e0de22fe262e1"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "bigint",
+      "source": "https://github.com/leif-ibsen/BigInt",
+      "revision": "afb70a0038bfbba845271b60fa9a58d5840f8017",
+      "version": "1.21.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "662f57f519d373edbb7207782707fd261e406eaab4915671c99e0de22fe262e1"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "cocoaasyncsocket",
+      "source": "https://github.com/robbiehanson/CocoaAsyncSocket",
+      "revision": "dbdc00669c1ced63b27c3c5f052ee4d28f10150c",
+      "version": "7.6.5",
+      "license_evidence": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "a591e14acf21833e30d4dc8206bbbeaa36bc29e0447c6d05e544ea2f3ae4581d"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "digest",
+      "source": "https://github.com/leif-ibsen/Digest",
+      "revision": "95ba89b494aaff5f3cd2933c03b9a890323dbf2c",
+      "version": "1.13.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "0b097c76b3c575fbf63854cf6c1229843d1bf95fb8efcd15553eb4009db54159"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "firebase-ios-sdk",
+      "source": "https://github.com/firebase/firebase-ios-sdk",
+      "revision": "346daa9f46316aa372b35b317e18224acc2e9063",
+      "version": "12.18.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "google-ads-on-device-conversion-ios-sdk",
+      "source": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
+      "revision": "dc39082d8881109d35b94b1c122164c0e8d08a55",
+      "version": "3.6.1",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "googleappmeasurement",
+      "source": "https://github.com/google/GoogleAppMeasurement.git",
+      "revision": "f04760d460296cc0fa430935a7be212e5bd67fc5",
+      "version": "12.18.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "googledatatransport",
+      "source": "https://github.com/google/GoogleDataTransport.git",
+      "revision": "617af071af9aa1d6a091d59a202910ac482128f9",
+      "version": "10.1.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "googleutilities",
+      "source": "https://github.com/google/GoogleUtilities.git",
+      "revision": "5459ee5603def3db0fe14ca522185f42c48d978e",
+      "version": "8.1.5",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "ad6d036b9a78f0e1700d68039c06058033fea063172ce2dc68e382a24b4d1928"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "grpc-binary",
+      "source": "https://github.com/google/grpc-binary.git",
+      "revision": "75b31c842f664a0f46a2e590a570e370249fd8f6",
+      "version": "1.69.1",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "gtm-session-fetcher",
+      "source": "https://github.com/google/gtm-session-fetcher.git",
+      "revision": "724a52eea6329b7e12d3ad8300d76ca9f3895fcc",
+      "version": "5.3.1",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "interop-ios-for-google-sdks",
+      "source": "https://github.com/google/interop-ios-for-google-sdks.git",
+      "revision": "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
+      "version": "101.0.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "leveldb",
+      "source": "https://github.com/firebase/leveldb.git",
+      "revision": "a0bc79961d7be727d258d33d5a6b2f1023270ba1",
+      "version": "1.22.5",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "ccc19f1da0798ed666609b65a5b44dd8b3abe6fc08b9c0592eb76e82e174db19"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "nanopb",
+      "source": "https://github.com/firebase/nanopb.git",
+      "revision": "3851d94a41890dea16dc3db34caf60e585cb4163",
+      "version": "2.30910.1",
+      "license_evidence": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "e2f2fc8fe3faa7dcb09dbe995db48c6ec5c1f72705db915101e4a83fed44f66d"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "promises",
+      "source": "https://github.com/google/promises.git",
+      "revision": "540318ecedd63d883069ae7f1ed811a2df00b6ac",
+      "version": "2.4.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "qrcode",
+      "source": "https://github.com/dagronf/qrcode.git",
+      "revision": "ea4047a7777bae470adc140cd94bfa5396a96202",
+      "version": "27.11.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "ca10383f51239e21f174239a568108d747c46f59b500a37f66265d3adb7dface"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "sqlite.swift",
+      "source": "https://github.com/stephencelis/SQLite.swift",
+      "revision": "392dd6058624d9f6c5b4c769d165ddd8c7293394",
+      "version": "0.15.4",
+      "license_evidence": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "54309d83b514af75deacb70285d5debe8c74ddfd7ca2d1990ae14a0255aceeba"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swift-argument-parser",
+      "source": "https://github.com/apple/swift-argument-parser.git",
+      "revision": "309a47b2b1d9b5e991f36961c983ecec72275be3",
+      "version": "1.6.1",
+      "license_evidence": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swift-protobuf",
+      "source": "https://github.com/apple/swift-protobuf.git",
+      "revision": "102a647b573f60f73afdce5613a51d71349fe507",
+      "version": "1.30.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "186c5f0192a754714a7e542233ddaaad28745626e0ad32e358d3f5af00afb84a"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swift-qrcode-generator",
+      "source": "https://github.com/dagronf/swift-qrcode-generator",
+      "revision": "2b1980b825f08a81ccc762b0c4d17fcde9d5e953",
+      "version": "2.0.2",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "8b149a719159359e68960c7fada5b9daae23db314f819cbe7c70707e81bdac8d"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swift-toolchain-sqlite",
+      "source": "https://github.com/swiftlang/swift-toolchain-sqlite",
+      "revision": "b626d3002773b1a1304166643e7f118f724b2132",
+      "version": "1.0.4",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "5fa05988c61428e0338acedfed0f2f45febf318196d5a357fa2614593917c7d7"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swiftecc",
+      "source": "https://github.com/leif-ibsen/SwiftECC.git",
+      "revision": "85c529c9c56b649a8d8edcef60aab3925ab0f69f",
+      "version": "5.5.0",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "662f57f519d373edbb7207782707fd261e406eaab4915671c99e0de22fe262e1"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "swiftimagereadwrite",
+      "source": "https://github.com/dagronf/SwiftImageReadWrite",
+      "revision": "42ace2412279f18bc264bc306e96b51c36e12a33",
+      "version": "1.9.2",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "635cc3a31a59d85c3d863ec504d243a70cbfdad0aaae16ce882704ca36128022"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    },
+    {
+      "identity": "yams",
+      "source": "https://github.com/jpsim/Yams.git",
+      "revision": "a27b21e0c81c5bf42049b897a62aaf387e80f279",
+      "version": "6.2.2",
+      "license_evidence": [
+        {
+          "file": "LICENSE",
+          "sha256": "0354b0ea403d2e78059c5ae0510a2cfae9f8eb306fcef094ac9fff5b47e20bed"
+        }
+      ],
+      "license_review": "required; evidence is not a license classification"
+    }
+  ],
+  "opaque_inputs": [
+    {
+      "path": "Sapphire/Services/Music/MediaRemoteAdapter.framework/Versions/A/MediaRemoteAdapter",
+      "bytes": 331456,
+      "sha256": "21547fea1012a1c64db71804a16dc7cc20afee682ca9998e1f976e34223f09cd",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/Music/MediaRemoteAdapter.framework/Versions/A/Resources/Info.plist",
+      "bytes": 848,
+      "sha256": "cf7c9699302a8ddacf24465443eb7a0153e1c347bf23c3c0895af41c85368af8",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/Music/MediaRemoteAdapter.framework/Versions/A/_CodeSignature/CodeResources",
+      "bytes": 2442,
+      "sha256": "5ddd46b76ea756abd4e084c1f21566a39b4ff890bd21dce9b6f11ace69563305",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/Music/SapphireMediaQueue.framework/Versions/A/Resources/Info.plist",
+      "bytes": 563,
+      "sha256": "97c7c74c2aae8bae379226f507e336b584a36813d477f239c6c0037e4fb68dc1",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/Music/SapphireMediaQueue.framework/Versions/A/SapphireMediaQueue",
+      "bytes": 104736,
+      "sha256": "b7c328567f23bf3138cf18e0fd52f1c567e53b53044b4506ec4dbd42346ba9ab",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/Music/SapphireMediaQueue.framework/Versions/A/_CodeSignature/CodeResources",
+      "bytes": 2442,
+      "sha256": "be7b2782b072c1b5d93588867cda65cbc92fef956a6e1945d8b3e96d9cc61b12",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/ArcFace.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "bytes": 126997,
+      "sha256": "865603c46470b9b0304e6e49f2be007d082540ee3a18fa3ce8aecbe24f143bda",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/ArcFace.mlpackage/Data/com.apple.CoreML/weights/weight.bin",
+      "bytes": 32776640,
+      "sha256": "558664d1a3622017044fbed7d33b0cb74b590b230ad7b2ea53f355ec498df68e",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/ArcFace.mlpackage/Manifest.json",
+      "bytes": 617,
+      "sha256": "b4f002c8114a42b4b275da6680b1163cbe083014e1f9d311ce8cb230a3ce4766",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/PassiveLiveness_v4_ANE.mlmodelc/analytics/coremldata.bin",
+      "bytes": 4096,
+      "sha256": "274cb2e9f82cee71c7232c88c60db9cb85425dd2e8f5945e2c573f24d23cce39",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/PassiveLiveness_v4_ANE.mlmodelc/coremldata.bin",
+      "bytes": 4096,
+      "sha256": "21c5bf965fbbd75d51d1cace3f8e37dc260cb381cb5c942d118c9574f25258a5",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/PassiveLiveness_v4_ANE.mlmodelc/encryptionInfo/coremldata.bin",
+      "bytes": 144,
+      "sha256": "298a9cd77edf1e015cca7e35c1c5f530d1141e39b2d3a5876475e3111b83471f",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/PassiveLiveness_v4_ANE.mlmodelc/model.mil",
+      "bytes": 151552,
+      "sha256": "fe65284df966fb72a524818658845fcedd2034a60d758433038fad2f4cdb3f42",
+      "provenance": "unverified inherited artifact"
+    },
+    {
+      "path": "Sapphire/Services/FaceID/Models/PassiveLiveness_v4_ANE.mlmodelc/weights/weight.bin",
+      "bytes": 21741568,
+      "sha256": "84869619daac374e72d0911dd63db2709f2d854973f1eeb21952db975066301d",
+      "provenance": "unverified inherited artifact"
+    }
+  ]
+}

@@ -26,7 +26,18 @@ struct FinanceSettingsView: View {
 }
 
 struct AccountSettingsView: View {
-    var body: some View { UnavailableFeatureView(name: "Account management") }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label("Sapphire FOSS", systemImage: "heart.circle")
+                .font(.largeTitle.bold())
+            Text("All implemented features are available without an account or subscription.")
+            Text("Some features are still being rebuilt. See the roadmap for implementation and device verification status.")
+                .foregroundStyle(.secondary)
+            Link("Implementation roadmap", destination: URL(string: "https://github.com/ezariago/sapphire-foss#roadmap--implementation-checklist")!)
+        }
+        .padding(30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
 }
 
 struct BetaBlockerView: View {

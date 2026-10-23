@@ -311,10 +311,10 @@ class UpdateChecker: NSObject, ObservableObject, @preconcurrency URLSessionDownl
     private var networkMonitor: NWPathMonitor?
     private let networkMonitorQueue = DispatchQueue(label: "com.cshariq.sapphire.update-network", qos: .utility)
     private var periodicCheckInterval: TimeInterval = 5 * 60 * 60
-    private let persistedAvailableUpdateKey = "SapphirePersistedAvailableUpdate"
-    private let releasesCacheKey = "SapphireReleasesCache"
-    private let releasesCacheETagKey = "SapphireReleasesCacheETag"
-    private let releasesCacheDateKey = "SapphireReleasesCacheDate"
+    private let persistedAvailableUpdateKey = "SapphireFOSSPersistedAvailableUpdate"
+    private let releasesCacheKey = "SapphireFOSSReleasesCache"
+    private let releasesCacheETagKey = "SapphireFOSSReleasesCacheETag"
+    private let releasesCacheDateKey = "SapphireFOSSReleasesCacheDate"
     private let lastSuccessfulCheckKey = "SapphireUpdateLastSuccessfulCheck"
     private let nextScheduledCheckKey = "SapphireUpdateNextScheduledCheck"
     private let failureCountKey = "SapphireUpdateFailureCount"
@@ -536,7 +536,7 @@ class UpdateChecker: NSObject, ObservableObject, @preconcurrency URLSessionDownl
     }
 
     private func fetchReleases(useConditionalRequest: Bool = true) async throws -> FetchedGitHubReleases {
-        guard let url = URL(string: "https://api.github.com/repos/cshariq/Sapphire/releases?per_page=50") else {
+        guard let url = URL(string: "https://api.github.com/repos/ezariago/sapphire-foss/releases?per_page=50") else {
             throw UpdateMetadataError.invalidResponse
         }
         var request = URLRequest(url: url)
@@ -1077,27 +1077,7 @@ class UpdateChecker: NSObject, ObservableObject, @preconcurrency URLSessionDownl
         candidate: URL,
         replacing installed: URL
     ) throws {
-        let installedIdentity = try AppSecurityValidator.identity(at: installed)
-        let candidateIdentity = try AppSecurityValidator.identity(at: candidate)
-
-        guard candidateIdentity.bundleIdentifier == installedIdentity.bundleIdentifier else {
-            throw NSError(
-                domain: "UpdateError",
-                code: 25,
-                userInfo: [NSLocalizedDescriptionKey: "The downloaded update has the wrong bundle identifier."]
-            )
-        }
-        guard let installedTeam = installedIdentity.teamIdentifier else {
-            try AppSecurityValidator.validateReplacement(candidate: candidate, replacing: installed)
-            return
-        }
-        guard candidateIdentity.teamIdentifier == installedTeam else {
-            throw NSError(
-                domain: "UpdateError",
-                code: 26,
-                userInfo: [NSLocalizedDescriptionKey: "The update was not signed by the same Apple developer team."]
-            )
-        }
+        try AppSecurityValidator.validateReplacement(candidate: candidate, replacing: installed)
     }
 
     nonisolated private static func stageForCurrentUserInstallation(

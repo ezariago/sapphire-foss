@@ -1,0 +1,51 @@
+name: macOS build and checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      SAPPHIRE_SIGNING_IDENTITY: '-'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain evidence
+        run: |
+          xcodebuild -version
+          sw_vers
+          java -version
+      - name: Foundation security and FOSS access tests
+        run: ./scripts/test-foundation.sh
+      - name: Phone protocol and crypto tests
+        run: ./scripts/test-phone-reconstruction.sh
+      - name: Build and verify macOS app
+        run: ./scripts/build-local.sh
+      - name: Record dependency inputs and checksum
+        run: |
+          python3 scripts/dependency-inventory.py --output build/dependency-inventory.json
+          shasum -a 256 build/Sapphire-local.zip > build/Sapphire-local.zip.sha256
+      - name: Upload development build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sapphire-FOSS-${{ runner.arch }}-${{ github.sha }}
+          path: |
+            build/Sapphire-local.zip
+            build/Sapphire-local.zip.sha256
+            build/dependency-inventory.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-build-logs
+          path: build/logs
+          retention-days: 7

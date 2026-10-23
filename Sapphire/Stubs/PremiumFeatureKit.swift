@@ -40,7 +40,7 @@ struct PremiumFeatureView<Content: View>: View {
     }
 
     var body: some View {
-        content.disabled(true).opacity(0.45)
+        content
     }
 }
 
@@ -51,8 +51,7 @@ extension View {
 }
 
 func premiumDefaultMessage(for feature: AppFeature) -> String {
-    let tier = SubscriptionFeatureCatalog.minimumTier(for: feature)
-    return "This feature requires Sapphire \(SubscriptionFeatureCatalog.tierDisplayName(tier))."
+    return "This feature is available in Sapphire FOSS when its implementation is installed."
 }
 
 extension SettingsModel {

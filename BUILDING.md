@@ -186,3 +186,29 @@ Sapphire to remember access. Later builds using the same signing identity retain
 the same designated requirement. This does not unlock a locked login Keychain or
 change its auto-lock preferences. No passwords or private keys are copied out of
 Keychain. See [Apple's code signing requirements](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements).
+
+## CI, artifacts and release distribution
+
+The `macOS build and checks` workflow builds on the GitHub-hosted `macos-26`
+runner for pushes to main, pull requests and manual dispatch. It runs FOSS access,
+real code-signature rejection fixtures and phone crypto/protocol tests, then builds
+and verifies the app. Successful runs upload an app ZIP, SHA-256 checksum and input
+inventory; logs are retained on failures. Download development builds from the
+fork's Actions page. These are ad-hoc signed, unnotarized development artifacts.
+The hosted toolchain version is recorded in each run, not assumed reproducible.
+
+The updater reads this fork's releases rather than upstream's. A release ZIP is
+eligible only when it satisfies the installed app's signature requirement,
+signing identifier, bundle identifier and team identity. A different ad-hoc build
+will fail this check: update local/CI ad-hoc builds manually. Never disable signer
+verification to make local updates work.
+
+A public automatic-update release still requires a maintained Developer ID
+Application certificate, hardened-runtime signing of nested code, notarization
+(`xcrun notarytool submit --wait`), stapling (`xcrun stapler staple`), signature and
+Gatekeeper validation, and a versioned ZIP/checksum on this fork's GitHub Releases.
+No certificate, private key, notarization credentials or public release is created
+by CI. Keep credentials in protected release secrets and use the same designated
+signing identity for subsequent updates. Test upgrades on a separate installation
+before publishing. Dependency/source provenance blockers are tracked in
+[the audit](docs/audit/README.md); they remain release work.
