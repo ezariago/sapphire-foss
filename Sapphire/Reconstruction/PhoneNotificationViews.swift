@@ -18,6 +18,17 @@ struct PhoneNotificationCard: View {
                 HStack {
                     Label(entry.appName, systemImage: "iphone").font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                    Menu {
+                        Button("Mute \(entry.appName) on Mac") {
+                            muteApp()
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("Notification options for \(entry.appName)")
+                    .accessibilityLabel("Notification options for \(entry.appName)")
                     if entry.clearable { PhoneNotificationDismissButton(entry: entry) }
                 }
             }
@@ -65,7 +76,14 @@ struct PhoneNotificationCard: View {
         .disabled(bridge.actionRequestID != nil)
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(entry.id)
+        .contextMenu {
+            Button("Mute \(entry.appName) on Mac") { muteApp() }
+        }
         .onDisappear { finishReplyEditing() }
+    }
+
+    private func muteApp() {
+        SettingsModel.shared.settings.continuityNotificationMutedApps[entry.appId] = entry.appName
     }
 
     private var canSendReply: Bool {
@@ -142,6 +160,24 @@ struct PhoneNotificationsSettingsView: View {
                             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
                         }
                     }
+                Text("Use a notification’s options menu to mute its app on this Mac. Phone notifications stay on your phone.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if !settings.settings.continuityNotificationMutedApps.isEmpty {
+                    Divider()
+                    Text("Muted apps").font(.headline)
+                    ForEach(settings.settings.continuityNotificationMutedApps.keys.sorted(), id: \.self) { appID in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(settings.settings.continuityNotificationMutedApps[appID] ?? appID)
+                                Text(appID).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Allow on Mac") {
+                                settings.settings.continuityNotificationMutedApps.removeValue(forKey: appID)
+                            }
+                        }
+                    }
+                }
                 if !bridge.actionStatus.isEmpty { Text(bridge.actionStatus).font(.caption).foregroundStyle(.secondary) }
                 if bridge.notifications.isEmpty {
                     Text("No shared phone notifications. New notifications appear in the notch; existing ones refresh here when connected.")

@@ -35,6 +35,9 @@ if ! /usr/bin/xcodebuild -version >/dev/null 2>&1; then
     exit 1
 fi
 
+# Xcode's intermediate products remain ad-hoc signed. Apply the same stable
+# identity to the final app on every build so Keychain can recognize updates.
+SAPPHIRE_LOCAL_SIGNER="$(python3 scripts/local-signing-identity.py)"
 python3 scripts/prepare-local-build.py
 mkdir -p build/logs
 SAPPHIRE_PROJECT="$SAPPHIRE_ROOT/build/Local/Sapphire.xcodeproj"
@@ -76,14 +79,14 @@ for SAPPHIRE_FRAMEWORK in MediaRemoteAdapter SapphireMediaQueue; do
     /usr/bin/ditto \
         "Sapphire/Services/Music/$SAPPHIRE_FRAMEWORK.framework" \
         "$SAPPHIRE_APP/Contents/Resources/$SAPPHIRE_FRAMEWORK.framework"
-    /usr/bin/codesign --force --sign - --timestamp=none \
+    /usr/bin/codesign --force --sign "$SAPPHIRE_LOCAL_SIGNER" --timestamp=none \
         "$SAPPHIRE_APP/Contents/Resources/$SAPPHIRE_FRAMEWORK.framework"
 done
 for SAPPHIRE_SCRIPT in mediaremote-adapter.pl mediaremote-queue.pl; do
     /usr/bin/ditto "Sapphire/Services/Music/$SAPPHIRE_SCRIPT" \
         "$SAPPHIRE_APP/Contents/Resources/$SAPPHIRE_SCRIPT"
 done
-/usr/bin/codesign --force --sign - --timestamp=none --options runtime \
+/usr/bin/codesign --force --sign "$SAPPHIRE_LOCAL_SIGNER" --timestamp=none --options runtime \
     --entitlements "$SAPPHIRE_ROOT/build/Local/Local.entitlements" "$SAPPHIRE_APP"
 /usr/bin/codesign --verify --deep --strict "$SAPPHIRE_APP"
 /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$SAPPHIRE_APP" build/Sapphire-local.zip

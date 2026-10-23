@@ -190,4 +190,32 @@ dismissalStore.dismiss(notification)
 try expect(dismissalStore.contains(key: updatedNotification.key, revision: updatedNotification.revision), "Stale dismissal cannot remove a newer revision")
 dismissalStore.reset()
 try expect(dismissalStore.accept(notification), "A fresh connection resets local dismissal bookkeeping")
+var appFilterStore = PhoneNotificationStore()
+var otherAppPayload = notificationPayload(key: "another-app")
+otherAppPayload["appId"] = .string("test.app.other")
+let otherAppNotification = PhoneNotification(payload: otherAppPayload)!
+_ = appFilterStore.accept(notification)
+_ = appFilterStore.accept(otherAppNotification)
+let mutedAppIDs: Set<String> = [notification.appId]
+let mutedEntries = appFilterStore.removeApps(mutedAppIDs)
+try expect(mutedEntries == [notification], "Muting returns only the selected app's entries for alert/banner cleanup")
+try expect(appFilterStore.entries == [otherAppNotification], "Muting preserves other apps, including package names sharing a prefix")
+try expect(!appFilterStore.accept(notification, mutedAppIDs: mutedAppIDs), "Muted app cannot return through a live post")
+let mutedSnapshot = PhoneNotification(payload: notificationPayload(snapshot: true))!
+try expect(!appFilterStore.accept(mutedSnapshot, mutedAppIDs: mutedAppIDs) && appFilterStore.entries == [otherAppNotification], "Muted app cannot return through a reconnect snapshot")
+try expect(!appFilterStore.accept(updatedNotification, mutedAppIDs: mutedAppIDs), "New revisions stay muted")
+try expect(appFilterStore.removeApps(mutedAppIDs).isEmpty, "Repeated app muting is idempotent")
+try expect(!appFilterStore.accept(mutedSnapshot) && appFilterStore.contains(key: notification.key, revision: notification.revision), "Allowing an app restores the same revision quietly from a snapshot")
+appFilterStore.reset()
+try expect(!appFilterStore.accept(notification, mutedAppIDs: mutedAppIDs) && appFilterStore.entries.isEmpty, "Muting applies after disconnect resets ephemeral state")
+try expect(appFilterStore.accept(otherAppNotification, mutedAppIDs: mutedAppIDs), "Unmuted apps continue to trigger alerts")
+for valid in ["https://example.com/path?q=test#part", "http://example.com:8080/", "https://example.com/%F0%9F%94%94", "  https://example.com  "] {
+    try expect(PhoneHandoffURL.parse(valid) != nil, "Web link handoff accepts valid explicit links")
+}
+for invalid in ["", "file:///etc/passwd", "javascript:alert(1)", "intent://test", "https:///missing-host", "https://name:password@example.com", "https://example.com/a b", "https://example.com/\npath", "https://example.com\\@other.example/", "https://example.com:99999", "https://example.com/" + String(repeating: "a", count: 4096)] {
+    try expect(PhoneHandoffURL.parse(invalid) == nil, "Web link handoff rejects unsafe or oversized URLs")
+}
+for kind in ["media.command", "media.state", "handoff.url", "handoff.result"] {
+    try expect(!PhoneHandshakePolicy.acceptsPlaintext(type: kind, isSecure: false), "Media and link handoff refuse plaintext \(kind)")
+}
 print("Passed \(checks) phone protocol checks, including independent Java crypto fixtures.")

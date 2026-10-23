@@ -4,6 +4,9 @@ import CoreImage.CIFilterBuiltins
 
 struct ContinuitySettingsView: View {
     @ObservedObject private var link = ReconstructedPhoneLink.shared
+    @ObservedObject private var mediaBridge = ContinuityManager.shared.mediaBridge
+    @ObservedObject private var settings = SettingsModel.shared
+    @State private var handoffURL = ""
 
     var body: some View {
         ScrollView {
@@ -48,11 +51,18 @@ struct ContinuitySettingsView: View {
                     GroupBox("Phone controls") {
                         VStack(alignment: .leading, spacing: 12) {
                             if let battery = link.batteryPercent { Label("Battery: \(battery)%", systemImage: "battery.100") }
-                            if !link.mediaTitle.isEmpty { Text(link.mediaTitle).font(.headline) }
-                            HStack {
-                                Button("Previous") { link.sendMedia("previous") }
-                                Button("Play / pause") { link.sendMedia("toggle") }
-                                Button("Next") { link.sendMedia("next") }
+                            if let media = mediaBridge.phoneMedia {
+                                Text(media.title).font(.headline)
+                                Text([media.artist, media.appName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                                    .font(.caption).foregroundStyle(.secondary)
+                                HStack {
+                                    Button("Previous") { link.sendMedia("previous") }.disabled(!media.canPrev)
+                                    Button(media.isPlaying ? "Pause" : "Play") { link.sendMedia("toggle") }.disabled(!media.canToggle)
+                                    Button("Next") { link.sendMedia("next") }.disabled(!media.canNext)
+                                }
+                            } else {
+                                Text("Enable phone media sharing in the Android companion and allow notification access to control its current player.")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
                             Toggle("Automatically send Mac clipboard text to phone", isOn: $link.automaticClipboard)
                             Text("Sends new text copies while connected. Password-manager and private clipboard items stay on this Mac. Text must be under 12 KB.")
@@ -77,8 +87,29 @@ struct ContinuitySettingsView: View {
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
                     }
                 }
+                GroupBox("Link handoff") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Allow sending links to phone", isOn: $settings.settings.continuityHandoffToPhone)
+                        TextField("https://example.com", text: $handoffURL)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { link.sendLinkToPhone(handoffURL) }
+                        Button(link.handoffPendingID == nil ? "Send link to phone" : "Sending…") {
+                            link.sendLinkToPhone(handoffURL)
+                        }
+                        .disabled(!link.isSecure || !link.handoffSupported || link.handoffPendingID != nil
+                                  || !settings.settings.continuityHandoffToPhone || handoffURL.isEmpty)
+                        Text("Enable Receive web links from paired Mac in the Android companion. Links arrive as a phone notification. To send a phone link here, use the Android Share menu → Send link to Mac. Links open only when you choose.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if !link.handoffStatus.isEmpty { Text(link.handoffStatus).font(.caption).textSelection(.enabled) }
+                        if let url = link.receivedLink {
+                            Text("Received from phone").font(.headline)
+                            Text(url.absoluteString).font(.caption).textSelection(.enabled)
+                            Link("Open received link on Mac", destination: url)
+                        }
+                    }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                }
                 PhoneNotificationsSettingsView()
-                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, text clipboard messages, hotspot control and notification mirroring with supported actions/replies. Wi-Fi transfer, phone storage, screen mirroring, calls, widgets and camera/microphone support are not implemented yet.")
+                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, text clipboard messages, hotspot control, phone media, web-link handoff and notification mirroring with supported actions/replies. Wi-Fi transfer, phone storage, screen mirroring, calls, widgets and camera/microphone support are not implemented yet.")
                     .font(.caption).foregroundStyle(.secondary)
                 if !link.isSecure && link.hotspotConnected {
                     Button("Disconnect phone hotspot", action: link.leaveHotspot)

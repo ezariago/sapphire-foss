@@ -69,9 +69,12 @@ Implemented for device testing:
 - Reconnect and establish authenticated, replay-protected BLE sessions.
 - Read phone battery/status, receive phone media state and send playback commands.
 - Send up to 12 KB of clipboard text using an explicit button; received text is copied to the Mac only when requested.
-- Display notification previews received from the phone.
+- Mirror phone notifications with per-app muting, supported actions and replies.
+- Control the phone's internet hotspot through its authorized helper.
+- Share web links in either direction, with explicit opening on the receiving device.
+- Recover after Android Bluetooth radio off/on without restarting the companion.
 
-Not implemented: Wi-Fi/bulk transfer, file/storage browsing, screen mirroring, extended display, virtual camera/microphone, SMS/calls, Android widgets, image/file clipboard, hotspot, handoff and universal keyboard/mouse. Their protocol identifiers may be visible in a binary, but each still requires substantial implementation and verification. No account/subscription backend is reconstructed or changed.
+Not implemented: Wi-Fi/bulk transfer, file/storage browsing, screen mirroring, extended display, virtual camera/microphone, SMS/calls, Android widgets, image/file clipboard, full app-state handoff and universal keyboard/mouse. Their protocol identifiers may be visible in a binary, but each still requires substantial implementation and verification. No account/subscription backend is reconstructed or changed.
 
 ## Build and test
 
@@ -409,3 +412,106 @@ confirmed immediate closure, reply-state cleanup, next-alert preservation,
 idempotent acknowledgement, duplicate suppression and unrelated-activity safety.
 The updated on-device script could not run because the phone was no longer
 connected to ADB; the encrypted Bluetooth connection remained available.
+
+
+### Per-app notification muting (2026-10-24)
+
+Notification cards now offer **Mute [app] on Mac** in their options menu and
+right-click menu (including cards in the notch). Settings → Continuity → Phone
+notifications lists muted apps with **Allow on Mac** controls, available even
+while disconnected. The saved setting uses Android package IDs, so apps with
+similar names are filtered independently; only the package ID and display name
+are persisted, without notification content.
+
+Muting immediately removes that app's Mac entries, queued alerts, reply editor
+and optional macOS banners. Other apps keep their alerts and pending actions.
+The phone's notifications remain untouched. Live events and reconnect snapshots
+from muted apps are filtered on the Mac. Allowing an app again requests the
+phone's current snapshot, restoring existing entries quietly when connected.
+Mute preferences survive app restart and reconnect.
+
+Validation: all 107 protocol checks pass. The production bridge/dismissal harness
+also passes selective removal, next-alert preservation, composer cleanup,
+pending-action cancellation, late acknowledgement rejection, filtering after
+reset and quiet restoration. Run these checks with:
+
+```sh
+./scripts/test-phone-reconstruction.sh
+python3 scripts/test-phone-notification-bridge.py
+```
+
+The bridge harness uses synthetic local notifications and does not send phone
+commands. On the connected Galaxy S24 Ultra, the encrypted link passed initial arrival,
+immediate Mac-only muting, independent phone-notification retention, suppressed
+updates, muted reconnect snapshots and quiet restoration after allowing the app.
+The test restored its original preferences and removed its fixture.
+
+
+### Phone media and web-link handoff (2026-10-24)
+
+The independent companion now supports opt-in active media sharing separately
+from notification mirroring. Enable **Share now playing and allow Mac playback
+controls** on Android and grant notification access. The Mac receives the current
+player's title, artist, album, playback state, duration and position. Its existing
+music-source integration and Phone / Android controls can play, pause, toggle,
+skip, stop and seek using the actions the phone player supports. Playing sessions
+take priority; every command identifies the selected session so an outdated
+command cannot control a newly selected player. Turning sharing off clears Mac
+media and rejects controls. No audio capture, streaming or artwork is included.
+
+Link handoff supports both directions. On Android, enable **Receive web links
+from paired Mac** and allow Sapphire notifications. The Mac's new **Link handoff**
+section sends a URL to a silent phone notification. Tap that notification to review
+the complete URL, then choose **Open in browser**. To send the other direction, use
+Android **Share → Send link to Mac** and confirm. Mac settings show the URL and
+an explicit **Open received link on Mac** action. No browser opens automatically.
+Only HTTP/HTTPS links up to 4,096 ASCII bytes, without embedded credentials,
+spaces or backslashes, are accepted; percent-encoded paths are supported. The
+latest received link is ephemeral and cleared on disconnect. Request IDs match
+acknowledgements and timeouts; permission/disabled states are reported to the Mac.
+
+Debug-only fixtures use a silent synthetic MediaSession and the fixed public
+`https://example.com/sapphire-handoff-test` URL. Diagnostics expose only fixture
+state, never arbitrary titles, artist names or received URLs. Device tests passed
+play, pause, next, previous, exact seek, toggle, stop, sharing off/on, session
+release, disabled handoff rejection, phone notification creation, opening its
+review screen, and phone-to-Mac link delivery. The actual Android ACTION_SEND review screen was also exercised: confirming
+**Send to paired Mac** delivered the exact public test URL. No audio played and
+no browser or real messaging app was opened. The tests restore original sharing preferences.
+
+```sh
+python3 scripts/test-phone-media.py MAC_DIAGNOSTIC_PID
+python3 scripts/test-phone-handoff.py MAC_DIAGNOSTIC_PID
+python3 scripts/test-phone-muting.py MAC_DIAGNOSTIC_PID
+```
+
+All 126 Mac protocol checks and 17 Android JVM tests pass. macOS build/signature
+verification and Android companion/helper debug and release builds pass. Release
+manifest inspection confirms all three debug fixture Activities are absent.
+The hotspot helper's intentional legacy target and Shizuku-mediated hidden Binder
+call now have narrow, documented lint exceptions; other release checks stay on.
+Third-party media-player compatibility and acoustic playback remain separate from
+the silent synthetic test. Native Mac UI automation was unavailable during this
+run, so transport/bridge state and the Android review Activity were checked.
+
+### Android Bluetooth recovery and stable local signing (2026-10-24)
+
+The Android service observes the protected Bluetooth adapter-state broadcast.
+Radio-off retires the GATT server, queued writes, session keys and pending link
+notification. Radio-on opens a fresh server after a short delay. Every server's
+callbacks carry a generation; callbacks from a retired server cannot modify a
+replacement server. Pairing records survive, and an explicitly stopped service
+does not register for future radio events. The real Galaxy phone passed two
+complete Bluetooth off/on cycles, regaining an authenticated connection each time
+without restarting Sapphire or re-pairing:
+
+```sh
+python3 scripts/test-phone-radio.py MAC_DIAGNOSTIC_PID
+```
+
+The local build helper now reuses this Mac's existing Apple Development signing
+identity instead of changing the ad-hoc identity on every rebuild. Two distinct
+app builds had identical designated requirements; the updated build reopened and
+read its saved pairing successfully. A first transition may require **Always
+Allow** once for existing Keychain items. This does not change the login Keychain's
+lock policy. See [BUILDING.md](BUILDING.md#avoiding-repeated-keychain-prompts).

@@ -103,6 +103,7 @@ struct ContinuityMediaState: Codable, Equatable {
     var canNext: Bool
     var canPrev: Bool
     var canSeek: Bool
+    var canToggle: Bool
     var artwork: String?
 
     init(from decoder: Decoder) throws {
@@ -119,6 +120,7 @@ struct ContinuityMediaState: Codable, Equatable {
         canNext = try values.decodeIfPresent(Bool.self, forKey: .canNext) ?? false
         canPrev = try values.decodeIfPresent(Bool.self, forKey: .canPrev) ?? false
         canSeek = try values.decodeIfPresent(Bool.self, forKey: .canSeek) ?? false
+        canToggle = try values.decodeIfPresent(Bool.self, forKey: .canToggle) ?? true
         artwork = try values.decodeIfPresent(String.self, forKey: .artwork)
     }
 }
@@ -190,7 +192,9 @@ final class ContinuityNotificationBridge: ObservableObject {
     private var bannerTask: Task<Void, Never>?
 
     func accept(_ entry: PhoneNotification) {
-        let alert = store.accept(entry)
+        let mutedAppIDs = Set(SettingsModel.shared.current.continuityNotificationMutedApps.keys)
+        guard !mutedAppIDs.contains(entry.appId) else { return }
+        let alert = store.accept(entry, mutedAppIDs: mutedAppIDs)
         guard store.contains(key: entry.key, revision: entry.revision) else { return }
         notifications = store.entries
         pending.removeAll { $0.key == entry.key || !store.contains(key: $0.key, revision: $0.revision) }
@@ -223,6 +227,18 @@ final class ContinuityNotificationBridge: ObservableObject {
             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [bannerID(entry.key)])
         }
         (NSApp.delegate as? AppDelegate)?.liveActivityManager.dismissContinuityNotification(id: entry.id)
+    }
+
+    func removeMutedApps(_ appIDs: Set<String>) {
+        let removed = store.removeApps(appIDs)
+        // Prune the whole queue before promoting the next alert, so another
+        // notification from a muted app cannot become visible during cleanup.
+        pending.removeAll { appIDs.contains($0.appId) }
+        for entry in removed { completeRemoval(entry) }
+        if let actionKey, removed.contains(where: { $0.key == actionKey }) {
+            actionTimeout?.cancel(); actionTimeout = nil
+            actionRequestID = nil; self.actionKey = nil; actionStatus = ""
+        }
     }
 
     func clearLatest() { latest = pending.isEmpty ? nil : pending.removeFirst() }
@@ -320,7 +336,7 @@ final class ContinuityMediaBridge: ObservableObject {
     @Published private(set) var phoneDeviceName: String?
     var shouldSurfacePhoneMedia: Bool { phoneMedia != nil }
     func acceptReconstructed(_ state: ContinuityMediaState?, deviceName: String?) {
-        phoneMedia = state
+        phoneMedia = state.flatMap { $0.sessionId.isEmpty || ($0.title.isEmpty && !$0.isPlaying) ? nil : $0 }
         phoneDeviceName = deviceName
         phoneArtwork = nil
     }

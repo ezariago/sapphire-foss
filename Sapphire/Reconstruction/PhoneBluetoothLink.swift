@@ -59,11 +59,13 @@ private struct PhoneNotificationPreferences: Equatable {
     let general: Bool
     let system: Bool
     let banners: Bool
+    let mutedApps: [String: String]
     init(_ settings: Settings) {
         enabled = settings.continuityEnabled && settings.continuityNotifications
         general = settings.continuityNotificationsGeneral
         system = settings.continuityNotificationsSystem
         banners = settings.continuityNotificationsAsBanners
+        mutedApps = settings.continuityNotificationMutedApps
     }
 }
 
@@ -107,6 +109,13 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var mediaTitle = ""
     @Published private(set) var receivedText: String?
     @Published private(set) var lastNotification = ""
+    @Published private(set) var receivedLink: URL?
+    @Published private(set) var handoffStatus = ""
+    @Published private(set) var handoffState = ""
+    @Published private(set) var handoffSupported = false
+    @Published private(set) var handoffPendingID: String?
+    private var handoffTimeout: Task<Void, Never>?
+    private var receivedHandoffIDs: [String] = []
     @Published private(set) var lastError: String?
 
     @Published var automaticClipboard = UserDefaults.standard.object(forKey: "reconstructedContinuity.autoClipboard.v1") as? Bool ?? true {
@@ -121,6 +130,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var hotspotInternet = false
     @Published private(set) var hotspotCanStop = false
     private var notificationSettings: AnyCancellable?
+    private var appliedNotificationPreferences: PhoneNotificationPreferences?
     private var clipboardToken: PasteboardChangeMonitor.Token?
     private var clipboardChanges = PhoneClipboardChanges(baseline: 0)
     private let hotspotJoiner = PhoneHotspotJoiner()
@@ -190,6 +200,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         guard let diagnosticDirectory else { return }
         let activityManager = (NSApp.delegate as? AppDelegate)?.liveActivityManager
         let visibleID = activityManager?.activityContent.id?.base as? String
+        let media = ContinuityManager.shared.mediaBridge.phoneMedia
+        let fixtureMedia = media?.appId == "dev.sapphire.companion"
+            && ["Sapphire media fixture 1", "Sapphire media fixture 2"].contains(media?.title ?? "")
         let snapshot: [String: Any] = [
             "status": status, "error": lastError ?? "", "isScanning": isScanning,
             "isConnecting": isConnecting, "isSecure": isSecure, "pairingActive": pairing != nil,
@@ -198,6 +211,13 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             "hasConfirmationCode": sas != nil, "subscribed": subscribed,
             "bluetoothState": central?.state.rawValue ?? -1, "queuedChunks": chunks.count,
             "lastMessageType": lastMessageType,
+            "handoffFixtureReceived": receivedLink?.absoluteString == "https://example.com/sapphire-handoff-test",
+            "handoffState": handoffState,
+            "mediaFixturePresent": fixtureMedia,
+            "mediaFixturePlaying": fixtureMedia && media?.isPlaying == true,
+            "mediaFixtureTrack": fixtureMedia ? (media?.title.hasSuffix("2") == true ? 2 : 1) : 0,
+            "mediaFixturePositionMs": fixtureMedia ? (media?.positionMs ?? -1) : -1,
+            "notificationFixtureMuted": SettingsModel.shared.current.continuityNotificationMutedApps["dev.sapphire.companion"] != nil,
             "phoneNotificationCount": ContinuityManager.shared.notificationBridge.notifications.count,
             "hasPhoneNotificationAlert": ContinuityManager.shared.notificationBridge.latest != nil,
             "phoneNotificationActivityVisible": activityManager?.currentActivity == .continuityNotification,
@@ -244,6 +264,18 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         case "notification-test-action": notificationFixtureCommand("action")
         case "notification-test-reply": notificationFixtureCommand("reply")
         case "notification-test-dismiss": notificationFixtureCommand("dismiss")
+        case "handoff-test-send": sendLinkToPhone("https://example.com/sapphire-handoff-test")
+        case "notification-test-mute":
+            SettingsModel.shared.settings.continuityNotificationMutedApps["dev.sapphire.companion"] = "Sapphire Companion"
+        case "notification-test-unmute":
+            SettingsModel.shared.settings.continuityNotificationMutedApps.removeValue(forKey: "dev.sapphire.companion")
+        case "media-test-play", "media-test-pause", "media-test-toggle", "media-test-next", "media-test-previous", "media-test-seek", "media-test-stop":
+            if let media = ContinuityManager.shared.mediaBridge.phoneMedia,
+               media.appId == "dev.sapphire.companion",
+               ["Sapphire media fixture 1", "Sapphire media fixture 2"].contains(media.title),
+               let action = command["action"]?.replacingOccurrences(of: "media-test-", with: "") {
+                sendMedia(action, seekMs: action == "seek" ? 42000 : nil)
+            }
         case "quit": NSApp.terminate(nil)
         default: break
         }
@@ -275,9 +307,10 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     override private init() {
         super.init()
         hotspotLocation.delegate = self
+        appliedNotificationPreferences = PhoneNotificationPreferences(SettingsModel.shared.current)
         notificationSettings = SettingsModel.shared.changes(of: PhoneNotificationPreferences.init)
-            .sink { [weak self] _ in
-                MainActor.assumeIsolated { self?.subscribeNotifications() }
+            .sink { [weak self] preferences in
+                MainActor.assumeIsolated { self?.updateNotificationPreferences(preferences) }
             }
         let notifications = NSWorkspace.shared.notificationCenter
         workspaceObservers.append(notifications.addObserver(forName: NSWorkspace.willSleepNotification,
@@ -370,8 +403,33 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         catch { fail(error) }
     }
 
+    func sendLinkToPhone(_ input: String) {
+        guard handoffPendingID == nil else { return }
+        guard isSecure, activeCompanion, handoffSupported,
+              SettingsModel.shared.current.continuityHandoffToPhone else {
+            handoffStatus = "Connect a supported phone and enable link handoff first."
+            return
+        }
+        guard let url = PhoneHandoffURL.parse(input) else {
+            handoffStatus = "Enter an HTTP or HTTPS link without spaces or login credentials (up to 4 KB)."
+            return
+        }
+        let id = UUID().uuidString
+        handoffPendingID = id; handoffState = "sending"; handoffStatus = "Sending link…"
+        sendSecure("handoff.url", ["requestId": .string(id), "url": .string(url.absoluteString)])
+        handoffTimeout?.cancel()
+        handoffTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled, let self, self.handoffPendingID == id else { return }
+            self.handoffPendingID = nil; self.handoffState = "timeout"
+            self.handoffStatus = "The phone did not acknowledge the link. Check its connection before trying again."
+        }
+    }
+
     func sendMedia(_ action: String, seekMs: Int? = nil) {
-        var payload: [String: PhoneJSON] = ["action": .string(action)]
+        guard let media = ContinuityManager.shared.mediaBridge.phoneMedia,
+              !media.sessionId.isEmpty else { return }
+        var payload: [String: PhoneJSON] = ["action": .string(action), "sessionId": .string(media.sessionId)]
         if let seekMs { payload["seekMs"] = .number(Double(seekMs)) }
         sendSecure("media.command", payload)
     }
@@ -496,6 +554,21 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         Task { [hotspotJoiner] in await hotspotJoiner.leave() }
     }
 
+    private func updateNotificationPreferences(_ preferences: PhoneNotificationPreferences) {
+        let previous = appliedNotificationPreferences
+        appliedNotificationPreferences = preferences
+        if let previous, previous.enabled == preferences.enabled,
+           previous.general == preferences.general, previous.system == preferences.system,
+           previous.banners == preferences.banners {
+            lastNotification = ""
+            ContinuityManager.shared.notificationBridge.removeMutedApps(Set(preferences.mutedApps.keys))
+            // Muting is entirely local. Allowing an app again asks for the phone's
+            // current snapshot, whose entries restore quietly without old alerts.
+            if Set(previous.mutedApps.keys).isSubset(of: Set(preferences.mutedApps.keys)) { return }
+        }
+        subscribeNotifications()
+    }
+
     private func subscribeNotifications() {
         lastNotification = ""
         ContinuityManager.shared.notificationBridge.reset()
@@ -545,6 +618,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         writeCharacteristic = nil; subscribed = false; chunks = []; writeInFlight = false
         framing = PhoneGATTFraming(); encryption = nil; macNonce = nil; connectedID = nil
         isSecure = false; isConnecting = false
+        handoffTimeout?.cancel(); handoffTimeout = nil; handoffPendingID = nil
+        receivedLink = nil; receivedHandoffIDs = []; handoffSupported = false
+        handoffStatus = ""; handoffState = ""
         updateClipboardMonitoring()
         hotspotTask?.cancel(); hotspotTask = nil; hotspotRequestID = nil
         hotspotNeedsLocation = false; isHotspotBusy = false
@@ -723,12 +799,36 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
                 phoneStatus = PhoneDeviceStatus(payload: p)
                 hotspotInternet = p["hotspotMode"]?.string == "internet"
                 hotspotCanStop = p["hotspotStopSupported"]?.bool == true
+                handoffSupported = p["handoffSupported"]?.bool == true
             }
         case "media.state":
             guard encrypted else { throw PhoneWireError.unauthenticated }
             mediaTitle = p["title"]?.string ?? ""
             if let media = try? JSONDecoder().decode(ContinuityMediaState.self, from: JSONEncoder().encode(p)) {
                 ContinuityManager.shared.acceptReconstructedMedia(media, deviceName: trusted?.name)
+            }
+        case "handoff.url":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            guard let id = p["requestId"]?.string, !id.isEmpty, id.utf8.count <= 128,
+                  let raw = p["url"]?.string, let url = PhoneHandoffURL.parse(raw) else { break }
+            if !receivedHandoffIDs.contains(id) {
+                receivedHandoffIDs.append(id)
+                if receivedHandoffIDs.count > 32 { receivedHandoffIDs.removeFirst() }
+                receivedLink = url
+                handoffStatus = "Link received from your phone. Review it below before opening."
+            }
+            send("handoff.result", ["requestId": .string(id), "state": .string("received")])
+        case "handoff.result":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            guard p["requestId"]?.string == handoffPendingID, handoffPendingID != nil else { break }
+            handoffTimeout?.cancel(); handoffTimeout = nil; handoffPendingID = nil
+            let state = p["state"]?.string ?? "error"
+            handoffState = ["ready", "disabled", "needs_permission"].contains(state) ? state : "error"
+            switch handoffState {
+            case "ready": handoffStatus = "Link sent. Tap the Sapphire notification on your phone to review and open it."
+            case "disabled": handoffStatus = "Enable Receive web links from paired Mac in Sapphire Companion."
+            case "needs_permission": handoffStatus = "Allow Sapphire notifications and its Links from Mac channel on your phone."
+            default: handoffStatus = "The phone could not receive this link. Check its connection and try again."
             }
         case "clipboard.update":
             guard encrypted else { throw PhoneWireError.unauthenticated }
@@ -743,7 +843,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             guard encrypted else { throw PhoneWireError.unauthenticated }
             let preferences = PhoneNotificationPreferences(SettingsModel.shared.current)
             if preferences.enabled, let entry = PhoneNotification(payload: p),
-               (!entry.isGeneral || preferences.general), (!entry.isSystem || preferences.system) {
+               (!entry.isGeneral || preferences.general), (!entry.isSystem || preferences.system),
+               preferences.mutedApps[entry.appId] == nil {
                 lastNotification = [entry.appName, entry.title, entry.text].filter { !$0.isEmpty }.joined(separator: " — ")
                 ContinuityManager.shared.notificationBridge.accept(entry)
             }

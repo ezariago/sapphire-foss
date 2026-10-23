@@ -73,8 +73,8 @@ struct PhoneNotification: Equatable, Identifiable {
 struct PhoneNotificationStore {
     private(set) var entries: [PhoneNotification] = []
     private var dismissedIDs: [String] = []
-    mutating func accept(_ entry: PhoneNotification) -> Bool {
-        guard !dismissedIDs.contains(entry.id) else { return false }
+    mutating func accept(_ entry: PhoneNotification, mutedAppIDs: Set<String> = []) -> Bool {
+        guard !mutedAppIDs.contains(entry.appId), !dismissedIDs.contains(entry.id) else { return false }
         if entries.contains(where: { $0.id == entry.id }) { return false }
         entries.removeAll { $0.key == entry.key }
         entries.insert(entry, at: 0)
@@ -92,6 +92,13 @@ struct PhoneNotificationStore {
             if dismissedIDs.count > 128 { dismissedIDs.removeFirst() }
         }
         _ = remove(key: entry.key, revision: entry.revision)
+    }
+    /// Removes Mac copies without dismissing anything on the phone or suppressing
+    /// the same revision when the app is allowed again.
+    mutating func removeApps(_ appIDs: Set<String>) -> [PhoneNotification] {
+        let removed = entries.filter { appIDs.contains($0.appId) }
+        entries.removeAll { appIDs.contains($0.appId) }
+        return removed
     }
     mutating func reset() { entries.removeAll(); dismissedIDs.removeAll() }
     func contains(key: String, revision: String) -> Bool {

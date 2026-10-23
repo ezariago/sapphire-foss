@@ -42,6 +42,7 @@ def fixture(action):
     subprocess.run([args.adb, "shell", "am", "start", "--user", "0", "-n",
                     "dev.sapphire.companion/.NotificationFixtureActivity", "--es", "fixture", action],
                    check=True, capture_output=True)
+    time.sleep(.4)
 
 
 def fixture_flag(name):
@@ -58,6 +59,7 @@ if not state().get("isSecure"):
     parser.error("Connect the paired companion securely and grant notification access/sharing first.")
 if args.dismiss_only:
     try:
+        fixture("test-enable")
         fixture("post")
         wait("fixture arrives in the visible Mac activity", lambda s:
              s.get("notificationFixtureState") == "posted" and s.get("notificationFixtureActivityVisible"))
@@ -77,10 +79,12 @@ if args.dismiss_only:
              s.get("notificationFixtureState") == "absent" and not s.get("notificationFixtureActivityVisible"))
     finally:
         fixture("remove")
+        fixture("test-disable")
     print("Synthetic dismissal device checks passed.", flush=True)
     raise SystemExit(0)
 
 try:
+    fixture("test-enable")
     fixture("post")
     wait("encrypted notification arrival in the notch", lambda s:
          s.get("notificationFixtureState") == "posted" and s.get("notificationFixtureActivityVisible"))

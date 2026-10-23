@@ -87,8 +87,11 @@ preferences with the installed copy. Do not run both copies at once.
 - Converts build-script arrays into executable script text.
 - Removes the author's Crashlytics symbol-upload build step.
 - Resolves system frameworks through the selected macOS SDK.
-- Uses ad-hoc local signing instead of the author's development team and
-  provisioning entitlements.
+- Uses local signing instead of the author's development team and provisioning
+  entitlements. If this Mac has one valid Apple Development certificate, the final
+  app reuses it across rebuilds so Keychain recognizes updates. Otherwise it falls
+  back to ad-hoc signing. Set `SAPPHIRE_SIGNING_IDENTITY` to a certificate name or
+  SHA-1 fingerprint to select an identity, or `-` to force ad-hoc signing.
 - Copies and signs the media playback frameworks and scripts in the Resources
   directory where the app loads them at runtime.
 - Uses HTTP/1.1 for Git downloads within the build process to avoid stalled
@@ -164,3 +167,22 @@ The wrapper uses `../sapphire-android-companion` by default. Set
 `SAPPHIRE_ANDROID_SOURCE` to use another checkout. APKs are copied to
 `build/android/`. Android Studio can open the Android repository independently.
 Both Android apps must use the same signing certificate for their Binder service.
+
+## Avoiding repeated Keychain prompts
+
+Ad-hoc signatures identify each rebuilt executable by its hash. The build helper
+now automatically uses this Mac's sole valid Apple Development certificate for
+the final app and bundled media frameworks when available. You can choose an
+identity explicitly:
+
+```sh
+SAPPHIRE_SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" ./scripts/build-local.sh
+```
+
+The intermediate Xcode products remain ad-hoc signed; use the final app produced
+by the complete build script. On the first switch to certificate signing, macOS
+may request the saved pairing item's password once. Choose **Always Allow** for
+Sapphire to remember access. Later builds using the same signing identity retain
+the same designated requirement. This does not unlock a locked login Keychain or
+change its auto-lock preferences. No passwords or private keys are copied out of
+Keychain. See [Apple's code signing requirements](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements).

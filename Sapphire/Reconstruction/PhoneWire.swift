@@ -299,3 +299,20 @@ struct PhoneDeviceStatus: Equatable {
         if let value = payload["network"]?.string, ["wifi", "cellular", "none"].contains(value) { network = value }
     }
 }
+
+/// Explicit web-link handoff only. Never accepts executable/custom/file URLs.
+enum PhoneHandoffURL {
+    static func parse(_ input: String) -> URL? {
+        let raw = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, raw.utf8.count <= 4096,
+              raw.unicodeScalars.allSatisfy({ (33...126).contains($0.value) }),
+              !raw.contains("\\"),
+              let parts = URLComponents(string: raw),
+              ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
+              parts.user == nil, parts.password == nil,
+              let host = parts.host, !host.isEmpty,
+              parts.port.map({ (0...65535).contains($0) }) ?? true,
+              let url = parts.url else { return nil }
+        return url
+    }
+}

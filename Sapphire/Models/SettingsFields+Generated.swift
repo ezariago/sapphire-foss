@@ -563,6 +563,7 @@ extension SettingsField {
         SettingsField(\.continuityNotificationsAsBanners),
         SettingsField(\.continuityNotificationsGeneral),
         SettingsField(\.continuityNotificationsSystem),
+        SettingsField(\.continuityNotificationMutedApps),
         SettingsField(\.continuityExternalLiveActivities),
         SettingsField(\.continuityPhoneMediaInMusicPlayer),
         SettingsField(\.continuityPhoneMediaLiveActivityEnabled),

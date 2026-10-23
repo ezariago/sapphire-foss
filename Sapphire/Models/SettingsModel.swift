@@ -1900,6 +1900,8 @@ struct Settings: Codable, Equatable {
     var continuityNotificationsAsBanners: Bool = false
     var continuityNotificationsGeneral: Bool = false
     var continuityNotificationsSystem: Bool = false
+    // Android package IDs map to display names so muted apps remain manageable offline.
+    var continuityNotificationMutedApps: [String: String] = [:]
     var continuityExternalLiveActivities: Bool = true
     var continuityPhoneMediaInMusicPlayer: Bool = true
     var continuityPhoneMediaLiveActivityEnabled: Bool = true
