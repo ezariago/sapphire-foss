@@ -21,6 +21,10 @@ final class AppBlocker {
     private var shields: [String: [NSPanel]] = [:]
     private var observers: [NSObjectProtocol] = []
     private var refreshTimer: Timer?
+    private let screenFrames: () -> [NSRect]
+    init(screenFrames: @escaping () -> [NSRect] = { NSScreen.screens.map(\.frame) }) {
+        self.screenFrames = screenFrames
+    }
 
     func setBlocking(_ enabled: Bool) {
         guard enabled != isBlocking else { refresh(); return }
@@ -71,6 +75,9 @@ final class AppBlocker {
             let stillRunning = NSRunningApplication.runningApplications(withBundleIdentifier: id).contains { !$0.isTerminated }
             if !isBlocked(id) || !stillRunning || (!ownAppIsFront && front?.bundleIdentifier != id && !keepsShieldWhenNotFrontmost(id)) {
                 unshield(bundleID: id)
+            } else if shields[id]?.map(\.frame) != screenFrames() {
+                unshield(bundleID: id)
+                shield(bundleID: id)
             }
         }
         if let front, shouldBlock(front), let id = front.bundleIdentifier {
@@ -85,8 +92,8 @@ final class AppBlocker {
         if shieldsOnlyWhenFrontmost && NSWorkspace.shared.frontmostApplication?.bundleIdentifier != bundleID { return }
         // Use opaque panels, never a blurred snapshot of potentially private content.
         let content = makeShieldContent(app.localizedName ?? bundleID, bundleID)
-        shields[bundleID] = NSScreen.screens.map { screen in
-            let panel = AppShieldPanel(contentRect: screen.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        shields[bundleID] = screenFrames().map { frame in
+            let panel = AppShieldPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.level = .screenSaver
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false

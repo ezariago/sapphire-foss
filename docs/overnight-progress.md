@@ -16,9 +16,22 @@ or below 5% account usage remaining.
   controls. Both hosted CI runs for these two implementation commits passed and
   uploaded development app artifacts. This is not a notarized public release.
 
-The current checkpoint contains clipboard enhancements, the real DMG installer,
+Mac `dfd7c61` contains clipboard enhancements, the real DMG installer,
 native compression/OCR and opt-in screenshot text capture/monitoring. Their
-implementation/limits are in the feature documents linked from README.
+implementation/limits are in the feature documents linked from README. Its hosted
+CI run also passed and uploaded development artifacts.
+
+The next checkpoint hardens App Lock against stale authentication after rapid
+configuration changes, relocks on deliberate app switches, ignores accessory
+authentication agents and uses monotonic retry cooldowns. Privacy/Focus panels
+recreate their geometry when the display layout changes. Isolated fixtures cover
+these transitions; real monitor hot-plug and human authentication remain pending.
+The Mac was locked at this checkpoint, so the real activation rerun could not
+acquire focus from loginwindow. A separate explicit-shield mode passed panel
+creation, simulated display-layout changes and teardown behind the lock screen.
+No unlock or physical sleep test was attempted. Authentication lifecycle fixtures
+and the full local build/signature verification passed after the final changes
+(`build/app-lock-lifecycle-build.log`). The companion checkout remains clean.
 
 ## Verification so far
 

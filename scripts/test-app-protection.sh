@@ -13,4 +13,4 @@ with (pathlib.Path(sys.argv[1]) / 'Fixture.app/Contents/Info.plist').open('wb') 
 PY
 codesign --force --sign - "$SAPPHIRE_SHIELD_TEST/Fixture.app"
 xcrun swiftc Sapphire/Stubs/AppProtectionCore.swift Tests/AppProtection/main.swift -o build/app-protection-tests/checks
-build/app-protection-tests/checks "$SAPPHIRE_SHIELD_TEST/Fixture.app"
+build/app-protection-tests/checks "$SAPPHIRE_SHIELD_TEST/Fixture.app" "$@"

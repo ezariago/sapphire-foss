@@ -41,13 +41,51 @@ Task { @MainActor in
     raceManager.refresh()
     let staleSuccess = await raceManager.authenticateAndUnlock(bundleID: id)
     assert(!staleSuccess && raceManager.isLocked)
+    var configRace: AppLockManager!
+    configRace = AppLockManager(systemAuthentication: { _, _ in
+        // Both changes occur before a queued main-thread refresh can run.
+        SettingsModel.shared.settings.appLockEnabled = false
+        SettingsModel.shared.settings.appLockEnabled = true
+        return true
+    })
+    configRace.refresh()
+    let changedConfiguration = await configRace.authenticateAndUnlock(bundleID: id)
+    assert(!changedConfiguration && configRace.isLocked)
+    let staleSettingsAccess = await configRace.authenticateSettingsAccess()
+    assert(!staleSettingsAccess)
+
+    SettingsModel.shared.settings.appLockLockOnLeave = true
+    var clock = 100.0
+    let transitions = AppLockManager(systemAuthentication: { _, _ in true }, passwordVerification: { input in
+        guard input == "fixture secret" else { throw NSError(domain: "Fixture", code: 1) }
+    }, uptime: { clock })
+    transitions.refresh()
+    assert(transitions.verifyPassword("fixture secret", for: id))
+    transitions.applicationActivated(bundleID: "dev.sapphire.other-fixture", pid: 12346, regular: true)
+    assert(transitions.isLocked) // No initial activation notification was needed.
+    transitions.applicationActivated(bundleID: id, pid: 12345, regular: true)
+    assert(transitions.verifyPassword("fixture secret", for: id))
+    transitions.applicationActivated(bundleID: "com.apple.authentication-fixture", pid: 54321, regular: false)
+    assert(!transitions.isLocked) // Accessory/system agents are not leaving the app.
+    transitions.applicationActivated(bundleID: "dev.sapphire.other-fixture", pid: 12346, regular: true)
+    assert(transitions.isLocked)
+    for _ in 0..<3 { assert(!transitions.verifyPassword("wrong", for: id)) }
+    assert(!transitions.verifyPassword("fixture secret", for: id))
+    clock += 30.1
+    assert(transitions.verifyPassword("fixture secret", for: id))
+    transitions.applicationActivated(bundleID: id, pid: 12345, regular: true)
+    transitions.applicationActivated(bundleID: Bundle.main.bundleIdentifier, pid: ProcessInfo.processInfo.processIdentifier, regular: false)
+    assert(transitions.isLocked) // Deliberately switching to Sapphire also relocks.
+
     manager.clearFailedAttempts()
     assert(manager.failedAttempts.isEmpty)
     SettingsModel.shared.settings.appLockEnabled = false
     manager.refresh()
     raceManager.refresh()
+    configRace.refresh()
+    transitions.refresh()
     assert(!manager.isLocked && !raceManager.isLocked)
-    print("Passed App Lock denial, password, system auth, relock, cooldown and stale-auth checks using isolated providers.")
+    print("Passed App Lock denial, password, system auth, relock, monotonic cooldown, activation/configuration races and stale-auth checks using isolated providers.")
     exit(0)
 }
 app.run()

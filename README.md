@@ -97,7 +97,8 @@ in the [companion repository](https://github.com/ezariago/sapphire-android-compa
 - [ ] Add automated macOS build/test CI and fork-specific release artifacts,
   with a documented signing/notarization and update distribution workflow.
   [Build/test CI](.github/workflows/macos.yml) and development artifacts are added;
-  a verified hosted run and public signed release remain pending.
+  hosted build/test runs have passed and uploaded development artifacts. A public
+  signed/notarized release and update distribution workflow remain pending.
 
 Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 [FOSS feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),

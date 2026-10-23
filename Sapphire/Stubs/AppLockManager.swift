@@ -15,7 +15,7 @@ final class AppLockManager: ObservableObject {
     private let blocker = AppBlocker()
     private var unlocked: Set<String> = []
     private var failureCounts: [String: Int] = [:]
-    private var retryAfter: [String: Date] = [:]
+    private var retryAfter: [String: TimeInterval] = [:]
     private var cancellables = Set<AnyCancellable>()
     private var observers: [NSObjectProtocol] = []
     private var idleTimer: Timer?
@@ -23,13 +23,21 @@ final class AppLockManager: ObservableObject {
     private var generation = 0
     private let systemAuthentication: ((LAPolicy, String) async throws -> Bool)?
     private let passwordVerification: ((String) throws -> Void)?
+    private let configurationRevision: AppLockConfigurationRevision
+    private var appliedRevision: UInt64 = 0
+    private let uptime: () -> TimeInterval
+    private struct AuthenticationEpoch: Equatable { let generation: Int; let configuration: UInt64 }
+    private var epoch: AuthenticationEpoch { .init(generation: generation, configuration: configurationRevision.current) }
     private var context: LAContext?
     private var screenLockObserver: NSObjectProtocol?
 
     init(systemAuthentication: ((LAPolicy, String) async throws -> Bool)? = nil,
-         passwordVerification: ((String) throws -> Void)? = nil) {
+         passwordVerification: ((String) throws -> Void)? = nil,
+         uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
         self.systemAuthentication = systemAuthentication
         self.passwordVerification = passwordVerification
+        self.uptime = uptime
+        self.configurationRevision = AppLockConfigurationRevision(AppLockAuthenticationConfiguration(SettingsModel.shared.current))
         blocker.shieldsAreKeyable = true
         blocker.keepsShieldWhenNotFrontmost = { [weak self] _ in self?.isAuthenticating ?? false }
         blocker.isBlocked = { [weak self] id in self?.needsAuthentication(id) ?? false }
@@ -42,8 +50,10 @@ final class AppLockManager: ObservableObject {
                 onSubmitPassword: { self.verifyPassword($0, for: id) },
                 onQuit: { self.hide(id) }, quitButtonTitle: "Hide App"))
         }
-        SettingsModel.shared.$settings.receive(on: RunLoop.main).sink { [weak self] _ in
-            self?.refresh()
+        let revisions = configurationRevision
+        SettingsModel.shared.$settings.sink { [weak self] config in
+            revisions.record(AppLockAuthenticationConfiguration(config))
+            Task { @MainActor in self?.refresh() }
         }.store(in: &cancellables)
         let center = NSWorkspace.shared.notificationCenter
         observers.append(center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
@@ -54,13 +64,7 @@ final class AppLockManager: ObservableObject {
         observers.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
             Task { @MainActor in
                 guard let self, let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
-                if SettingsModel.shared.current.appLockLockOnLeave, let previous = self.lastActive,
-                   previous != app.bundleIdentifier, app.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-                    self.unlocked.remove(previous)
-                    self.generation += 1
-                }
-                if app.processIdentifier != ProcessInfo.processInfo.processIdentifier { self.lastActive = app.bundleIdentifier }
-                self.refresh()
+                self.applicationActivated(bundleID: app.bundleIdentifier, pid: app.processIdentifier, regular: app.activationPolicy == .regular)
             }
         })
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
@@ -78,13 +82,40 @@ final class AppLockManager: ObservableObject {
         refresh()
     }
 
+    // Internal entry point also used by isolated activation fixtures. System
+    // authentication agents must not look like a deliberate app switch.
+    func applicationActivated(bundleID: String?, pid: pid_t, regular: Bool) {
+        let own = pid == ProcessInfo.processInfo.processIdentifier
+        guard regular || own else { return }
+        if own && (isAuthenticating || lastActive.map(blocker.isShielded) == true) { return }
+        if SettingsModel.shared.current.appLockLockOnLeave, let previous = lastActive,
+           previous != bundleID {
+            unlocked.remove(previous)
+            generation += 1
+            context?.invalidate()
+        }
+        lastActive = bundleID
+        refresh()
+    }
+
     private func needsAuthentication(_ id: String) -> Bool {
         let settings = SettingsModel.shared.current
         return settings.appLockEnabled && settings.appLockProtectedApps.contains(id)
-            && id != Bundle.main.bundleIdentifier && !unlocked.contains(id)
+            && id != Bundle.main.bundleIdentifier
+            && !(appliedRevision == configurationRevision.current && unlocked.contains(id))
     }
 
     func refresh() {
+        let currentRevision = configurationRevision.current
+        if currentRevision != appliedRevision {
+            appliedRevision = currentRevision
+            generation += 1
+            context?.invalidate()
+            unlocked.removeAll()
+            // Shield content captures the available authentication methods.
+            // Recreate it after a policy change instead of leaving stale controls.
+            blocker.removeAllShields()
+        }
         let settings = SettingsModel.shared.current
         unlocked.formIntersection(settings.appLockProtectedApps)
         if !settings.appLockEnabled { unlocked.removeAll() }
@@ -109,9 +140,9 @@ final class AppLockManager: ObservableObject {
         return await authenticateAndUnlock(bundleID: id)
     }
     func authenticateAndUnlock(bundleID: String, method: AppLockAuthMethod = .auto) async -> Bool {
-        let stamp = generation
+        let stamp = epoch
         guard needsAuthentication(bundleID), await authenticate(bundleID: bundleID, method: method),
-              stamp == generation, needsAuthentication(bundleID) else { return false }
+              stamp == epoch, needsAuthentication(bundleID) else { return false }
         unlock(bundleID)
         return true
     }
@@ -135,7 +166,7 @@ final class AppLockManager: ObservableObject {
         authenticationError = nil
         let auth = LAContext()
         context = auth
-        let stamp = generation
+        let stamp = epoch
         defer { isAuthenticating = false; context = nil }
         // A password-only configuration must not silently allow biometrics.
         if !settingsAccess && !settings.appLockTouchIDEnabled {
@@ -152,7 +183,7 @@ final class AppLockManager: ObservableObject {
             } else {
                 success = try await auth.evaluatePolicy(policy, localizedReason: reason)
             }
-            return success && stamp == generation
+            return success && stamp == epoch
         } catch {
             authenticationError = error.localizedDescription
             if (error as? LAError)?.code == .authenticationFailed { recordFailure(bundleID, method: "Touch ID") }
@@ -182,6 +213,9 @@ final class AppLockManager: ObservableObject {
     }
 
     private func unlock(_ id: String) {
+        // The app may already be frontmost when the manager starts, without an
+        // activation notification. Track it now so the first departure relocks.
+        lastActive = id
         unlocked.insert(id)
         failureCounts[id] = nil
         retryAfter[id] = nil
@@ -190,8 +224,8 @@ final class AppLockManager: ObservableObject {
         refresh()
     }
     private func canRetry(_ id: String) -> Bool {
-        if let until = retryAfter[id], until > Date() {
-            authenticationError = "Wait \(Int(ceil(until.timeIntervalSinceNow))) seconds before trying again."
+        if let until = retryAfter[id], until > uptime() {
+            authenticationError = "Wait \(Int(ceil(until - uptime()))) seconds before trying again."
             return false
         }
         return true
@@ -201,7 +235,7 @@ final class AppLockManager: ObservableObject {
         failedAttempts.insert(AppLockFailedAttempt(id: UUID(), bundleID: id, appName: AppShieldManager.displayName(for: id), timestamp: .now, method: method), at: 0)
         failedAttempts = Array(failedAttempts.prefix(100))
         if failureCounts[id, default: 0] >= 3 {
-            retryAfter[id] = Date().addingTimeInterval(30)
+            retryAfter[id] = uptime() + 30
             if SettingsModel.shared.current.appLockCloseAppOnAuthFailures { hide(id) }
         }
     }
