@@ -233,3 +233,28 @@ transient retry branch executed.
 The mouse click-policy fixtures and final full local app build/signature checks
 passed (`build/mouse-click-filter-build.log`). No real pointer/button events
 were sent. The Android checkout remains clean and the phone remains Dozing.
+
+## Focus-follows-mouse checkpoint
+
+Implemented the existing focus-follows-mouse manager with AX window hit testing,
+a configurable dwell interval, current/target app exclusions, typing/lifecycle
+resets, secure-input/button/modifier pauses, and final trust/front-app/pointer
+checks. Mouse settings now expose it. Dwell fixtures do not focus any real app.
+Native AX, menus, multiple displays, Spaces and physical-device checks remain
+pending; the locked session was not unlocked for verification.
+
+The final scheduled overnight run started at 06:35 Jakarta. It must checkpoint
+and pause the existing automation at 07:00, regardless of remaining features.
+This is not a completed roadmap: source provenance, public notarized distribution,
+several input/media/storage/AI/inbox/extension implementations and Android parity
+remain open. Physical Mac sleep/lid-close checks remain explicitly pending.
+
+The final full local app build and signature checks passed
+(`build/hover-focus-build.log`). All 13 configured CI test scripts passed locally,
+plus the separate App Protection `--panel-only` fixture
+(`build/final-overnight-checks.log`). The phone protocol suite includes 126 checks
+and independent Java crypto compatibility checks. These fixture results do not
+replace native permission, activation or hardware verification. Build logs and
+local development artifacts are ignored build outputs, not committed evidence.
+Hosted CI for the preceding mouse-click checkpoint `51785fa` also succeeded:
+https://github.com/ezariago/sapphire-foss/actions/runs/40038240236.

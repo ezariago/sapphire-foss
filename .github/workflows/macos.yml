@@ -42,6 +42,7 @@ jobs:
           ./scripts/test-auto-quit.sh
           ./scripts/test-keyboard-bounce.sh
           ./scripts/test-mouse-click-bounce.sh
+          ./scripts/test-hover-focus.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh
       - name: Phone protocol and crypto tests

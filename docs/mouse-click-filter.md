@@ -28,4 +28,5 @@ A timing filter cannot distinguish every worn-switch bounce from a very fast
 intentional click or the start of a drag. Use the smallest effective interval.
 Real double/triple-click counts, drag initiation, multiple mice, excluded-app
 transitions, other input tools and Accessibility/lifecycle recovery remain
-manual checks. Other pointer controls and focus follows mouse remain unfinished.
+manual checks. [Focus follows mouse](focus-follows-mouse.md) now has public code
+and isolated dwell tests; other pointer controls remain unfinished.

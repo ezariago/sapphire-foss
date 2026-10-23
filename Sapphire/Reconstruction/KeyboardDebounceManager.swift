@@ -105,7 +105,13 @@ struct MouseSettingsView: View {
                 Text("\(Int(settings.settings.mouseExtraClickFilterInterval * 1000)) milliseconds").monospacedDigit()
                 Text("Filters the same button near its release position. Use the smallest interval that removes chatter; extremely fast intentional clicks can also be filtered. Accepted drags and clicks at a new position are retained.").foregroundStyle(.secondary)
             }
-            Section("Click-filter excluded foreground apps") {
+            Section("Focus follows mouse") {
+                Toggle("Focus the window under the pointer", isOn: $settings.settings.mouseFocusFollowsEnabled)
+                Slider(value: $settings.settings.mouseFocusFollowsDelay, in: 0.1...2) { Text("Focus delay") }
+                Text("\(settings.settings.mouseFocusFollowsDelay, specifier: "%.1f") seconds")
+                Text("Requires Accessibility. Hover to activate and raise a window. Typing, held mouse buttons, shortcut modifiers and secure input pause focusing. Excluded apps apply to both the current and target app.").foregroundStyle(.secondary)
+            }
+            Section("Mouse-feature excluded apps") {
                 ForEach(Array(Set(settings.settings.mouseExcludedAppBundleIDs)).sorted(), id: \.self) { id in
                     HStack {
                         Text(AppShieldManager.displayName(for: id))
@@ -116,7 +122,7 @@ struct MouseSettingsView: View {
                 Button("Add application…") { chooseExcludedApps() }
             }
             Section("Other mouse features") {
-                Text("Pointer controls, focus follows mouse and Super Key are not available in this build.").foregroundStyle(.secondary)
+                Text("Other pointer controls and Super Key are not available in this build.").foregroundStyle(.secondary)
             }
         }.formStyle(.grouped)
     }

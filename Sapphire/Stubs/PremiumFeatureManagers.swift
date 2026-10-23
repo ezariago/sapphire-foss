@@ -45,13 +45,6 @@ final class MouseControlManager {
     func restoreSystemSettings() {}
 }
 
-final class FocusFollowsMouseManager {
-    static let shared = FocusFollowsMouseManager()
-    private init() {}
-    func start() {}
-    func removeMonitors() {}
-}
-
 
 final class SuperKeyManager {
     static let shared = SuperKeyManager()

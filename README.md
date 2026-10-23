@@ -73,6 +73,8 @@ implementation and recorded build/device evidence; unchecked items are remaining
 work, not delivery promises. A visible setting, protocol identifier or buildable
 stub does not mean the feature works. The Android items require coordinated work
 in the [companion repository](https://github.com/ezariago/sapphire-android-companion).
+See the [24 October overnight handoff](docs/overnight-handoff.md) for implementation
+evidence, native checks and remaining blockers.
 
 ### Implemented foundation
 
@@ -124,8 +126,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   keyboard debounce, Super Key, emoji suggestions and text snippets; complete
   their settings and shortcut configuration UI. Keyboard debounce now has a public
   event-filter implementation and per-key overrides. [Extra-click filtering](docs/mouse-click-filter.md)
-  also has public code and isolated tests; native [keyboard](docs/keyboard-debounce.md)
-  and mouse verification remains open.
+  and [focus follows mouse](docs/focus-follows-mouse.md) also have public code and
+  isolated tests; native [keyboard](docs/keyboard-debounce.md) and mouse verification
+  remains open.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
   These now have public implementations and policy tests; [native interaction
