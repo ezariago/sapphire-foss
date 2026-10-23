@@ -173,3 +173,23 @@ The expanded switcher/cycling policy fixtures and final full local app build
 with signature verification passed (`build/window-switcher-input-build.log`).
 The Android checkout remains clean and the phone remains Dozing; no personal
 window actions or device input were used for validation.
+
+## Auto-quit observation checkpoint
+
+Hardened the existing auto-quit path: monotonic grace periods, interrupted AX
+query sequences, window reopenings, exclusions, reusable PIDs and lifecycle
+resets now have an isolated policy. A failed/denied window query clears the
+pending deadline. State uses process launch time and skips apps whose lifetime
+cannot be identified. Termination is requested once per observed empty episode;
+there is no force-quit fallback. Current enablement/exclusions/trust are checked
+again immediately before requesting termination.
+
+New isolated auto-quit fixtures cover these transitions without quitting apps,
+and are included in CI. Real save dialogs, native permission/lifecycle behavior
+and app compatibility remain pending. Hosted CI for `a4820d1` and `8c85559` is
+confirmed successful; `5fc9be7` was still running when this checkpoint started.
+
+The auto-quit policy fixtures and final full local app build/signature checks
+passed (`build/auto-quit-observation-build.log`). No real app termination was
+tested. The Android checkout is clean and the phone remains Dozing with stay-on
+disabled.

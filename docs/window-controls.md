@@ -80,3 +80,18 @@ invalidation. No real application was closed or quit by these tests.
 Unsupported keys and Control-modified commands cancel the switcher and pass
 through to macOS; they cannot leave a pending selector commit behind. Fixtures
 also cover these cancellation/pass-through paths.
+
+Auto-quit now measures its grace period using monotonic uptime and requires
+consecutive valid empty samples after observing at least one window. An AX error
+breaks that sequence and starts a fresh grace period at the next empty sample;
+it cannot leave an old deadline ready to fire. Reopening a window clears the
+deadline. Excluded/terminated processes are pruned, and state keys include launch
+time to distinguish reused PIDs; apps without a known launch date are skipped.
+Feature/exclusion changes, permission loss, sleep/wake and teardown reset state.
+Each empty episode requests termination once and never escalates to force quit.
+
+`test-auto-quit.sh` exercises these state transitions, process replacement,
+invalid/rollback clock values and reset behavior using isolated observations.
+It does not close or quit any real apps. Sampling cannot observe windows that
+open and close entirely between polls. Actual save-dialog refusal, AX failures,
+sleep/wake and third-party compatibility still require manual verification.

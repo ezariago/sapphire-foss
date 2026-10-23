@@ -79,44 +79,55 @@ final class SystemEnhanceQuitProtection {
 final class SystemEnhanceAutoQuit {
     static let shared = SystemEnhanceAutoQuit()
     private var timer: Timer?
-    private var lastHadWindows: Set<pid_t> = []
-    private var emptySince: [pid_t: Date] = [:]
+    private var policy = AutoQuitPolicy()
+    private var configurationSubscription: AnyCancellable?
+    private struct Configuration: Equatable { let enabled: Bool; let excluded: Set<String> }
+    private var lifecycleObservers: [NSObjectProtocol] = []
     private init() {}
     func start() {
         guard timer == nil else { return }
+        configurationSubscription = SettingsModel.shared.$settings
+            .map { Configuration(enabled: $0.systemEnhanceAutoQuitEnabled, excluded: Set($0.systemEnhanceAutoQuitExcludedApps)) }
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.policy.reset() }
+        let center = NSWorkspace.shared.notificationCenter
+        lifecycleObservers = [NSWorkspace.willSleepNotification, NSWorkspace.didWakeNotification].map { name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.policy.reset() }
+            }
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.check() }
         }
     }
     private func check() {
         let config = SettingsModel.shared.current
-        guard config.systemEnhanceAutoQuitEnabled, AXIsProcessTrusted() else { lastHadWindows.removeAll(); emptySince.removeAll(); return }
-        let apps = NSWorkspace.shared.runningApplications
-        let running = Set(apps.map(\.processIdentifier))
-        lastHadWindows.formIntersection(running)
-        emptySince = emptySince.filter { running.contains($0.key) }
-        for app in apps {
-            guard app.activationPolicy == .regular, let id = app.bundleIdentifier,
-                  id != Bundle.main.bundleIdentifier,
-                  !["com.apple.finder", "com.apple.systempreferences", "com.apple.SystemSettings"].contains(id),
-                  !config.systemEnhanceAutoQuitExcludedApps.contains(id), !app.isTerminated else { continue }
+        guard config.systemEnhanceAutoQuitEnabled, AXIsProcessTrusted() else { policy.reset(); return }
+        let apps = NSWorkspace.shared.runningApplications.compactMap { app -> (NSRunningApplication, String, String)? in
+            guard app.activationPolicy == .regular, !app.isTerminated,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+                  let id = app.bundleIdentifier, let launched = app.launchDate,
+                  !["com.apple.finder", "com.apple.dock", "com.apple.loginwindow", "com.apple.systempreferences", "com.apple.SystemSettings"].contains(id),
+                  !config.systemEnhanceAutoQuitExcludedApps.contains(id) else { return nil }
+            return (app, id, "\(app.processIdentifier):\(launched.timeIntervalSinceReferenceDate)")
+        }
+        policy.retain(Set(apps.map { $0.2 }))
+        for (app, id, key) in apps {
             let root = AXUIElementCreateApplication(app.processIdentifier)
             AXUIElementSetMessagingTimeout(root, 0.1)
-            // A denied/failed AX query is never evidence that the app is empty.
-            guard let windows: [AXUIElement] = SystemEnhanceWindowRegistry.attribute(root, kAXWindowsAttribute) else { continue }
-            if !windows.isEmpty {
-                lastHadWindows.insert(app.processIdentifier)
-                emptySince[app.processIdentifier] = nil
-            } else if lastHadWindows.contains(app.processIdentifier) {
-                if let since = emptySince[app.processIdentifier], Date().timeIntervalSince(since) >= 3 {
-                    _ = app.terminate() // Respect document-save dialogs; never force-quit here.
-                    lastHadWindows.remove(app.processIdentifier)
-                    emptySince[app.processIdentifier] = nil
-                } else if emptySince[app.processIdentifier] == nil { emptySince[app.processIdentifier] = .now }
-            }
+            let windows: [AXUIElement]? = SystemEnhanceWindowRegistry.attribute(root, kAXWindowsAttribute)
+            let request = policy.observe(key, windowCount: windows?.count, now: ProcessInfo.processInfo.systemUptime)
+            let current = SettingsModel.shared.current
+            guard request, current.systemEnhanceAutoQuitEnabled, AXIsProcessTrusted(),
+                  !current.systemEnhanceAutoQuitExcludedApps.contains(id), !app.isTerminated else { continue }
+            _ = app.terminate() // Respect document-save dialogs; never force-quit here.
         }
     }
-    func stopObserving() { timer?.invalidate(); timer = nil; lastHadWindows.removeAll(); emptySince.removeAll() }
+    func stopObserving() {
+        timer?.invalidate(); timer = nil; policy.reset(); configurationSubscription = nil
+        lifecycleObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
+        lifecycleObservers.removeAll()
+    }
 }
 
 #endif
