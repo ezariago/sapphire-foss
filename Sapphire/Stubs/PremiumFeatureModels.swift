@@ -49,10 +49,6 @@ final class DMGInstallerManager: ObservableObject {
     static func shadowingCopy() -> URL? { nil }
 }
 
-struct DockLayout: Codable, Equatable, Identifiable {
-    var id: UUID = UUID()
-    var name: String = "New Preset"
-}
 
 struct SnippetEntry: Codable, Equatable, Identifiable {
     var id: UUID = UUID()

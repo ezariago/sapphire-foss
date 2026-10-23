@@ -15,8 +15,14 @@ extension DMGInstallerManager {
 
 struct SEQuitProtectionRulesView: View {
     var body: some View {
-        Text("Quit protection is unavailable in this public build.")
-            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Quit and close protection").font(.headline)
+            Text("Hold mode requires holding ⌘Q or ⌘W until the configured interval. Double-press mode requires two distinct presses; extra-modifier mode requires the configured modifier. Menu commands and app-initiated exits are unaffected.")
+                .foregroundStyle(.secondary)
+            if !AXIsProcessTrusted() {
+                Button("Allow Accessibility") { AccessibilityPermission.request() }
+            }
+        }
     }
 }
 

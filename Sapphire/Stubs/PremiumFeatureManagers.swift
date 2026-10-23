@@ -13,52 +13,7 @@ final class OCRScreenshotMonitor {
     private init() {}
 }
 
-final class SystemEnhanceWindowRegistry {
-    static let shared = SystemEnhanceWindowRegistry()
-    private init() {}
-}
 
-final class SystemEnhanceDockPreviewController {
-    static let shared = SystemEnhanceDockPreviewController()
-    private init() {}
-    func start() {}
-    func dismiss() {}
-}
-
-final class SystemEnhanceWindowSwitcher {
-    static let shared = SystemEnhanceWindowSwitcher()
-    private init() {}
-    func start() {}
-    func dismiss() {}
-}
-
-final class SystemEnhanceDockClicks {
-    static let shared = SystemEnhanceDockClicks()
-    private init() {}
-    func start() {}
-    func stopMonitoring() {}
-}
-
-final class SystemEnhanceAutoQuit {
-    static let shared = SystemEnhanceAutoQuit()
-    private init() {}
-    func start() {}
-    func stopObserving() {}
-}
-
-final class SystemEnhanceQuitProtection {
-    static let shared = SystemEnhanceQuitProtection()
-    private init() {}
-    func start() {}
-    func removeTap() {}
-}
-
-final class SystemEnhanceGreenMaximize {
-    static let shared = SystemEnhanceGreenMaximize()
-    private init() {}
-    func start() {}
-    func stopMonitoring() {}
-}
 
 final class SystemEnhanceContextMenu {
     static let shared = SystemEnhanceContextMenu()
@@ -73,13 +28,6 @@ final class SystemEnhanceHingeAnimationManager {
     func stop() {}
 }
 
-final class DockLayoutsManager {
-    static let shared = DockLayoutsManager()
-    private init() {}
-    func start() {}
-    func startDockBehaviorSync() {}
-    func importLayoutFiles(at urls: [URL]) {}
-}
 
 enum MediaOptimizeKind: String {
     case image, pdf, video, audio

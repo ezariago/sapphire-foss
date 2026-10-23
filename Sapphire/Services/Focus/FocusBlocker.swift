@@ -87,8 +87,8 @@ final class FocusBlocker {
             temporarilyUnblocked.removeAll()
             unblockRequests.removeAll()
             snoozedUntil.removeAll()
-            closeRunningBlockedApps()
             blocker.setBlocking(true)
+            closeRunningBlockedApps()
         } else {
             blocker.setBlocking(false)
         }
@@ -102,7 +102,7 @@ final class FocusBlocker {
             snoozedUntil[bundleID] = nil
         }
         if let requestDate = unblockRequests[bundleID] {
-            let remaining = unblockCooldowns[bundleID] ?? (strictCooldown - Date().timeIntervalSince(requestDate))
+            let remaining = (unblockCooldowns[bundleID] ?? strictCooldown) - Date().timeIntervalSince(requestDate)
             if remaining > 0 { return true }
             unblockRequests[bundleID] = nil
             unblockCooldowns[bundleID] = nil

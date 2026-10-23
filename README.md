@@ -42,7 +42,7 @@ for the foundation this work builds on.
 
 See [Phone / Android implementation notes](PHONE-RECONSTRUCTION.md) and
 [device verification](https://github.com/ezariago/sapphire-android-companion/blob/main/VERIFICATION.md) for tested behavior and
-remaining limitations. Calls, media control, file browsing,
+remaining limitations. Calls, file browsing,
 camera streaming and screen sharing are not implemented in the replacement companion.
 
 ## Repositories
@@ -107,10 +107,17 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 
 - [ ] Implement App Lock authentication/enforcement and the shared app shields
   used by Focus app blocking. Existing Focus session and website-blocking code
-  does not supply the missing app-enforcement layer.
+  does not supply the missing app-enforcement layer. Core system/password
+  authentication, session shields, sleep/idle/leave relocking and configuration UI
+  are now implemented and tested with an isolated auth provider and real Mac app.
+  Camera authentication, process-launch prevention, panic shortcuts and complete
+  permission/hardware verification remain open. See [App Lock evidence](docs/app-lock.md).
 - [ ] Implement Dock previews, window switcher, Dock click behavior, auto-quit,
   quit protection, green-button maximize, context-menu enhancements, hinge
-  animations and Dock layout import/application.
+  animations and Dock layout import/application. Public implementations for
+  presets, AX window selection/previews, click actions, auto-quit, quit protection
+  and green-button maximize are added; [implementation/test status](docs/window-controls.md)
+  records remaining UI variants and device verification.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
   keyboard debounce, Super Key, emoji suggestions and text snippets; complete
   their settings and shortcut configuration UI.
@@ -144,8 +151,9 @@ its individual findings need rechecking against the current source.
 
 ### Android / Continuity feature parity
 
-- [ ] Implement phone media-state publishing and playback command handling in
-  the replacement companion, then complete Mac phone-media presentation.
+- [x] Implement opt-in phone media state/playback commands and Mac phone-media
+  presentation, verified with a silent Android MediaSession fixture. Third-party
+  media-player and acoustic playback checks remain open.
 - [x] Implement opt-in notification posts/updates/removals, reconnect snapshots,
   Mac list/notch alerts, optional banners and supported dismissal/actions/replies.
 - [x] Verify notification arrival/update/removal, actions, replies, dismissal

@@ -1,9 +1,3 @@
-//
-//  AppLockOverlayView.swift
-//  Sapphire
-//
-//  Created by Shariq Charolia on 2026-08-30
-
 #if !SAPPHIRE_FULL_BUILD
 import SwiftUI
 
@@ -18,9 +12,35 @@ struct AppLockOverlayView: View {
     let onSubmitPassword: (String) -> Bool
     let onQuit: (() -> Void)?
     var quitButtonTitle: String = "Quit App"
-
+    @State private var password = ""
     var body: some View {
-        Color.clear
+        VStack(spacing: 20) {
+            Image(systemName: "lock.shield.fill").font(.system(size: 56)).foregroundStyle(.purple)
+            Text("\(appName) is locked").font(.largeTitle.bold())
+            if hasTouchID {
+                Button("Unlock with system authentication", action: onTouchID)
+                    .disabled(lockManager.isAuthenticating)
+            }
+            if hasPassword {
+                SecureField("Mac login password", text: $password).frame(width: 280)
+                    .onSubmit(submit)
+                Button("Unlock with password", action: submit)
+                    .disabled(password.isEmpty || lockManager.isAuthenticating)
+            }
+            if let message = lockManager.authenticationError {
+                Text(message).foregroundStyle(.red).multilineTextAlignment(.center).frame(maxWidth: 400)
+            }
+            if lockManager.isAuthenticating { ProgressView() }
+            if let onQuit { Button(quitButtonTitle, action: onQuit).keyboardShortcut(.cancelAction) }
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    private func submit() {
+        let attempt = password
+        password = ""
+        _ = onSubmitPassword(attempt)
     }
 }
 #endif

@@ -24,6 +24,12 @@ jobs:
           java -version
       - name: Foundation security and FOSS access tests
         run: ./scripts/test-foundation.sh
+      - name: Dock preset and quit protection tests
+        run: |
+          ./scripts/test-dock-layouts.sh
+          ./scripts/test-quit-protection.sh
+      - name: App Lock authentication lifecycle tests
+        run: ./scripts/test-app-lock.sh
       - name: Phone protocol and crypto tests
         run: ./scripts/test-phone-reconstruction.sh
       - name: Build and verify macOS app
