@@ -69,3 +69,22 @@ surfaces, audio views, sports/finance, Intelligence/Inbox, extensions and most
 Android bulk/streaming parity still require implementation. Source/license
 provenance and public signed/notarized distribution have external blockers;
 record those honestly and progress on another actionable item.
+
+## Privacy shortcut checkpoint
+
+Implemented App Lock's ⌘⌥S privacy shortcut and a matching Settings button. The
+operation relocks first, invalidates pending authentication, and requests hiding
+protected regular apps while excluding Sapphire and essential system apps. It
+does not quit apps or dismiss a shield in front of protected content. The shared
+shortcut dispatcher reports registration conflicts. Settings text now describes
+these semantics instead of promising an unconditional overlay dismissal.
+
+Injected tests verify target exclusion, disabled/no-op cases, relock-before-hide
+ordering and stale authentication rejection during the privacy action. Real
+shortcut routing and third-party hide/refusal behavior require an unlocked Mac
+and remain pending; no personal apps or phone interactions were tested.
+
+`./scripts/test-app-lock.sh` passed with the expanded privacy-action fixtures.
+The full local app build and signature checks passed; log:
+`build/app-lock-panic-build.log`. The Android checkout remains clean and the
+phone still reports Dozing with stay-on disabled.

@@ -77,6 +77,32 @@ Task { @MainActor in
     transitions.applicationActivated(bundleID: Bundle.main.bundleIdentifier, pid: ProcessInfo.processInfo.processIdentifier, regular: false)
     assert(transitions.isLocked) // Deliberately switching to Sapphire also relocks.
 
+    let ownID = "dev.sapphire.self-fixture"
+    let targets = AppLockManager.panicTargets(from: [id, ownID, "com.apple.finder", "com.apple.dock", "com.apple.loginwindow", "com.apple.SystemSettings", "com.apple.systempreferences"], ownID: ownID)
+    assert(targets == [id])
+    var hiddenRequests: [Set<String>] = []
+    var panicManager: AppLockManager!
+    panicManager = AppLockManager(systemAuthentication: { _, _ in true }, passwordVerification: { _ in }, panicHideApplications: { ids in
+        assert(panicManager.isLocked) // Relock before asking macOS to hide.
+        hiddenRequests.append(ids)
+    })
+    panicManager.refresh()
+    assert(panicManager.verifyPassword("fixture secret", for: id))
+    assert(!panicManager.isLocked)
+    SettingsModel.shared.settings.appLockPanicKeyEnabled = false
+    assert(!panicManager.panicHideAndLock() && hiddenRequests.isEmpty)
+    SettingsModel.shared.settings.appLockPanicKeyEnabled = true
+    assert(panicManager.panicHideAndLock() && panicManager.isLocked)
+    assert(hiddenRequests == [[id]])
+    var panicRace: AppLockManager!
+    panicRace = AppLockManager(systemAuthentication: { _, _ in
+        assert(panicRace.panicHideAndLock())
+        return true
+    }, panicHideApplications: { _ in })
+    panicRace.refresh()
+    let panicStaleAuth = await panicRace.authenticateAndUnlock(bundleID: id)
+    assert(!panicStaleAuth && panicRace.isLocked)
+
     manager.clearFailedAttempts()
     assert(manager.failedAttempts.isEmpty)
     SettingsModel.shared.settings.appLockEnabled = false
@@ -85,7 +111,10 @@ Task { @MainActor in
     configRace.refresh()
     transitions.refresh()
     assert(!manager.isLocked && !raceManager.isLocked)
-    print("Passed App Lock denial, password, system auth, relock, monotonic cooldown, activation/configuration races and stale-auth checks using isolated providers.")
+    assert(!panicManager.panicHideAndLock() && hiddenRequests.count == 1)
+    panicManager.refresh()
+    panicRace.refresh()
+    print("Passed App Lock denial, password, system auth, relock, monotonic cooldown, activation/configuration races, panic relocking/targets/denial and stale-auth checks using isolated providers.")
     exit(0)
 }
 app.run()

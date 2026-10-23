@@ -4,6 +4,7 @@ import Foundation
 enum FocusIntensity { case minimal, gentle, standard, strict }
 struct Settings {
     var appLockEnabled = false
+    var appLockPanicKeyEnabled = true
     var appLockProtectedApps: Set<String> = ["dev.sapphire.nonexistent-fixture"]
     var appLockTouchIDEnabled = true
     var appLockPasswordFallbackEnabled = true

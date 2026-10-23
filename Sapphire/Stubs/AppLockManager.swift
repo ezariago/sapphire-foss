@@ -23,6 +23,7 @@ final class AppLockManager: ObservableObject {
     private var generation = 0
     private let systemAuthentication: ((LAPolicy, String) async throws -> Bool)?
     private let passwordVerification: ((String) throws -> Void)?
+    private let panicHideApplications: (Set<String>) -> Void
     private let configurationRevision: AppLockConfigurationRevision
     private var appliedRevision: UInt64 = 0
     private let uptime: () -> TimeInterval
@@ -33,10 +34,16 @@ final class AppLockManager: ObservableObject {
 
     init(systemAuthentication: ((LAPolicy, String) async throws -> Bool)? = nil,
          passwordVerification: ((String) throws -> Void)? = nil,
-         uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+         uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+         panicHideApplications: @escaping (Set<String>) -> Void = { ids in
+             for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular
+                 && app.processIdentifier != ProcessInfo.processInfo.processIdentifier
+                 && app.bundleIdentifier.map(ids.contains) == true { _ = app.hide() }
+         }) {
         self.systemAuthentication = systemAuthentication
         self.passwordVerification = passwordVerification
         self.uptime = uptime
+        self.panicHideApplications = panicHideApplications
         self.configurationRevision = AppLockConfigurationRevision(AppLockAuthenticationConfiguration(SettingsModel.shared.current))
         blocker.shieldsAreKeyable = true
         blocker.keepsShieldWhenNotFrontmost = { [weak self] _ in self?.isAuthenticating ?? false }
@@ -128,6 +135,26 @@ final class AppLockManager: ObservableObject {
         context?.invalidate()
         unlocked.removeAll()
         refresh()
+    }
+
+    /// Relock first, then request hiding. Never dismiss a shield in front of a
+    /// protected app: hiding can fail or be delayed by macOS.
+    @discardableResult
+    func panicHideAndLock() -> Bool {
+        let settings = SettingsModel.shared.current
+        guard settings.appLockEnabled, settings.appLockPanicKeyEnabled else { return false }
+        lockAll()
+        panicHideApplications(Self.panicTargets(from: settings.appLockProtectedApps, ownID: Bundle.main.bundleIdentifier))
+        return true
+    }
+
+    static func panicTargets(from apps: Set<String>, ownID: String?) -> Set<String> {
+        var targets = apps.subtracting([
+            "com.apple.finder", "com.apple.dock", "com.apple.loginwindow",
+            "com.apple.systempreferences", "com.apple.SystemSettings"
+        ])
+        if let ownID { targets.remove(ownID) }
+        return targets
     }
 
     private func hide(_ id: String) {

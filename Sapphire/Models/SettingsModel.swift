@@ -972,6 +972,7 @@ enum FileOperationProgressDisplay: String, Codable, CaseIterable, Identifiable {
 }
 
 enum ShortcutIdentifier {
+    static let appLockPanic = "appLockPanic"
     static let circleToSearch = "circleToSearch"
     static let clipboardPicker = "clipboardPicker"
     static let emojiPicker = "emojiPicker"

@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct AppLockSettingsView: View {
     @ObservedObject private var settings = SettingsModel.shared
     @ObservedObject private var manager = AppLockManager.shared
+    @ObservedObject private var panicShortcut = AppLockPanicShortcut.shared
     @State private var authorized = false
     @State private var message: String?
     var body: some View {
@@ -50,6 +51,17 @@ struct AppLockSettingsView: View {
                 Button("Lock protected apps now") { manager.lockAll() }
             }
             .disabled(settings.settings.appLockEnabled && !authorized)
+            Section("Privacy shortcut") {
+                Toggle("Enable ⌘⌥S to hide and lock protected apps", isOn: $settings.settings.appLockPanicKeyEnabled)
+                    .disabled(settings.settings.appLockEnabled && !authorized)
+                Text("Requires Accessibility permission. Relocks first and asks macOS to hide protected apps without quitting them. Shields remain if hiding fails; returning to an app requires authentication.")
+                    .foregroundStyle(.secondary)
+                if panicShortcut.unavailable || settings.settings.disabledShortcutIDs.contains(ShortcutIdentifier.appLockPanic) {
+                    Text("The privacy shortcut is unavailable or disabled. Resolve the shortcut conflict or use the button below.").foregroundStyle(.orange)
+                }
+                Button("Hide and lock protected apps now") { manager.panicHideAndLock() }
+                    .disabled(!settings.settings.appLockEnabled || !settings.settings.appLockPanicKeyEnabled)
+            }
             Section("Recent failed authentication") {
                 ForEach(manager.failedAttempts.prefix(20)) { attempt in
                     HStack {

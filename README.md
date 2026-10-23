@@ -111,7 +111,8 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   does not supply the missing app-enforcement layer. Core system/password
   authentication, session shields, sleep/idle/leave relocking and configuration UI
   are now implemented and tested with an isolated auth provider and real Mac app.
-  Camera authentication, process-launch prevention, panic shortcuts and complete
+  A privacy shortcut now relocks and requests hiding protected apps. Camera
+  authentication, process-launch prevention and complete
   permission/hardware verification remain open. See [App Lock evidence](docs/app-lock.md).
 - [ ] Implement Dock previews, window switcher, Dock click behavior, auto-quit,
   quit protection, green-button maximize, context-menu enhancements, hinge

@@ -890,6 +890,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         MediaOptimizerManager.shared.start()
         FileOperationProgressRouter.shared.start()
         _ = ocrScreenshotMonitor
+        _ = AppLockPanicShortcut.shared
         requestScreenRecordingForSystemEnhanceIfNeeded()
         _ = emojiShortcutManager
         _ = clipboardPickerManager

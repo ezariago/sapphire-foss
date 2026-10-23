@@ -19,6 +19,13 @@ Implemented 2026-10-24 in the public build, opt-in and disabled by default.
   failure log is in-memory and contains app/time/method, never passwords.
 - Changing an enabled configuration requires system authentication. Authorization
   is discarded when Settings disappears, the app deactivates, or the Mac sleeps.
+- The optional ⌘⌥S privacy shortcut relocks all protected apps, invalidates pending
+  authentication, then requests hiding those apps without terminating them. It
+  excludes Sapphire, Finder, Dock, loginwindow and System Settings. A matching
+  Settings button works without a global input hook. The shortcut uses the shared
+  shortcut dispatcher and reports conflicts; global use requires Accessibility.
+  Hiding is best effort. A shield is not dismissed while the protected app remains
+  frontmost, and returning to a protected app still requires authentication.
 - Focus shares the shield layer, with allow/snooze controls at minimal intensity
   and cooldown-based access at strict intensity. Standard/strict Focus retains
   its explicit terminate/force-terminate behavior; use those modes with care.
@@ -28,14 +35,17 @@ It cannot prevent quitting Sapphire, inspecting another process, notification
 previews, or a brief pre-shield frame during app activation. Lock macOS when
 leaving a machine unattended. App Lock does not terminate protected applications
 or automatically reopen them. Inherited camera, prevent-process-launch,
-auto-close and panic-key settings are not exposed as supported behavior here.
+and auto-close settings are not exposed as supported behavior here.
 
 ## Verification
 
 - `./scripts/test-app-lock.sh`: injected authentication fixtures test denial while
   disabled, empty-password rejection, failed/successful password paths, successful
   system auth, relock, cooldown expiry, accessory/regular app transitions,
-  unsupported Face ID and stale-auth/configuration-race rejection.
+  unsupported Face ID and stale-auth/configuration-race rejection, plus privacy
+  action enable/disable guards, target exclusion, relock-before-hide ordering and
+  cancellation of pending authentication. Privacy tests inject the hide action;
+  no real application is hidden.
   No real login password or biometric approval is used by these tests.
 - `./scripts/test-app-protection.sh`: launches a temporary signed GUI fixture and
   verifies real workspace activation, visible shield creation, unblock/reblock
@@ -47,6 +57,7 @@ auto-close and panic-key settings are not exposed as supported behavior here.
   acquire focus (`com.apple.loginwindow` remained frontmost); no unlock was tried.
 - Full local app build/signature verification is recorded in `build/logs/`.
 
-Remaining manual checks: real Touch ID/password success/cancel, fast-user-switch,
+Remaining manual checks: real Touch ID/password success/cancel, privacy-shortcut
+key routing/conflicts and third-party hide/refusal behavior, fast-user-switch,
 Mission Control and multiple Spaces/full-screen transitions, monitor hot-plug
 (panel geometry refresh has isolated fixture coverage), physical sleep/wake and screen-lock recovery. These remain on the README roadmap.
