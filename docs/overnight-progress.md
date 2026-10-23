@@ -113,3 +113,17 @@ by that push and cancelled by the configured concurrency rule.
 The cycle/thumbnail policy tests and full local build/signature checks passed
 after the final changes (`build/window-cycling-build.log`). The phone remains
 Dozing with stay-on disabled; the Android checkout is clean.
+
+## Dock preset shortcut checkpoint
+
+Implemented per-preset shortcut recording/clearing and shared dispatcher
+registration, with conflict/unsupported-key feedback. Actions resolve current
+settings and reject disabled, deleted or reassigned bindings. Preset persistence
+retains shortcuts; imports clear them and keep IDs distinct from existing local
+presets. Bare/Shift-only typing keys are rejected. Expanded isolated tests cover
+these format, import and stale-action cases without touching the real Dock.
+Global key routing and actual Dock application remain manual verification work.
+
+The expanded Dock tests and full local app build/signature verification passed
+(`build/dock-shortcuts-build.log`). No real Dock preferences were changed. The
+Android checkout is clean and the phone remains Dozing with stay-on disabled.

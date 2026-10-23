@@ -9,8 +9,9 @@ struct DockLayout: Codable, Equatable, Identifiable {
     var tileSize = 48.0
     var autohide = false
     var magnification = false
+    var shortcut: KeyboardShortcut?
 
-    enum CodingKeys: String, CodingKey { case id, name, applicationPaths, orientation, tileSize, autohide, magnification }
+    enum CodingKeys: String, CodingKey { case id, name, applicationPaths, orientation, tileSize, autohide, magnification, shortcut }
     init() {}
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -21,6 +22,19 @@ struct DockLayout: Codable, Equatable, Identifiable {
         tileSize = try values.decodeIfPresent(Double.self, forKey: .tileSize) ?? 48
         autohide = try values.decodeIfPresent(Bool.self, forKey: .autohide) ?? false
         magnification = try values.decodeIfPresent(Bool.self, forKey: .magnification) ?? false
+        shortcut = try values.decodeIfPresent(KeyboardShortcut.self, forKey: .shortcut)
+    }
+
+    static func isValidShortcut(_ shortcut: KeyboardShortcut) -> Bool {
+        !shortcut.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && shortcut.key.count <= 40 && !shortcut.key.contains("\0")
+            && !shortcut.significantModifiers.intersection([.command, .option, .control]).isEmpty
+    }
+
+    static func shortcutTarget(id: UUID, expected: KeyboardShortcut, presets: [Self], enabled: Bool, isDisabled: Bool) -> Self? {
+        guard enabled, !isDisabled, let layout = presets.first(where: { $0.id == id }),
+              layout.shortcut == expected, (try? layout.validated()) != nil else { return nil }
+        return layout
     }
 
     func validated() throws -> Self {
@@ -28,6 +42,7 @@ struct DockLayout: Codable, Equatable, Identifiable {
               ["left", "bottom", "right"].contains(orientation), tileSize.isFinite,
               (16...128).contains(tileSize), (1...200).contains(applicationPaths.count),
               Set(applicationPaths).count == applicationPaths.count,
+              shortcut.map(Self.isValidShortcut) ?? true,
               applicationPaths.allSatisfy({ path in
                   path.hasPrefix("/") && path.utf8.count <= 4096 && !path.contains("\0")
                     && URL(fileURLWithPath: path).pathExtension.lowercased() == "app"
@@ -41,7 +56,7 @@ enum DockLayoutError: LocalizedError {
     case invalidPreset, unsupportedVersion, missingApplication(String), preferencesFailed
     var errorDescription: String? {
         switch self {
-        case .invalidPreset: "This Dock preset is empty or contains invalid settings or application paths."
+        case .invalidPreset: "This Dock preset is empty or contains invalid settings, shortcuts or application paths."
         case .unsupportedVersion: "This Dock preset file uses an unsupported version."
         case .missingApplication(let path): "Install or locate the application before applying this preset: \(path)"
         case .preferencesFailed: "Dock preferences could not be saved. The previous values were restored."
@@ -52,6 +67,16 @@ enum DockLayoutError: LocalizedError {
 struct DockLayoutDocument: Codable {
     var version = 1
     var presets: [DockLayout]
+    static func presetsForImport(_ data: Data, existingIDs: Set<UUID>) throws -> [DockLayout] {
+        var used = existingIDs
+        return try decode(data).map { incoming in
+            var layout = incoming
+            layout.shortcut = nil
+            while used.contains(layout.id) { layout.id = UUID() }
+            used.insert(layout.id)
+            return layout
+        }
+    }
     static func decode(_ data: Data) throws -> [DockLayout] {
         guard data.count <= 1_048_576 else { throw DockLayoutError.invalidPreset }
         let document = try JSONDecoder().decode(Self.self, from: data)

@@ -164,8 +164,11 @@ class KeyboardShortcutManager {
         for provider in externalProviders.values {
             var unavailable = Set<String>()
             for external in provider.shortcuts(currentSettings) {
-                guard settings.isEnabled(external.identifier),
-                      let trigger = trigger(for: external.shortcut) else { continue }
+                guard settings.isEnabled(external.identifier) else { continue }
+                guard let trigger = trigger(for: external.shortcut) else {
+                    unavailable.insert(external.identifier)
+                    continue
+                }
                 if registrations[trigger] == nil {
                     registrations[trigger] = .external(external)
                 } else {

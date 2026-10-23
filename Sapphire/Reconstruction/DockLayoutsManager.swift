@@ -7,8 +7,49 @@ import SwiftUI
 final class DockLayoutsManager: ObservableObject {
     static let shared = DockLayoutsManager()
     @Published private(set) var status: String?
+    @Published private(set) var unavailableShortcutIDs = Set<String>()
+    private var subscription: AnyCancellable?
+    private struct ShortcutConfiguration: Equatable {
+        let enabled: Bool
+        let entries: [Entry]
+        struct Entry: Equatable { let id: UUID; let shortcut: KeyboardShortcut? }
+        init(_ settings: Settings) {
+            enabled = settings.dockLayoutsEnabled
+            entries = settings.dockLayoutsPresets.map { Entry(id: $0.id, shortcut: $0.shortcut) }
+        }
+    }
     private init() {}
-    func start() {}
+    func start() {
+        guard subscription == nil else { return }
+        subscription = SettingsModel.shared.$settings.map(ShortcutConfiguration.init)
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.registerShortcuts() }
+    }
+    private func registerShortcuts() {
+        KeyboardShortcutManager.shared.registerExternalShortcutProvider(.init(shortcuts: { [weak self] settings in
+            guard settings.dockLayoutsEnabled else { return [] }
+            return settings.dockLayoutsPresets.compactMap { layout in
+                guard let shortcut = layout.shortcut, (try? layout.validated()) != nil else { return nil }
+                return .init(identifier: ShortcutIdentifier.dockLayouts(layout.id), shortcut: shortcut,
+                             perform: { self?.applyPreset(id: layout.id, expected: shortcut) })
+            }
+        }, reportUnavailable: { [weak self] unavailable in self?.unavailableShortcutIDs = unavailable }), named: "FOSSDockPresets")
+    }
+    private func applyPreset(id: UUID, expected: KeyboardShortcut) {
+        let settings = SettingsModel.shared.current
+        guard let layout = DockLayout.shortcutTarget(id: id, expected: expected,
+            presets: settings.dockLayoutsPresets, enabled: settings.dockLayoutsEnabled,
+            isDisabled: settings.disabledShortcutIDs.contains(ShortcutIdentifier.dockLayouts(id))) else { return }
+        apply(layout)
+    }
+    func setShortcut(_ shortcut: KeyboardShortcut?, for id: UUID) {
+        guard let index = SettingsModel.shared.settings.dockLayoutsPresets.firstIndex(where: { $0.id == id }) else { return }
+        if let shortcut, !DockLayout.isValidShortcut(shortcut) {
+            status = "Use a shortcut with Command, Option or Control to avoid intercepting normal typing."
+            return
+        }
+        SettingsModel.shared.settings.dockLayoutsPresets[index].shortcut = shortcut
+    }
     func startDockBehaviorSync() {}
     func captureCurrent() {
         do {
@@ -34,15 +75,12 @@ final class DockLayoutsManager: ObservableObject {
             do {
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size > 0, size <= 1_048_576 else { throw DockLayoutError.invalidPreset }
-                let incoming = try DockLayoutDocument.decode(Data(contentsOf: url))
                 var presets = SettingsModel.shared.current.dockLayoutsPresets
-                for var layout in incoming {
-                    // Import is additive. Never silently replace an existing preset.
-                    if presets.contains(where: { $0.id == layout.id }) { layout.id = UUID() }
-                    presets.append(layout)
-                }
+                // Imported files never install global shortcuts or replace local presets.
+                let incoming = try DockLayoutDocument.presetsForImport(Data(contentsOf: url), existingIDs: Set(presets.map(\.id)))
+                presets.append(contentsOf: incoming)
                 SettingsModel.shared.settings.dockLayoutsPresets = presets
-                status = "Imported \(incoming.count) Dock preset(s)."
+                status = "Imported \(incoming.count) Dock preset(s). Assign shortcuts locally if needed."
             } catch { status = "\(url.lastPathComponent): \(error.localizedDescription)" }
         }
     }
@@ -67,7 +105,7 @@ struct DockLayoutsSettingsView: View {
         Form {
             Section("Dock presets") {
                 Toggle("Enable Dock presets", isOn: $settings.settings.dockLayoutsEnabled)
-                Text("Save and restore pinned apps, Dock position, size, autohide and magnification. Applying restarts the Dock; the previous settings are backed up first.")
+                Text("Save and restore pinned apps, Dock position, size, autohide and magnification. Applying restarts the Dock; the previous settings are backed up first. Preset shortcuts require Accessibility permission. Imported shortcuts must be assigned locally.")
                     .foregroundStyle(.secondary)
                 HStack {
                     Button("Save current Dock") { manager.captureCurrent() }
@@ -82,12 +120,28 @@ struct DockLayoutsSettingsView: View {
             }
             Section("Saved presets") {
                 ForEach($settings.settings.dockLayoutsPresets) { $layout in
-                    HStack {
+                    VStack(alignment: .leading) {
+                      HStack {
                         TextField("Preset name", text: $layout.name)
                         Text("\(layout.applicationPaths.count) apps").foregroundStyle(.secondary)
                         Button("Apply") { manager.apply(layout) }.disabled(!settings.settings.dockLayoutsEnabled)
                         Button("Export") { manager.export(layout) }
                         Button("Delete") { settings.settings.dockLayoutsPresets.removeAll { $0.id == layout.id } }
+                      }
+                      HStack {
+                        Text(layout.shortcut.map { KeyboardShortcutHelper.description(for: $0.modifiers) + $0.key } ?? "No shortcut")
+                            .foregroundStyle(.secondary)
+                        Button("Record shortcut…") {
+                            let id = layout.id
+                            GlobalShortcutRecorder.shared.startRecording(identifier: ShortcutIdentifier.dockLayouts(id)) { key, modifiers in
+                                manager.setShortcut(KeyboardShortcut(key: key, modifiers: modifiers), for: id)
+                            }
+                        }
+                        if layout.shortcut != nil { Button("Clear shortcut") { manager.setShortcut(nil, for: layout.id) } }
+                        if manager.unavailableShortcutIDs.contains(ShortcutIdentifier.dockLayouts(layout.id)) || settings.settings.disabledShortcutIDs.contains(ShortcutIdentifier.dockLayouts(layout.id)) {
+                            Text("Shortcut unavailable or disabled").foregroundStyle(.orange)
+                        }
+                      }.font(.caption)
                     }
                 }
                 if settings.settings.dockLayoutsPresets.isEmpty { Text("Save your current Dock to create a preset.").foregroundStyle(.secondary) }
