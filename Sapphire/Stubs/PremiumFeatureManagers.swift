@@ -52,13 +52,6 @@ final class FocusFollowsMouseManager {
     func removeMonitors() {}
 }
 
-final class ExtraClickFilterManager {
-    static let shared = ExtraClickFilterManager()
-    private init() {}
-    func start() {}
-    func shutdown() {}
-}
-
 
 final class SuperKeyManager {
     static let shared = SuperKeyManager()

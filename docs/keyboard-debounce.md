@@ -28,5 +28,6 @@ Remaining checks: physical worn keyboards, rapid intentional repeated letters,
 multiple keyboards, input methods, secure-input fields, synthetic paste and
 shortcut/filter coexistence, Accessibility loss/recovery and actual sleep/wake.
 The filter is global across keyboards and has no per-device discrimination or
-per-app exclusion UI. Other mouse controls, focus follows mouse, extra-click
-filtering, Super Key, snippets and emoji suggestions remain unimplemented.
+per-app exclusion UI. [Extra-click filtering](mouse-click-filter.md) now has a public implementation.
+Other mouse controls, focus follows mouse, Super Key, snippets and emoji
+suggestions remain unimplemented.

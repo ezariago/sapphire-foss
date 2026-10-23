@@ -214,3 +214,22 @@ The keyboard policy fixtures, fresh real-DMG fixture run and final full local
 app build/signature verification passed (`build/keyboard-debounce-build.log`,
 `build/dmg-fixture-retry-test.log`). The local DMG run did not reproduce the
 transient attach error. No physical keyboard or phone input was performed.
+
+## Mouse click-filter checkpoint
+
+Implemented the extra-click filter with same-button/time/position/modifier
+matching, paired release suppression, accepted-drag preservation and foreground
+app exclusions. Mouse settings expose the interval and application picker. No
+pointer events are synthesized and native click-count metadata is preserved.
+Isolated fixtures cover chatter, geometry boundaries, drag/drop, independent
+buttons/modifiers, malformed coordinates and resets. Native device behavior,
+double/triple-click counts and permission/app transitions remain pending.
+
+Hosted CI for `a0b2ad5` succeeded, including all configured tests, the full app
+build and development artifacts. The prior failed DMG fixture run remains
+recorded as a failure; the passing later run does not by itself prove that its
+transient retry branch executed.
+
+The mouse click-policy fixtures and final full local app build/signature checks
+passed (`build/mouse-click-filter-build.log`). No real pointer/button events
+were sent. The Android checkout remains clean and the phone remains Dozing.

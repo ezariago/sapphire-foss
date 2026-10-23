@@ -382,7 +382,7 @@ extension SettingsIndex {
         .init(key: "mouseButton5ModifiedAction", title: "Side 2 + Modifier", detail: "Alternate action when the modifier button is held.", section: .mouse, range: nil, options: MouseButtonAction.allCases.map(\.rawValue)),
         .init(key: "mouseControlEnabled", title: "Enable Mouse Controls", detail: "Allow Sapphire to adjust scrolling, pointer acceleration, and mouse buttons system-wide.", section: .mouse, range: nil, options: nil),
         .init(key: "mouseDisableAcceleration", title: "Disable Pointer Acceleration", detail: "Turn off macOS cursor acceleration for 1:1, precise pointer movement — great for gaming and design work.", section: .mouse, range: nil, options: nil),
-        .init(key: "mouseExtraClickFilterEnabled", title: "Extra Click Filter", detail: "Swallow a repeat click of the same button that lands within a few milliseconds of releasing it. Kept short so fast double-clicks still count.", section: .mouse, range: nil, options: nil),
+        .init(key: "mouseExtraClickFilterEnabled", title: "Extra Click Filter", detail: "Reject a same-button repeat shortly after release. Extremely fast intentional clicks can also be filtered.", section: .mouse, range: nil, options: nil),
         .init(key: "mouseExtraClickFilterInterval", title: "Click Window", detail: nil, section: .mouse, range: (0.01)...(0.06), options: nil),
         .init(key: "mouseFocusFollowsDelay", title: "Pause Before Focusing", detail: nil, section: .mouse, range: (0.1)...(2.0), options: nil),
         .init(key: "mouseFocusFollowsEnabled", title: "Focus Window Under Pointer", detail: "Bring the window under the cursor to the front after a pause. Waits while you drag or hold a modifier key.", section: .mouse, range: nil, options: nil),

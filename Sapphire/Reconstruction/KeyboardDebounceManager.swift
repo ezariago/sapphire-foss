@@ -2,6 +2,7 @@
 import AppKit
 import Combine
 import SwiftUI
+import UniformTypeIdentifiers
 
 private final class KeyboardDebounceState: @unchecked Sendable {
     struct Configuration: Equatable {
@@ -98,10 +99,37 @@ struct MouseSettingsView: View {
                 }
                 if let error { Text(error).foregroundStyle(.red) }
             }
-            Section("Mouse features") {
-                Text("Pointer controls, focus follows mouse, extra-click filtering and Super Key are still being implemented.").foregroundStyle(.secondary)
+            Section("Click debounce") {
+                Toggle("Filter accidental repeated clicks", isOn: $settings.settings.mouseExtraClickFilterEnabled)
+                Slider(value: $settings.settings.mouseExtraClickFilterInterval, in: 0.01...0.06) { Text("Click interval") }
+                Text("\(Int(settings.settings.mouseExtraClickFilterInterval * 1000)) milliseconds").monospacedDigit()
+                Text("Filters the same button near its release position. Use the smallest interval that removes chatter; extremely fast intentional clicks can also be filtered. Accepted drags and clicks at a new position are retained.").foregroundStyle(.secondary)
+            }
+            Section("Click-filter excluded foreground apps") {
+                ForEach(Array(Set(settings.settings.mouseExcludedAppBundleIDs)).sorted(), id: \.self) { id in
+                    HStack {
+                        Text(AppShieldManager.displayName(for: id))
+                        Spacer()
+                        Button("Remove") { settings.settings.mouseExcludedAppBundleIDs.removeAll { $0 == id } }
+                    }
+                }
+                Button("Add application…") { chooseExcludedApps() }
+            }
+            Section("Other mouse features") {
+                Text("Pointer controls, focus follows mouse and Super Key are not available in this build.").foregroundStyle(.secondary)
             }
         }.formStyle(.grouped)
+    }
+    private func chooseExcludedApps() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = true
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            if let id = Bundle(url: url)?.bundleIdentifier, !settings.settings.mouseExcludedAppBundleIDs.contains(id) {
+                settings.settings.mouseExcludedAppBundleIDs.append(id)
+            }
+        }
     }
 }
 #endif
