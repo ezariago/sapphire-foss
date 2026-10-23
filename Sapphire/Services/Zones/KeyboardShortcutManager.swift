@@ -129,6 +129,11 @@ class KeyboardShortcutManager {
         installTap()
     }
 
+    func unregisterExternalShortcutProvider(named name: String) {
+        externalProviders.removeValue(forKey: name)
+        installTap()
+    }
+
     private func installTap(using settings: ShortcutRegistrationSettings) {
         guard !isAccessibilitySuspended, !isShortcutRecording else { return }
         removeTap()

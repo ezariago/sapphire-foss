@@ -1106,6 +1106,8 @@ struct Settings: Codable, Equatable {
     var mediaToolsMaxImageDimension: Double = 2048
     var mediaToolsShowShelfActions: Bool = false
     var mediaToolsOCRLanguage: String = "en-US"
+    var ocrScreenshotMonitorEnabled: Bool = false
+    var ocrScreenshotCopyTextAutomatically: Bool = false
     var mediaToolsOCRShortcutEnabled: Bool = false
     var mediaToolsOCRShortcut: KeyboardShortcut = KeyboardShortcut(key: "T", modifiers: [.control, .shift])
 

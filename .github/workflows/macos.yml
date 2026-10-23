@@ -22,6 +22,16 @@ jobs:
           xcodebuild -version
           sw_vers
           java -version
+      - name: Cache pinned Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/DerivedData/SourcePackages
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Package.resolved') }}
+      - name: Clipboard, DMG and native media tests
+        run: |
+          ./scripts/test-clipboard-tools.sh
+          ./scripts/test-dmg-installer.sh
+          ./scripts/test-media-tools.sh
       - name: Foundation security and FOSS access tests
         run: ./scripts/test-foundation.sh
       - name: Dock preset and quit protection tests

@@ -94,6 +94,8 @@ extension SettingsField {
         SettingsField(\.mediaToolsMaxImageDimension),
         SettingsField(\.mediaToolsShowShelfActions),
         SettingsField(\.mediaToolsOCRLanguage),
+        SettingsField(\.ocrScreenshotMonitorEnabled),
+        SettingsField(\.ocrScreenshotCopyTextAutomatically),
         SettingsField(\.mediaToolsOCRShortcutEnabled),
         SettingsField(\.mediaToolsOCRShortcut),
         SettingsField(\.systemEnhanceAutoQuitEnabled),

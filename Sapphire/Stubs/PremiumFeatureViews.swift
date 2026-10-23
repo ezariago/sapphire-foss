@@ -42,10 +42,10 @@ struct KeyboardShortcutsSettingsView: View { var body: some View { PremiumUnavai
 struct EmojiSettingsView: View { var body: some View { PremiumUnavailableView(title: "Emoji") } }
 struct MouseSettingsView: View { var body: some View { PremiumUnavailableView(title: "Mouse") } }
 struct MonitoringSettingsView: View { var body: some View { PremiumUnavailableView(title: "Monitoring") } }
-struct ArchivesAndDMGInstallerSettingsView: View { var body: some View { PremiumUnavailableView(title: "Archives") } }
 
 
-struct MediaOptimizerSettingsView: View { var body: some View { PremiumUnavailableView(title: "Media Optimizer") } }
+
+
 
 struct StorageWorkspaceView: View {
     @ObservedObject var model: StorageViewModel

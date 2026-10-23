@@ -123,10 +123,18 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   their settings and shortcut configuration UI.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
+  These now have public implementations and policy tests; [native interaction
+  verification remains open](docs/clipboard-tools.md).
 - [ ] Implement media optimization and OCR, screenshot text monitoring and Circle
-  to Search. File conversion already has public source and is a separate feature.
+  to Search. Native image/PDF/audio/video compression, local OCR and opt-in
+  screenshot text monitoring are added; [test coverage and remaining checks](docs/media-tools.md)
+  distinguish fixtures from live screen/video verification. Circle to Search and
+  automatic clipboard optimization remain open. File conversion is separate.
 - [ ] Implement the DMG installer and its default-handler integration; complete
-  the archive settings UI around the existing archive extractor.
+  the archive settings UI around the existing archive extractor. Both now have
+  public code, including staged signed-app installation and a passing real-DMG
+  fixture; [default-handler/permission and failure recovery checks](docs/dmg-installer.md)
+  remain open.
 - [ ] Complete storage workspace/detail/widget UI and monitoring settings,
   adapter-power readings and menu-bar profile automation. Storage scanning and
   system statistics already have public implementations.
