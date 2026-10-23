@@ -88,3 +88,28 @@ and remain pending; no personal apps or phone interactions were tested.
 The full local app build and signature checks passed; log:
 `build/app-lock-panic-build.log`. The Android checkout remains clean and the
 phone still reports Dozing with stay-on disabled.
+
+## Dock cycling checkpoint
+
+Continuing the existing window-controls implementation: Dock cycle now chooses
+the next window after the focused one and preserves a stable ring when AX puts
+the newly focused window first. Closed windows leave the ring and new windows
+join it. AX element identities replace index/title-based picker IDs. Thumbnail
+association declines ambiguous title/geometry matches. Delayed Dock actions
+recheck current app focus, feature enablement, app exclusions and chosen action;
+unknown action strings no longer fall through to minimizing every window.
+
+The new isolated `test-window-cycling.sh` checks cycle state and thumbnail record
+matching and is wired into CI. Real native Dock/AX interactions remain blocked by
+the locked session and human permission checks, so the README item stays open.
+App Lock camera authentication still needs trustworthy identity-model/source
+provenance; process-launch prevention cannot be claimed from session shields.
+Those blockers are not bypassed by adding another visible setting.
+
+Hosted CI for `01371e2` passed all configured tests and the full app build, and
+uploaded development artifacts. The intermediate `241739b` run was superseded
+by that push and cancelled by the configured concurrency rule.
+
+The cycle/thumbnail policy tests and full local build/signature checks passed
+after the final changes (`build/window-cycling-build.log`). The phone remains
+Dozing with stay-on disabled; the Android checkout is clean.

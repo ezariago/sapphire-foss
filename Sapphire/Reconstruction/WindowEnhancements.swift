@@ -16,30 +16,61 @@ struct SapphireWindow: Identifiable {
 @MainActor
 final class SystemEnhanceWindowRegistry {
     static let shared = SystemEnhanceWindowRegistry()
+    private var identities: [pid_t: [(AXUIElement, String)]] = [:]
     private init() {}
     func windows(for application: NSRunningApplication? = nil) -> [SapphireWindow] {
         guard AXIsProcessTrusted() else { return [] }
         let records = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let activePID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let apps = application.map { [$0] } ?? NSWorkspace.shared.runningApplications.sorted { $0.processIdentifier == activePID && $1.processIdentifier != activePID }
+        let runningPIDs = Set(NSWorkspace.shared.runningApplications.map(\.processIdentifier))
+        identities = identities.filter { runningPIDs.contains($0.key) }
         return apps.filter { $0.activationPolicy == .regular && !$0.isTerminated && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }.flatMap { app -> [SapphireWindow] in
             let root = AXUIElementCreateApplication(app.processIdentifier)
             AXUIElementSetMessagingTimeout(root, 0.15)
             let elements: [AXUIElement] = Self.attribute(root, kAXWindowsAttribute) ?? []
-            return elements.enumerated().compactMap { index, element in
+            let previous = identities[app.processIdentifier] ?? []
+            let current = elements.map { element in
+                (element, previous.first(where: { CFEqual($0.0, element) })?.1 ?? UUID().uuidString)
+            }
+            identities[app.processIdentifier] = current
+            let candidates = records.compactMap { record -> WindowPreviewCandidate? in
+                guard (record[kCGWindowOwnerPID as String] as? Int32) == app.processIdentifier,
+                      (record[kCGWindowLayer as String] as? Int) == 0,
+                      let id = (record[kCGWindowNumber as String] as? NSNumber)?.uint32Value else { return nil }
+                let bounds = (record[kCGWindowBounds as String] as? [String: Any]).flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) }
+                return WindowPreviewCandidate(id: id, title: record[kCGWindowName as String] as? String, bounds: bounds)
+            }
+            return current.compactMap { element, identity in
+                AXUIElementSetMessagingTimeout(element, 0.15)
                 let role: String = Self.attribute(element, kAXRoleAttribute) ?? ""
                 guard role == kAXWindowRole else { return nil }
                 let title: String = Self.attribute(element, kAXTitleAttribute) ?? app.localizedName ?? "Window"
-                let record = records.first { ($0[kCGWindowOwnerPID as String] as? Int32) == app.processIdentifier && ($0[kCGWindowName as String] as? String) == title && ($0[kCGWindowLayer as String] as? Int) == 0 }
-                let number = (record?[kCGWindowNumber as String] as? NSNumber)?.uint32Value
+                let number = WindowPreviewMatcher.match(title: title, bounds: Self.bounds(element), candidates: candidates)
+                let record = number.flatMap { number in records.first { ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value == number } }
                 if !SettingsModel.shared.current.systemEnhanceSwitcherIncludeOtherSpaces,
                    let visible = record?[kCGWindowIsOnscreen as String] as? Bool, !visible {
                     let minimized: Bool = Self.attribute(element, kAXMinimizedAttribute) ?? false
                     if !minimized { return nil }
                 }
-                return SapphireWindow(id: "\(app.processIdentifier)-\(number.map(String.init) ?? String(index))", app: app, element: element, title: title, windowID: number)
+                return SapphireWindow(id: "\(app.processIdentifier)-\(identity)", app: app, element: element, title: title, windowID: number)
             }
         }
+    }
+    private static func bounds(_ element: AXUIElement) -> CGRect? {
+        guard let position: AXValue = attribute(element, kAXPositionAttribute),
+              let size: AXValue = attribute(element, kAXSizeAttribute),
+              AXValueGetType(position) == .cgPoint, AXValueGetType(size) == .cgSize else { return nil }
+        var point = CGPoint.zero
+        var dimensions = CGSize.zero
+        guard AXValueGetValue(position, .cgPoint, &point), AXValueGetValue(size, .cgSize, &dimensions) else { return nil }
+        return CGRect(origin: point, size: dimensions)
+    }
+    func focusedWindowID(for app: NSRunningApplication, in windows: [SapphireWindow]) -> String? {
+        let root = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(root, 0.15)
+        guard let focused: AXUIElement = Self.attribute(root, kAXFocusedWindowAttribute) else { return nil }
+        return windows.first { CFEqual($0.element, focused) }?.id
     }
     static func attribute<T>(_ element: AXUIElement, _ name: String) -> T? {
         var value: CFTypeRef?
@@ -313,6 +344,7 @@ enum DockElementUnderPointer {
 final class SystemEnhanceDockClicks {
     static let shared = SystemEnhanceDockClicks()
     private var monitor: Any?
+    private var cycles: [pid_t: WindowCyclePolicy] = [:]
     private init() {}
     func start() {
         guard monitor == nil else { return }
@@ -324,18 +356,27 @@ final class SystemEnhanceDockClicks {
                       let app = DockElementUnderPointer.application(), let id = app.bundleIdentifier,
                       config.isDockClickEnabled(for: id), NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
                 let action = config.systemEnhanceDockClickActionRaw
+                let windows = action == "cycle" ? SystemEnhanceWindowRegistry.shared.windows(for: app) : []
+                let focused = action == "cycle" ? SystemEnhanceWindowRegistry.shared.focusedWindowID(for: app, in: windows) : nil
+                let livePIDs = Set(NSWorkspace.shared.runningApplications.map(\.processIdentifier))
+                self.cycles = self.cycles.filter { livePIDs.contains($0.key) }
+                let selected = action == "cycle" ? self.cycles[app.processIdentifier, default: WindowCyclePolicy()].next(windows: windows.map(\.id), focused: focused) : nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                    guard SettingsModel.shared.current.systemEnhanceDockClicksEnabled, !app.isTerminated else { return }
+                    let current = SettingsModel.shared.current
+                    guard current.systemEnhanceDockClicksEnabled, current.isDockClickEnabled(for: id),
+                          current.systemEnhanceDockClickActionRaw == action, !app.isTerminated,
+                          NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
                     if action == "hide" { app.hide() }
                     else {
                         let windows = SystemEnhanceWindowRegistry.shared.windows(for: app)
-                        if action == "cycle", let first = windows.first { SystemEnhanceWindowRegistry.shared.activate(first) }
-                        else { windows.forEach { SystemEnhanceWindowRegistry.shared.minimize($0) } }
+                        if action == "cycle" {
+                            if let window = windows.first(where: { $0.id == selected }) { SystemEnhanceWindowRegistry.shared.activate(window) }
+                        } else if action == "minimize" { windows.forEach { SystemEnhanceWindowRegistry.shared.minimize($0) } }
                     }
                 }
             }
         }
     }
-    func stopMonitoring() { if let monitor { NSEvent.removeMonitor(monitor) }; monitor = nil }
+    func stopMonitoring() { if let monitor { NSEvent.removeMonitor(monitor) }; monitor = nil; cycles.removeAll() }
 }
 #endif

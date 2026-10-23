@@ -34,10 +34,11 @@ jobs:
           ./scripts/test-media-tools.sh
       - name: Foundation security and FOSS access tests
         run: ./scripts/test-foundation.sh
-      - name: Dock preset and quit protection tests
+      - name: Dock/window policies and quit protection tests
         run: |
           ./scripts/test-dock-layouts.sh
           ./scripts/test-quit-protection.sh
+          ./scripts/test-window-cycling.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh
       - name: Phone protocol and crypto tests
