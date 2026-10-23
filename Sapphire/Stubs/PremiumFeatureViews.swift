@@ -40,7 +40,7 @@ private struct PremiumUnavailableView: View {
 
 struct KeyboardShortcutsSettingsView: View { var body: some View { PremiumUnavailableView(title: "Keyboard Shortcuts") } }
 struct EmojiSettingsView: View { var body: some View { PremiumUnavailableView(title: "Emoji") } }
-struct MouseSettingsView: View { var body: some View { PremiumUnavailableView(title: "Mouse") } }
+
 struct MonitoringSettingsView: View { var body: some View { PremiumUnavailableView(title: "Monitoring") } }
 
 

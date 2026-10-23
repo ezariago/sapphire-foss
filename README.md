@@ -122,7 +122,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   records remaining UI variants and device verification.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
   keyboard debounce, Super Key, emoji suggestions and text snippets; complete
-  their settings and shortcut configuration UI.
+  their settings and shortcut configuration UI. Keyboard debounce now has a public
+  event-filter implementation, per-key overrides and isolated policy tests;
+  [native keyboard verification remains open](docs/keyboard-debounce.md).
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
   These now have public implementations and policy tests; [native interaction

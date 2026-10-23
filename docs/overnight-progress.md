@@ -193,3 +193,24 @@ The auto-quit policy fixtures and final full local app build/signature checks
 passed (`build/auto-quit-observation-build.log`). No real app termination was
 tested. The Android checkout is clean and the phone remains Dozing with stay-on
 disabled.
+
+## Keyboard debounce and fixture reliability checkpoint
+
+Replaced the keyboard-debounce manager and Mouse settings placeholders with a
+real opt-in event filter, global timing and per-key override UI. Isolated policy
+fixtures cover chatter pairs/bursts, native-repeat handling, duplicate downs,
+modifier changes, independent keys, zero overrides and resets. Actual hardware,
+input-method and shortcut interactions remain pending; no input was injected.
+Other mouse/snippet/emoji managers remain placeholders.
+
+Hosted `5fc9be7` succeeded. `a4fe176` failed before its new auto-quit tests ran:
+hdiutil temporarily refused attaching the generated DMG fixture. The harness now
+retries only that classified attach error, at most three times, with cleanup
+restricted to the exact fixture image's devices. It never retries arbitrary
+assertion/install failures. Product mount behavior remains unchanged. A fresh
+hosted run is still required to verify CI recovery.
+
+The keyboard policy fixtures, fresh real-DMG fixture run and final full local
+app build/signature verification passed (`build/keyboard-debounce-build.log`,
+`build/dmg-fixture-retry-test.log`). The local DMG run did not reproduce the
+transient attach error. No physical keyboard or phone input was performed.

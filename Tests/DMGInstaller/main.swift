@@ -2,7 +2,12 @@ import Foundation
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let image = root.appendingPathComponent("Fixture.dmg")
 let destination = root.appendingPathComponent("Installed")
-let mounted = try DiskImageInstaller.mount(image)
+let mounted: MountedInstallImage
+ do { mounted = try DiskImageInstaller.mount(image) }
+ catch DiskImageInstallError.commandFailed(let message) where message.localizedCaseInsensitiveContains("Resource temporarily unavailable") {
+    fputs("Transient fixture mount failure: \(message)\n", stderr)
+    exit(75)
+ }
 assert(mounted.applications.count == 1)
 assert(mounted.applications[0].lastPathComponent == "Fixture.app")
 let result = try DiskImageInstaller.install(mounted.applications[0], to: destination, quarantineSource: image)

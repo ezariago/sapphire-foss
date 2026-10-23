@@ -59,12 +59,6 @@ final class ExtraClickFilterManager {
     func shutdown() {}
 }
 
-final class KeyboardDebounceManager {
-    static let shared = KeyboardDebounceManager()
-    private init() {}
-    func start() {}
-    func stopMonitoring() {}
-}
 
 final class SuperKeyManager {
     static let shared = SuperKeyManager()

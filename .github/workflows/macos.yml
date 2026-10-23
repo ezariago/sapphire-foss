@@ -40,6 +40,7 @@ jobs:
           ./scripts/test-quit-protection.sh
           ./scripts/test-window-cycling.sh
           ./scripts/test-auto-quit.sh
+          ./scripts/test-keyboard-bounce.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh
       - name: Phone protocol and crypto tests

@@ -31,3 +31,11 @@ rejection, replacement backup, tampered/symlink-source rejection and detach. Tes
 install only into a temporary directory, never /Applications. Real default-handler
 permission prompts, Gatekeeper launch behavior, disk-full/permissions failure,
 multi-volume images and manual-mount offering remain separate device checks.
+
+Hosted run `a4fe176` failed when macOS temporarily refused attaching the generated
+fixture image with “Resource temporarily unavailable.” The fixture harness now
+classifies only that attach error for at most three attempts, detaching only
+devices belonging to its exact temporary fixture image between attempts and at
+exit. Other install/assertion failures are not retried. This is test-harness
+recovery; the application still reports mount failures to the user normally. A
+passing normal local fixture run does not prove a transient retry was exercised.
