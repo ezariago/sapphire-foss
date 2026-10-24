@@ -595,3 +595,20 @@ Native Services discovery/enabling, menu delivery and third-party editor style/
 replacement remain unverified. No user selection, Services registry, global
 clipboard or phone setting was changed by these fixtures. Details:
 [Selection Services](selection-services.md).
+
+Implemented display scoping for Sapphire Dock previews and custom click actions
+using the existing persisted display identities. Missing/ambiguous selections
+fail closed. Relevant settings/topology/suspension changes invalidate queued
+interaction generations and dismiss previews. Picker geometry now fits smaller
+usable display areas. Native Dock placement, window switcher and preset
+application are intentionally independent; the UI names that scope explicitly.
+
+All 27 configured regression scripts passed (`build/dock-display-full-regression.log`),
+then the expanded scope script also passed its production native-adapter check
+using fake settings and real read-only display/session adapters. Policy fixtures
+cover identity ambiguity, disconnect/reconnect, settings/suspension generations,
+invalid geometry and small-screen placement. No input monitor, native Dock action,
+real preference write, physical sleep or lid-close test ran. Full app/signature/ZIP
+verification passed (`build/dock-display-build.log`). Real hot-plug, pointer/AX,
+permission and multi-display visual checks remain open. See
+[display scoping](dock-display-scope.md).

@@ -535,7 +535,7 @@ extension SettingsIndex {
         .init(key: "systemEnhanceDockClickActionRaw", title: nil, detail: nil, section: nil, range: nil, options: nil),
         .init(key: "systemEnhanceDockClicksAllAppsEnabled", title: nil, detail: nil, section: .dockLayouts, range: nil, options: nil),
         .init(key: "systemEnhanceDockClicksEnabled", title: "Enable Dock Clicks", detail: "Click an enabled app's Dock icon to perform an action on its windows.", section: .dockLayouts, range: nil, options: nil),
-        .init(key: "systemEnhanceDockLocked", title: "Lock Dock to Display", detail: "Keep Dock enhancements attached to one monitor in multi-display setups.", section: .dockLayouts, range: nil, options: nil),
+        .init(key: "systemEnhanceDockLocked", title: "Limit Dock enhancements to one display", detail: "Limit Sapphire’s previews and custom Dock clicks to a selected display; macOS controls native Dock placement.", section: .dockLayouts, range: nil, options: nil),
         .init(key: "systemEnhanceDockPreviewsEnabled", title: "Enable Dock Previews", detail: "Preview an app's open windows when hovering over its Dock icon.", section: .dockLayouts, range: nil, options: nil),
         .init(key: "systemEnhanceEnhancedPreviewsEnabled", title: "Enhanced Previews", detail: "Show larger window thumbnails.", section: .dockLayouts, range: nil, options: nil),
         .init(key: "systemEnhanceGreenMaximizeEnabled", title: "Maximize in Current Space", detail: "The green traffic-light button fills the screen without creating a new Space; clicking it again restores the window.", section: .systemEnhance, range: nil, options: nil),

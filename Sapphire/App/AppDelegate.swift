@@ -710,6 +710,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         #if !SAPPHIRE_FULL_BUILD
         MediaOptimizerManager.shared.stop()
         SmartInboxMonitor.shared.stop()
+        DockDisplayScope.shared.stop()
         #endif
         finderCutPasteManager.removeTap()
         snippetManager.removeHandler()

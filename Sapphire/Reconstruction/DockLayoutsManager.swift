@@ -50,7 +50,7 @@ final class DockLayoutsManager: ObservableObject {
         }
         SettingsModel.shared.settings.dockLayoutsPresets[index].shortcut = shortcut
     }
-    func startDockBehaviorSync() {}
+    func startDockBehaviorSync() { DockDisplayScope.shared.start() }
     func captureCurrent() {
         do {
             let layout = try DockLayoutPreferences().capture(name: "Dock \(SettingsModel.shared.current.dockLayoutsPresets.count + 1)")
@@ -101,6 +101,7 @@ final class DockLayoutsManager: ObservableObject {
 struct DockLayoutsSettingsView: View {
     @ObservedObject private var settings = SettingsModel.shared
     @ObservedObject private var manager = DockLayoutsManager.shared
+    @ObservedObject private var scope = DockDisplayScope.shared
     var body: some View {
         Form {
             Section("Dock presets") {
@@ -117,6 +118,23 @@ struct DockLayoutsSettingsView: View {
                     }
                 }
                 if let status = manager.status { Text(status).textSelection(.enabled) }
+            }
+            Section("Display for Sapphire Dock enhancements") {
+                Toggle("Limit Dock enhancements to one display", isOn: $settings.settings.systemEnhanceDockLocked)
+                if settings.settings.systemEnhanceDockLocked {
+                    Picker("Display", selection: Binding(get: { settings.settings.systemEnhanceLockedDisplayID ?? "" }, set: { settings.settings.systemEnhanceLockedDisplayID = $0.isEmpty ? nil : $0 })) {
+                        Text("Choose a display…").tag("")
+                        if let saved = settings.settings.systemEnhanceLockedDisplayID, !saved.isEmpty,
+                           !scope.selectableDisplays.contains(where: { $0.key == saved }) {
+                            Text("Saved display unavailable or needs reselection").tag(saved)
+                        }
+                        ForEach(scope.selectableDisplays) { display in Text(display.name + " · " + display.id).tag(display.key) }
+                    }
+                }
+                Text(scope.status).foregroundStyle(.secondary)
+                Text("Limits Sapphire’s hover/click previews and custom Dock click actions. macOS still controls where the native Dock appears. A missing or ambiguous display disables these enhancements; reconnect or select a different display. The window switcher and Dock presets are independent.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Refresh displays") { scope.refresh() }
             }
             Section("Window previews") {
                 Toggle("Enable Dock window previews", isOn: $settings.settings.systemEnhanceDockPreviewsEnabled)
@@ -166,6 +184,7 @@ struct DockLayoutsSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .onAppear { scope.start() }
     }
 }
 #endif

@@ -122,8 +122,10 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   presets, AX window selection/previews, click actions, auto-quit, quit protection
   and green-button maximize are added; [implementation/test status](docs/window-controls.md)
   records remaining UI variants and device verification. [Selection Services](docs/selection-services.md)
-  now provide opt-in text cleanup and URL tracking removal; native menu delivery,
-  hinge animation and display locking remain open.
+  now provide opt-in text cleanup and URL tracking removal; native menu delivery
+  and hinge animation remain open. [Display scoping](docs/dock-display-scope.md)
+  now limits Sapphire previews/clicks to a selected monitor; native hot-plug/input
+  verification and native Dock placement locking remain open.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
   keyboard debounce, Super Key, emoji suggestions and text snippets; complete
   their settings and shortcut configuration UI. Keyboard debounce now has a public

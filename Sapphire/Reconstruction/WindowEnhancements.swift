@@ -232,7 +232,9 @@ private final class WindowPicker {
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.contentView = NSHostingView(rootView: WindowPickerView(state: state, title: title, layout: compact && windows.count > 6 ? .list : layout, enhanced: enhanced))
         if let point, let frame = NSScreen.screens.first(where: { $0.frame.contains(point) })?.visibleFrame {
-            panel.setFrameOrigin(NSPoint(x: min(max(frame.minX, point.x - 350), frame.maxX - 700), y: min(max(frame.minY, point.y + 20), frame.maxY - 430)))
+            if let placement = DockDisplayScopeState.panelFrame(size: panel.frame.size, near: point, visibleFrame: frame) {
+                panel.setFrame(placement, display: false)
+            }
         } else { panel.center() }
         self.panel = panel
         panel.makeKeyAndOrderFront(nil)
@@ -353,12 +355,17 @@ final class SystemEnhanceDockPreviewController {
     private let picker = WindowPicker()
     private var timer: Timer?
     private var clickMonitor: Any?
+    private var scopeSubscription: AnyCancellable?
     private var hovered: pid_t?
     private var hoverStarted = Date.distantPast
     private var lastDockHover = Date.distantPast
     private init() {}
     func start() {
         guard timer == nil else { return }
+        DockDisplayScope.shared.start()
+        scopeSubscription = DockDisplayScope.shared.$revision.sink { [weak self] _ in
+            self?.picker.dismiss(); self?.hovered = nil; self?.hoverStarted = .distantPast; self?.lastDockHover = .distantPast
+        }
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.otherMouseDown, .leftMouseDown]) { [weak self] event in
             MainActor.assumeIsolated { self?.handleClick(event) }
         }
@@ -371,19 +378,27 @@ final class SystemEnhanceDockPreviewController {
         let matches = config.systemEnhancePreviewTriggerRaw == "middleClick" && event.type == .otherMouseDown && event.buttonNumber == 2
             || config.systemEnhancePreviewTriggerRaw == "modifierClick" && event.type == .leftMouseDown && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .option
         guard matches, config.systemEnhanceDockPreviewsEnabled, AXIsProcessTrusted(),
+              DockDisplayScope.shared.ticket(at: NSEvent.mouseLocation) != nil,
               let app = DockElementUnderPointer.application() else { return }
         hovered = app.processIdentifier
         lastDockHover = .now
         show(app, config: config)
     }
     private func show(_ app: NSRunningApplication, config: Settings) {
-        picker.show(windows: SystemEnhanceWindowRegistry.shared.windows(for: app), title: app.localizedName ?? "Windows", near: NSEvent.mouseLocation,
+        let point = NSEvent.mouseLocation
+        guard SettingsModel.shared.current.systemEnhanceDockPreviewsEnabled,
+              DockScopeConfiguration(config) == DockScopeConfiguration(SettingsModel.shared.current),
+              let ticket = DockDisplayScope.shared.ticket(at: point) else { return }
+        let windows = SystemEnhanceWindowRegistry.shared.windows(for: app)
+        guard DockDisplayScope.shared.accepts(ticket) else { return }
+        picker.show(windows: windows, title: app.localizedName ?? "Windows", near: point,
                     layout: config.systemEnhancePreviewLayout, enhanced: config.systemEnhanceEnhancedPreviewsEnabled,
                     compact: config.systemEnhanceCompactPreviewEnabled)
     }
     private func tick() {
         let config = SettingsModel.shared.current
-        guard config.systemEnhanceDockPreviewsEnabled, AXIsProcessTrusted() else { picker.dismiss(); return }
+        guard config.systemEnhanceDockPreviewsEnabled, AXIsProcessTrusted(),
+              DockDisplayScope.shared.ticket(at: NSEvent.mouseLocation) != nil else { picker.dismiss(); hovered = nil; return }
         // Keep a visible panel usable while the pointer moves from the Dock to it.
         if picker.isVisible && NSApp.windows.contains(where: { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) && $0.level == .floating }) { return }
         guard let app = DockElementUnderPointer.application() else {
@@ -404,6 +419,7 @@ final class SystemEnhanceDockPreviewController {
     func dismiss() {
         timer?.invalidate(); timer = nil
         if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }; clickMonitor = nil
+        scopeSubscription = nil
         picker.dismiss(); hovered = nil
     }
 }
@@ -438,11 +454,13 @@ final class SystemEnhanceDockClicks {
     private init() {}
     func start() {
         guard monitor == nil else { return }
+        DockDisplayScope.shared.start()
         // Observe mouse-down before the Dock activates a different application.
         monitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
             MainActor.assumeIsolated {
                 let config = SettingsModel.shared.current
                 guard config.systemEnhanceDockClicksEnabled,
+                      let scopeTicket = DockDisplayScope.shared.ticket(at: NSEvent.mouseLocation),
                       !(config.systemEnhanceDockPreviewsEnabled && config.systemEnhancePreviewTrigger == .modifierClick && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .option),
                       let app = DockElementUnderPointer.application(), let id = app.bundleIdentifier,
                       config.isDockClickEnabled(for: id), NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
@@ -454,7 +472,8 @@ final class SystemEnhanceDockClicks {
                 let selected = action == "cycle" ? self.cycles[app.processIdentifier, default: WindowCyclePolicy()].next(windows: windows.map(\.id), focused: focused) : nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                     let current = SettingsModel.shared.current
-                    guard current.systemEnhanceDockClicksEnabled, current.isDockClickEnabled(for: id),
+                    guard DockDisplayScope.shared.accepts(scopeTicket),
+                          current.systemEnhanceDockClicksEnabled, current.isDockClickEnabled(for: id),
                           current.systemEnhanceDockClickActionRaw == action, !app.isTerminated,
                           NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier else { return }
                     if action == "hide" { app.hide() }
