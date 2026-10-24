@@ -102,7 +102,7 @@ evidence, native checks and remaining blockers.
   hosted build/test runs have passed and uploaded development artifacts. A public
   signed/notarized release and update distribution workflow remain pending. See
   [recent implementation and CI checkpoint notes](docs/overnight-progress.md) for
-  current verification limits, including the repaired hosted storage compiler timeouts and pending full-build status.
+  current verification limits, including the repaired hosted storage compiler timeouts and a passing full hosted build.
 
 Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 [FOSS feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),
@@ -202,6 +202,14 @@ The [older parity gap map](docs/parity/vorssaint-gap-map.md) is historical conte
 its individual findings need rechecking against the current source.
 
 ### Android / Continuity feature parity
+
+- [ ] Complete automatic clipboard and copied-link verification. Public implementations
+  now add foreground Android sending, marked automatic Mac delivery, an expiring
+  Android link notification and compact Mac notch Open/Dismiss prompt. An optional
+  signature-protected Shizuku helper supplies background clipboard code while keeping
+  the current keyboard. [Setup and evidence](docs/clipboard-link-handoff.md) record
+  passing policy/build checks and a real Android notification-expiry check; background
+  clipboard capture is blocked on phone unlock, and notch/open interaction is unverified.
 
 - [x] Implement opt-in phone media state/playback commands and Mac phone-media
   presentation, verified with a silent Android MediaSession fixture. Third-party

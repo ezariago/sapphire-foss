@@ -750,3 +750,19 @@ generated-image Vision/private-temp cleanup tests passed, as did the full local
 Mac compile. Visual/image search and actual picker/notch/browser checks remain
 open. User steered ongoing work toward automatic clipboard sync and copied-link
 prompts; those are the next priority.
+
+Hosted repair run 40107077304 passed all configured checks, full Mac build and
+artifact upload. Automatic clipboard/copy-link work now has public code: Android
+foreground sends, optional Shizuku background broker, marked Mac clipboard
+delivery, expiring Android notifications and a five-second compact notch prompt.
+Policy, isolated pasteboard and full builds pass; native background probe was
+blocked before setup by phone lock. Pending fixture activities were cleared and
+phone returned to sleep. User unlock/setup choice is pending; native success is
+not claimed. README and docs/clipboard-link-handoff.md record these limits.
+
+Final copied-link checkpoint: latest full local Mac build/signature/ZIP completed
+successfully; Companion/Helper builds and 26 JVM cases pass. Production Android
+notification-only fixture verified private review notification and expiry by six
+seconds; no clipboard access/browser opening. Latest APKs installed in place.
+Background capture still awaits human unlock, and helper sending remains opt-in.
+The phone was verified Dozing after tests; no persistent wake/alarm setting changed.

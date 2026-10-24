@@ -68,7 +68,7 @@ Implemented for device testing:
 - Store this replacement's pairing key in macOS Keychain under its own service name; the official app's pairing store is untouched.
 - Reconnect and establish authenticated, replay-protected BLE sessions.
 - Read phone battery/status, receive phone media state and send playback commands.
-- Send up to 12 KB of clipboard text using an explicit button; received text is copied to the Mac only when requested.
+- Send text below 12 KB explicitly or automatically while Companion has focus; the Mac now supports automatic marked clipboard delivery. Optional Shizuku background sending and five-second copied-link prompts have public implementations; native background verification is pending phone unlock. See [current setup/evidence](docs/clipboard-link-handoff.md).
 - Mirror phone notifications with per-app muting, supported actions and replies.
 - Control the phone's internet hotspot through its authorized helper.
 - Share web links in either direction, with explicit opening on the receiving device.
@@ -561,3 +561,21 @@ debug-only fixture guards against existing transfers and restores the Files
 preference; release manifests exclude it. No actual document provider, personal
 file, message or call was used. Normal Mac startup and phone sleep were restored.
 Actual Save/File Shelf/OEM and maximum-size throughput checks remain pending.
+
+### Automatic Android clipboard and copied links (2026-10-24)
+
+Companion 0.6.0 / Helper 0.2.0 add opt-in focus-based automatic phone sending,
+a signature-protected Shizuku shell clipboard broker, automatic marked Mac
+clipboard writes and five-second copied-link prompts in both directions. The
+normal app/helper APKs were updated in place without clearing app data; matching
+certificates were checked. All 26 Android JVM cases, both apps' debug/release
+builds and debug lint pass. Mac protocol/expiry/private-pasteboard checks and
+full local build pass. Android notification-only fixture confirmed timeout and
+removal, without clipboard access or browser opening.
+
+Actual background clipboard capture remains blocked on human phone unlock;
+unlocked heads-up and Mac notch tap flow remain unverified. Earlier references
+to button-only Android sending/manual Mac copying describe the previous path.
+[Setup and evidence](docs/clipboard-link-handoff.md) distinguish new public code
+from device verification. No claim of seamless background operation follows
+from compilation or a helper ready state.

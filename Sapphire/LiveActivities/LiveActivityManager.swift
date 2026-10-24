@@ -442,6 +442,7 @@ class LiveActivityManager {
             .otp: { self.checkForOTP() },
             .notification: { self.checkForNotification() },
             .continuityNotification: { self.checkForContinuityNotification() },
+            .continuityLink: { self.checkForCopiedPhoneLink() },
             .parcel: { self.checkForParcel() },
             .fileProgress: { self.checkForFileProgress() },
             .eyeBreak: { self.checkForEyeBreak() },
@@ -772,6 +773,7 @@ class LiveActivityManager {
             notificationManager.$latestNotification
                 .removeDuplicates()
                 .mapToVoid(),
+            ReconstructedPhoneLink.shared.$copiedLinkPrompt.removeDuplicates().mapToVoid(),
             ContinuityManager.shared.notificationBridge.$latest
                 .removeDuplicates()
                 .mapToVoid(),
@@ -1064,6 +1066,7 @@ class LiveActivityManager {
         .otp,
         .notification,
         .continuityNotification,
+        .continuityLink,
         .parcel,
         .geminiLive,
         .nearbyShare,
@@ -1480,6 +1483,8 @@ class LiveActivityManager {
                 dismissedNotifications[id] = Date().addingTimeInterval(300)
             }
             clearNotificationState()
+        case .continuityLink:
+            if let prompt = ReconstructedPhoneLink.shared.copiedLinkPrompt { ReconstructedPhoneLink.shared.dismissCopiedLink(id: prompt.id) }
         case .continuityNotification:
             ContinuityManager.shared.notificationBridge.clearLatest()
             clearNotificationState()
@@ -1801,6 +1806,14 @@ class LiveActivityManager {
         let id = "continuity_\(snapshot.severity)_\(snapshot.linkState.rawValue)_\(snapshot.headline)_\(snapshot.phoneBatteryPercent ?? -1)_\(snapshot.phoneCharging)_\(snapshot.phoneSignalLevel)"
         let content = LiveActivityContent.standard(data: .continuity(snapshot: snapshot), id: id)
         return (.continuity, content, 5.0)
+    }
+
+    private func checkForCopiedPhoneLink() -> (ActivityType, LiveActivityContent, TimeInterval?)? {
+        guard settingsModel.current.continuityEnabled, settingsModel.current.continuityHandoff,
+              let prompt = ReconstructedPhoneLink.shared.copiedLinkPrompt,
+              PhoneCopiedLinkPolicy.valid(prompt, now: ProcessInfo.processInfo.systemUptime) else { return nil }
+        return (.continuityLink, .full(view: AnyView(PhoneCopiedLinkPromptView(prompt: prompt)), id: prompt.id),
+                max(0.1, prompt.expiresAt - ProcessInfo.processInfo.systemUptime))
     }
 
     private func checkForContinuityNotification() -> (ActivityType, LiveActivityContent, TimeInterval?)? {

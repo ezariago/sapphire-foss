@@ -110,6 +110,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var receivedText: String?
     @Published private(set) var lastNotification = ""
     @Published private(set) var receivedLink: URL?
+    @Published private(set) var copiedLinkPrompt: PhoneCopiedLinkPrompt?
+    private var copiedLinkTimeout: Task<Void, Never>?
     @Published private(set) var handoffStatus = ""
     @Published private(set) var handoffState = ""
     @Published private(set) var handoffSupported = false
@@ -609,9 +611,37 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
 
     func copyReceivedText() {
         guard let receivedText else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(receivedText, forType: .string)
+        guard PhoneClipboardDelivery.write(receivedText, to: .general) else { return }
         clipboardChanges.skip(through: NSPasteboard.general.changeCount)
+    }
+
+    private func offerCopiedLink(_ text: String) {
+        copiedLinkTimeout?.cancel(); copiedLinkPrompt = nil
+        guard SettingsModel.shared.current.continuityEnabled, SettingsModel.shared.current.continuityHandoff,
+              !isSleeping, let session = CGSessionCopyCurrentDictionary() as? [String: Any],
+              session[kCGSessionOnConsoleKey as String] as? Bool == true,
+              !(session["CGSSessionScreenIsLocked"] as? Bool ?? false),
+              let prompt = PhoneCopiedLinkPolicy.offer(text, now: ProcessInfo.processInfo.systemUptime) else { return }
+        copiedLinkPrompt = prompt
+        copiedLinkTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            self?.dismissCopiedLink(id: prompt.id)
+        }
+    }
+    func dismissCopiedLink(id: UUID) {
+        guard copiedLinkPrompt?.id == id else { return }
+        copiedLinkPrompt = nil; copiedLinkTimeout?.cancel(); copiedLinkTimeout = nil
+    }
+    func openCopiedLink(id: UUID) {
+        guard isSecure, SettingsModel.shared.current.continuityEnabled, SettingsModel.shared.current.continuityHandoff,
+              let prompt = copiedLinkPrompt, prompt.id == id,
+              PhoneCopiedLinkPolicy.valid(prompt, now: ProcessInfo.processInfo.systemUptime), !isSleeping,
+              let session = CGSessionCopyCurrentDictionary() as? [String: Any],
+              session[kCGSessionOnConsoleKey as String] as? Bool == true,
+              !(session["CGSSessionScreenIsLocked"] as? Bool ?? false) else { return }
+        dismissCopiedLink(id: id)
+        NSWorkspace.shared.open(prompt.url)
     }
 
     func requestHotspot() { beginHotspotRequest(probeOnly: false) }
@@ -769,6 +799,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         framing = PhoneGATTFraming(); encryption = nil; macNonce = nil; connectedID = nil
         isSecure = false; isConnecting = false
         handoffTimeout?.cancel(); handoffTimeout = nil; handoffPendingID = nil
+        copiedLinkTimeout?.cancel(); copiedLinkTimeout = nil; copiedLinkPrompt = nil
         receivedLink = nil; receivedHandoffIDs = []; handoffSupported = false
         handoffStatus = ""; handoffState = ""
         phoneDraftTimeout?.cancel(); phoneDraftTimeout = nil; phoneDraftPendingID = nil
@@ -1004,7 +1035,13 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             }
         case "clipboard.update":
             guard encrypted else { throw PhoneWireError.unauthenticated }
-            if p["contentType"]?.string == "text" { receivedText = p["text"]?.string }
+            guard p["contentType"]?.string == "text", let text = p["text"]?.string,
+                  !text.isEmpty, text.utf8.count < 12000, !text.contains("\0") else { break }
+            receivedText = text
+            if SettingsModel.shared.current.continuityEnabled && SettingsModel.shared.current.continuityClipboardSync {
+                if PhoneClipboardDelivery.write(text, to: .general) { clipboardChanges.skip(through: NSPasteboard.general.changeCount) }
+            }
+            offerCopiedLink(text)
         case "hotspot.credentials":
             guard encrypted else { throw PhoneWireError.unauthenticated }
             try acceptHotspotCredentials(p)

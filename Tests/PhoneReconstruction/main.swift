@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import CryptoKit
 
 var checks = 0
@@ -229,3 +230,18 @@ try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: Strin
 try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: "control\u{3}") == nil, "SMS draft rejects control bytes")
 try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: "Tabs\tand\nlines") != nil, "SMS draft accepts tabs and line breaks")
 print("Passed \(checks) phone protocol checks, including independent Java crypto fixtures.")
+
+for (input, expected) in [("Read https://example.com/path?x=1&y=2 please", "https://example.com/path?x=1&y=2"), ("See (https://example.com/wiki/Test_(thing)).", "https://example.com/wiki/Test_(thing)"), ("https://user:pass@example.com then https://safe.example/", "https://safe.example/"), ("No web links: file:///tmp/test", "")] {
+    try expect((PhoneCopiedLinkPolicy.extract(input)?.absoluteString ?? "") == expected, "Copied text extracts a bounded safe link with punctuation handling")
+}
+try expect(PhoneCopiedLinkPolicy.extract(String(repeating: "x", count: 12000) + "https://example.com") == nil, "Oversized copy cannot create a link prompt")
+let linkPrompt = PhoneCopiedLinkPolicy.offer("https://example.com", now: 100)!
+try expect(PhoneCopiedLinkPolicy.valid(linkPrompt, now: 100) && PhoneCopiedLinkPolicy.valid(linkPrompt, now: 104.99), "Prompt lasts five seconds")
+try expect(!PhoneCopiedLinkPolicy.valid(linkPrompt, now: 105) && !PhoneCopiedLinkPolicy.valid(linkPrompt, now: 99) && !PhoneCopiedLinkPolicy.valid(linkPrompt, now: .nan), "Expired, backwards and invalid clock prompts cannot open")
+let remoteBoard = NSPasteboard.withUniqueName()
+defer { remoteBoard.releaseGlobally() }
+try expect(PhoneClipboardDelivery.write("Synthetic phone text", to: remoteBoard), "Phone text delivery writes to an isolated pasteboard")
+try expect(remoteBoard.string(forType: .string) == "Synthetic phone text" && remoteBoard.types?.contains(PhoneClipboardDelivery.marker) == true, "Remote clipboard marker prevents echo")
+let countBeforeInvalid = remoteBoard.changeCount
+try expect(!PhoneClipboardDelivery.write("bad\0copy", to: remoteBoard) && remoteBoard.changeCount == countBeforeInvalid, "Invalid clipboard delivery leaves destination intact")
+print("Passed copied-link extraction/expiry and isolated marked clipboard delivery checks.")

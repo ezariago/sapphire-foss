@@ -33,6 +33,7 @@ enum ActivityType: Int, Equatable, Comparable, CaseIterable {
     case notification = 80
     case continuityNotification = 81
     case otp = 82
+    case continuityLink = 83
     case geminiLive = 85
     case microphone = 86
     case appActivity = 87

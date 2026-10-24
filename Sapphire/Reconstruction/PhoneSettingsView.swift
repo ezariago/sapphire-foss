@@ -67,7 +67,8 @@ struct ContinuitySettingsView: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                             Toggle("Automatically send Mac clipboard text to phone", isOn: $link.automaticClipboard)
-                            Text("Sends new text copies while connected. Password-manager and private clipboard items stay on this Mac. Text must be under 12 KB.")
+                            Toggle("Automatically copy phone text on this Mac", isOn: $settings.settings.continuityClipboardSync)
+                            Text("Syncs new text while connected. Android Companion can send automatically while in front; background sending needs the optional helper. Sensitive/marked copies are skipped. Text must be under 12 KB. Copied web links offer a five-second open prompt when link handoff is enabled.")
                                 .font(.caption).foregroundStyle(.secondary)
                             Divider()
                             Text("Instant hotspot").font(.headline)
@@ -92,6 +93,8 @@ struct ContinuitySettingsView: View {
                 GroupBox("Link handoff") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle("Allow sending links to phone", isOn: $settings.settings.continuityHandoffToPhone)
+                        Toggle("Suggest copied phone links in the notch", isOn: $settings.settings.continuityHandoff)
+                        Text("Offers Open or Dismiss for about five seconds. Links never open automatically.").font(.caption).foregroundStyle(.secondary)
                         TextField("https://example.com", text: $handoffURL)
                             .textFieldStyle(.roundedBorder)
                             .onSubmit { link.sendLinkToPhone(handoffURL) }
