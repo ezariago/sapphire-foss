@@ -55,10 +55,15 @@ def fixture(action, transfer=None):
         uuid.UUID(transfer)
         command += ["--es", "transfer", transfer]
     adb(*command)
-    result = json.loads(adb("shell", "run-as", "dev.sapphire.companion", "cat", "files/file-transfer-fixture-state.json"))
-    if result.get("run") != run:
-        raise RuntimeError("Fixture report belongs to another run")
-    return result.get("state")
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        result = json.loads(adb("shell", "run-as", "dev.sapphire.companion", "cat", "files/file-transfer-fixture-state.json"))
+        if result.get("run") != run:
+            raise RuntimeError("Fixture report belongs to another run")
+        if result.get("action") == action and result.get("state") != "saving":
+            return result.get("state")
+        time.sleep(.1)
+    raise RuntimeError("Timed out waiting for fixture action: " + action)
 
 def wait(label, predicate, seconds=90):
     deadline = time.monotonic() + seconds
@@ -105,6 +110,12 @@ try:
     if fixture("verify") != "verified":
         raise RuntimeError("Phone's independently read staged bytes/hash did not match the fixed fixture")
     print("PASS: phone independently verifies all 4,097 expected synthetic bytes and SHA-256", flush=True)
+    if fixture("save-refused") != "save-refused":
+        raise RuntimeError("Refused provider destination did not preserve the received fixture")
+    print("PASS: native provider refusal reports failure and preserves staged bytes", flush=True)
+    if fixture("save") != "saved":
+        raise RuntimeError("Native provider output bytes/hash or staged-copy retention failed")
+    print("PASS: production ContentResolver save writes all expected bytes and retains staging", flush=True)
     if fixture("discard") != "discarded":
         raise RuntimeError("Phone did not discard the owned fixture")
     print("PASS: phone discards only the exact owned transfer", flush=True)
@@ -126,4 +137,4 @@ finally:
             if args.sleep_after:
                 mode, _ = sleep_phone()
                 print("Phone verified:", mode, flush=True)
-print("Live synthetic file-staging checks passed; no external picker, browser, message or user file used.", flush=True)
+print("Live synthetic file staging and private provider-save checks passed; no external picker, browser, message or user file used.", flush=True)

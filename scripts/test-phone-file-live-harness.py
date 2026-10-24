@@ -29,10 +29,13 @@ if args[:4]==['shell','am','start','-W']:
  elif action=='expect':
   assert extra('transfer')==os.environ['SAPPHIRE_FAKE_EXPECTED'], 'Transfer ID case changed during cleanup'
   state='expected'
- elif action=='verify':state='mismatch'
+ elif action=='verify':state='verified' if os.environ['SAPPHIRE_FAKE_SCENARIO'] in {'save-failure','success'} else 'mismatch'
+ elif action=='save-refused':state='save-refused'
+ elif action=='save':state='mismatch' if os.environ['SAPPHIRE_FAKE_SCENARIO']=='save-failure' else 'saved'
+ elif action=='discard':state='discarded'
  elif action=='restore':state='wrong-run' if os.environ['SAPPHIRE_FAKE_SCENARIO']=='blocked' else ('error' if os.environ['SAPPHIRE_FAKE_SCENARIO']=='restore-failure' else 'restored')
  else:raise AssertionError(action)
- report.write_text(json.dumps({'run':run,'state':state}));print('Complete')
+ report.write_text(json.dumps({'run':run,'state':state,'action':action}));print('Complete')
  if action=='restore':(root/'restored').write_text(state)
  elif action=='expect':(root/'bound').write_text(extra('transfer'))
 elif args[:3]==['shell','run-as','dev.sapphire.companion']:print(report.read_text())
@@ -78,7 +81,7 @@ def run_case(scenario):
                     else:assert action == "file-test-remove"
                 time.sleep(.005)
             output, error = process.communicate(timeout=2)
-            assert process.returncode != 0, (scenario, output, error)
+            assert (process.returncode == 0) == (scenario == "success"), (scenario, output, error)
             assert (temp / "slept").exists(), (scenario, error)
             assert "Phone verified: Dozing" in output, (scenario, output, error)
             if scenario == "wake-during-transfer":assert "Phone woke during staging" in error
@@ -90,5 +93,5 @@ def run_case(scenario):
             if process.poll() is None:process.kill();process.wait()
             shutil.rmtree(directory)
 
-for case in ["blocked", "verification-failure", "restore-failure", "wake-during-transfer"]:run_case(case)
+for case in ["blocked", "verification-failure", "restore-failure", "wake-during-transfer", "save-failure", "success"]:run_case(case)
 print("Live test harness failure cleanup passed with isolated fake transport only.")

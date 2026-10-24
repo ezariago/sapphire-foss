@@ -102,7 +102,7 @@ evidence, native checks and remaining blockers.
   hosted build/test runs have passed and uploaded development artifacts. A public
   signed/notarized release and update distribution workflow remain pending. See
   [recent implementation and CI checkpoint notes](docs/overnight-progress.md) for
-  current verification limits, including the hosted Space Map compiler timeout.
+  current verification limits, including the repaired hosted storage compiler timeouts and pending full-build status.
 
 Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 [FOSS feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),
@@ -221,8 +221,9 @@ its individual findings need rechecking against the current source.
   [One-file Mac-to-phone BLE transfer](docs/phone-file-transfer.md) now stages
   verified files up to 5 MiB for phone-side Save/Discard. Wi-Fi/bulk, reverse
   transfer, browsing and file clipboard remain open. Live encrypted BLE staging and
-  exact 4,097-byte phone verification/discard now pass; actual Save/provider and File
-  Shelf interaction checks remain pending.
+  exact 4,097-byte phone verification/discard now pass. A private debug provider also
+  verifies the production Save path, refusal handling and staging retention on the phone;
+  system document-picker, third-party providers and File Shelf interaction remain pending.
 - [ ] Implement screen mirroring, extended display and phone camera/microphone
   streaming, including photo capture and document scanning.
 - [ ] Implement Android widgets/external live activities, full app-state/browser-tab

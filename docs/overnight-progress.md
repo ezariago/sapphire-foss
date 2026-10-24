@@ -736,3 +736,10 @@ helpers with precomputed display strings. Focused real storage fixtures and
 Tree/multicolor Pie renders passed locally (`build/storage-pie-ci-fix.log` and
 `build/storage-tree-ci-fix.log`). Hosted verification remains separate from local
 success; the new run will be inspected before claiming a green pipeline.
+
+Native phone provider-save checkpoint: production ContentResolver Save passed
+with a private debug destination, exact 4,097-byte/hash verification and retained
+staging. Refused output preserves staging. Six isolated harness scenarios passed;
+Android JVM, debug/release builds and lint passed. README records picker/third-party
+provider/File Shelf gaps. Phone verified Dozing after cleanup; no personal files
+or messages used. Account remaining: 90% primary, 38% weekly.

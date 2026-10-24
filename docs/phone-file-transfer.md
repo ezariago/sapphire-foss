@@ -99,7 +99,7 @@ development fixtures. The Mac and Android full builds/lint, 24 Android JVM cases
 all 29 configured Mac shell scripts and separate fake-harness tests passed.
 Headless diagnostic startup will not open Settings or begin/approve pairing.
 
-File Shelf feedback, actual document-picker/provider saving, real maximum-size
+File Shelf feedback, the system document picker and third-party providers, real maximum-size
 throughput, cache/storage pressure and locked-phone/OEM behavior remain native
 checks. No user file was transferred or modified for
 tests. Wi-Fi/high-throughput bulk transfer, multiple files, phone-to-Mac transfer,
@@ -113,3 +113,23 @@ phone woke; asleep/locked/OEM behaviour remains unverified. The harness checks
 sleep state and the last-wake timestamp rather than treating staging success as
 proof that the display stayed asleep. No persistent wake/notification setting was
 changed to make the probe pass. Evidence: `build/phone-file-background-device.log`.
+
+### Native provider-save checkpoint (24 October 2026)
+
+The expanded live fixture passed the production `PhoneFileTransfers.save` path
+through Android `ContentResolver` and a private debug-only `ContentProvider`.
+An unavailable destination reported failure without removing staging or creating
+output; a valid destination wrote exactly 4,097 synthetic bytes and the expected
+SHA-256, while keeping staging until explicit discard. Only the app's own fixed
+cache output was used. The non-exported provider is run-scoped, rejects arbitrary
+paths/modes and is absent with the activity from the release manifest.
+
+The harness waits for the asynchronous save result and matches both run and action,
+with atomic phone reports. Isolated transport tests now include save failure and
+a full successful path as well as the previous cleanup failures. Android debug/
+release builds, JVM tests and debug lint passed. The installed APK's certificate
+matched before its in-place update; secure pairing resumed. Owned files were
+removed, the original Files preference restored, normal Mac startup restored and
+the phone verified Dozing. Evidence: `build/phone-provider-live-device.log`,
+`build/phone-provider-build.log`, `build/phone-provider-harness.log`. This does not
+verify the system picker UI, third-party providers or asleep-transfer behaviour.
