@@ -45,6 +45,7 @@ jobs:
           ./scripts/test-hover-focus.sh
           ./scripts/test-mouse-scroll.sh
           ./scripts/test-super-key.sh
+          ./scripts/test-shortcut-dispatcher.sh
           ./scripts/test-snippets.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh

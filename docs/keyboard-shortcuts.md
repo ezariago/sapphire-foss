@@ -28,13 +28,19 @@ attended checks. The catalog is not a claim that every upstream shortcut manager
 has been reconstructed.
 
 
-Source review found a remaining shared-dispatcher lifecycle issue: `perform`
-queues captured plane/Snap Zone actions and only rechecks their disabled IDs.
-Deleting or reassigning a target between key capture and main-queue execution
-can therefore leave a stale queued action. External provider lifecycle guards
-also vary: Emoji and Dock have additional validation, while the clipboard
-provider only rechecks feature enablement. Provider iteration order is not a
-stable collision priority. These are remaining implementation work, distinct
-from the catalog's stale-safe configuration writes; they have not been fixed
-or exercised with native input in this checkpoint. Add isolated lifecycle
-fixtures before changing routing, then verify permission/recording transitions.
+The dispatcher now invalidates captured actions synchronously when relevant
+settings change, before the debounced registration rebuild. The generation also
+changes on provider replacement/removal, recording, Accessibility teardown and
+shared event-tap reset. Execution resolves current planes/mappings/providers and
+rechecks permissions, enabled state and binding identity. Disable/re-enable
+cannot revive an older queued action. Unrelated settings preserve valid work.
+External providers now resolve legacy collisions in sorted provider-name order;
+planes and Snap Zones keep their existing precedence. This is a local conflict
+rule, not an audit of other applications' global shortcuts.
+
+`./scripts/test-shortcut-dispatcher.sh` compiles the production dispatcher against
+inert settings/event/action dependencies. It verifies deletion/reassignment,
+rapid disable/re-enable, provider/permission/recording/reset transitions,
+deterministic conflicts, repeated/synthetic key bypass and valid delivery. It
+constructs events in memory without OS hooks, key posting or real window actions.
+Native layout/permission/recording and OS shortcut coexistence still need checks.

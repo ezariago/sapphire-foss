@@ -19,6 +19,9 @@ class KeyboardShortcutManager {
         var dockLayoutsEnabled: Bool
         var dockLayoutsPresets: [DockLayout]
         var disabledShortcutIDs: Set<String>
+        var customSnapLayouts: [SnapLayout]
+        var defaultSnapLayout: SnapLayout
+        var externalBindings: [ExternalBinding] = []
 
         init(_ settings: Settings) {
             planes = settings.planes
@@ -26,11 +29,19 @@ class KeyboardShortcutManager {
             dockLayoutsEnabled = settings.dockLayoutsEnabled
             dockLayoutsPresets = settings.dockLayoutsPresets
             disabledShortcutIDs = settings.disabledShortcutIDs
+            customSnapLayouts = settings.customSnapLayouts
+            defaultSnapLayout = settings.defaultSnapLayout
         }
 
         func isEnabled(_ identifier: String) -> Bool {
             !disabledShortcutIDs.contains(identifier)
         }
+    }
+
+    private struct ExternalBinding: Equatable {
+        let provider: String
+        let identifier: String
+        let shortcut: KeyboardShortcut
     }
 
     struct ExternalShortcut {
@@ -47,15 +58,22 @@ class KeyboardShortcutManager {
     private enum ShortcutAction {
         case plane(Plane)
         case snapZone(SnapZoneShortcut)
-        case external(ExternalShortcut)
+        case external(provider: String, binding: ExternalShortcut)
     }
 
     private var externalProviders: [String: ExternalShortcutProvider] = [:]
+    private var lastObservedRegistration: ShortcutRegistrationSettings?
 
     private struct ShortcutTrigger: Hashable {
         let keyCode: UInt16
         let modifiers: UInt64
     }
+
+    private struct QueuedAction {
+        let action: ShortcutAction
+        let generation: UInt64
+    }
+    private nonisolated(unsafe) var registrationGeneration: UInt64 = 0
 
     private var tapToken: GlobalEventTap.Token?
     private var globalMonitor: Any?
@@ -67,7 +85,7 @@ class KeyboardShortcutManager {
     private nonisolated(unsafe) var registeredShortcuts: [ShortcutTrigger: ShortcutAction] = [:]
     private let cacheLock = NSLock()
     private let triggerLock = NSLock()
-    private nonisolated(unsafe) var lastTriggerAt = Date.distantPast
+    private nonisolated(unsafe) var lastTriggerAt = -Double.infinity
 
     private nonisolated(unsafe) var isAccessibilitySuspended = false
     private var isShortcutRecording = false
@@ -96,13 +114,18 @@ class KeyboardShortcutManager {
             }
         }
 
-        let initialSettings = ShortcutRegistrationSettings(SettingsModel.shared.settings)
-        SettingsModel.shared.changes(of: ShortcutRegistrationSettings.init)
-            .prepend(initialSettings)
-            .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
-            .sink { [weak self] settings in
-                self?.installTap(using: settings)
+        // Observe before scheduling: @Published emits during willSet. Invalidate
+        // old captures synchronously, then rebuild from committed settings later.
+        SettingsModel.shared.$settings
+            .map { [weak self] in self?.registrationSettings($0) }
+            .filter { [weak self] value in
+                guard let self, let value, value != self.lastObservedRegistration else { return false }
+                self.lastObservedRegistration = value
+                return true
             }
+            .handleEvents(receiveOutput: { [weak self] _ in self?.removeTap() })
+            .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in self?.installTap() }
             .store(in: &cancellables)
 
         PremiumGate.accessChanges
@@ -120,8 +143,18 @@ class KeyboardShortcutManager {
         }
     }
 
+    private func registrationSettings(_ settings: Settings) -> ShortcutRegistrationSettings {
+        var result = ShortcutRegistrationSettings(settings)
+        result.externalBindings = externalProviders.keys.sorted().flatMap { name in
+            externalProviders[name]!.shortcuts(settings).map {
+                ExternalBinding(provider: name, identifier: $0.identifier, shortcut: $0.shortcut)
+            }
+        }
+        return result
+    }
+
     private func installTap() {
-        installTap(using: ShortcutRegistrationSettings(SettingsModel.shared.settings))
+        installTap(using: registrationSettings(SettingsModel.shared.settings))
     }
 
     func registerExternalShortcutProvider(_ provider: ExternalShortcutProvider, named name: String) {
@@ -142,12 +175,13 @@ class KeyboardShortcutManager {
             switch action {
             case .plane(let plane): return identifier == ShortcutIdentifier.plane(plane.id)
             case .snapZone(let mapping): return identifier == ShortcutIdentifier.snapZone(layoutID: mapping.layoutID, zoneID: mapping.zoneID)
-            case .external(let external): return identifier == external.identifier
+            case .external(_, let external): return identifier == external.identifier
             }
         }
     }
 
     private func installTap(using settings: ShortcutRegistrationSettings) {
+        lastObservedRegistration = settings
         guard !isAccessibilitySuspended, !isShortcutRecording else { return }
         removeTap()
 
@@ -174,7 +208,9 @@ class KeyboardShortcutManager {
         }
 
         let currentSettings = SettingsModel.shared.settings
-        for provider in externalProviders.values {
+        // Stable priority for imported legacy conflicts; planes/zones retain precedence.
+        for name in externalProviders.keys.sorted() {
+            guard let provider = externalProviders[name] else { continue }
             var unavailable = Set<String>()
             for external in provider.shortcuts(currentSettings) {
                 guard settings.isEnabled(external.identifier) else { continue }
@@ -183,7 +219,7 @@ class KeyboardShortcutManager {
                     continue
                 }
                 if registrations[trigger] == nil {
-                    registrations[trigger] = .external(external)
+                    registrations[trigger] = .external(provider: name, binding: external)
                 } else {
                     unavailable.insert(external.identifier)
                 }
@@ -204,7 +240,8 @@ class KeyboardShortcutManager {
         tapToken = GlobalEventTap.shared.register(
             name: "KeyboardShortcutManager",
             mask: eventsToMonitor,
-            priority: EventTapPriority.shortcut
+            priority: EventTapPriority.shortcut,
+            reset: { [weak self] in self?.invalidateQueuedActions() }
         ) { [weak self] type, event in
             self?.handleEvent(type, event) ?? .pass
         }
@@ -241,12 +278,13 @@ class KeyboardShortcutManager {
         globalMonitor = nil
         localMonitor = nil
         cacheLock.withLock {
+            registrationGeneration &+= 1
             registeredShortcuts.removeAll()
         }
     }
 
     nonisolated private func handleEvent(_ type: CGEventType, _ event: CGEvent) -> EventTapDecision {
-        guard type == .keyDown else { return .pass }
+        guard type == .keyDown, event.getIntegerValueField(.keyboardEventAutorepeat) == 0 else { return .pass }
         guard event.getIntegerValueField(.eventSourceUserData) != SapphireSyntheticEventMarker.plainTextPaste else {
             return .pass
         }
@@ -312,35 +350,48 @@ class KeyboardShortcutManager {
         return result
     }
 
-    nonisolated private func action(for trigger: ShortcutTrigger) -> ShortcutAction? {
+    nonisolated private func invalidateQueuedActions() {
+        cacheLock.withLock { registrationGeneration &+= 1 }
+    }
+
+    nonisolated private func action(for trigger: ShortcutTrigger) -> QueuedAction? {
         cacheLock.withLock {
-            registeredShortcuts[trigger]
+            registeredShortcuts[trigger].map { QueuedAction(action: $0, generation: registrationGeneration) }
         }
     }
 
     nonisolated private func shouldTrigger() -> Bool {
         triggerLock.withLock {
-            let now = Date()
-            guard now.timeIntervalSince(lastTriggerAt) > 0.3 else { return false }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastTriggerAt > 0.3 else { return false }
             lastTriggerAt = now
             return true
         }
     }
 
-    nonisolated private func perform(_ action: ShortcutAction) {
-        DispatchQueue.main.async {
-            switch action {
-            case .plane(let plane):
-                guard SettingsModel.shared.settings.isShortcutEnabled(ShortcutIdentifier.plane(plane.id)) else { return }
-                WindowArrangementManager.shared.activate(plane: plane)
+    nonisolated private func perform(_ queued: QueuedAction) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isAccessibilitySuspended, !self.isShortcutRecording,
+                  self.cacheLock.withLock({ self.registrationGeneration == queued.generation }) else { return }
+            let settings = SettingsModel.shared.settings
+            switch queued.action {
+            case .plane(let captured):
+                guard settings.isShortcutEnabled(ShortcutIdentifier.plane(captured.id)),
+                      let current = settings.planes.first(where: { $0.id == captured.id }),
+                      current == captured else { return }
+                WindowArrangementManager.shared.activate(plane: current)
             case .snapZone(let mapping):
-                guard SettingsModel.shared.settings.isShortcutEnabled(
-                    ShortcutIdentifier.snapZone(layoutID: mapping.layoutID, zoneID: mapping.zoneID)
-                ) else { return }
+                guard PremiumGate.hasAccess(.snapZonesKeyboardShortcuts),
+                      settings.isShortcutEnabled(ShortcutIdentifier.snapZone(layoutID: mapping.layoutID, zoneID: mapping.zoneID)),
+                      settings.snapZoneShortcuts.contains(mapping) else { return }
                 SnappingManager.snap(layoutID: mapping.layoutID, zoneID: mapping.zoneID)
-            case .external(let external):
-                guard SettingsModel.shared.settings.isShortcutEnabled(external.identifier) else { return }
-                MainActor.assumeIsolated { external.perform() }
+            case .external(let name, let captured):
+                guard settings.isShortcutEnabled(captured.identifier),
+                      let provider = self.externalProviders[name],
+                      let current = provider.shortcuts(settings).first(where: {
+                          $0.identifier == captured.identifier && $0.shortcut == captured.shortcut
+                      }) else { return }
+                current.perform()
             }
         }
     }

@@ -430,3 +430,17 @@ Samsung received `KEYCODE_SLEEP` and reported `mWakefulness=Dozing`,
 this verifies current sleep only and cannot guarantee the phone never wakes.
 The overnight automation remains paused. Remaining implementation and native
 checks are explicitly open; the complete README roadmap is not finished.
+
+
+Resumed on the user's direct request after a usage reset and USB reconnection.
+The shared dispatcher now invalidates queued work before debounced settings
+rebuilds and across provider/recording/permission/event-tap transitions. Current
+targets/bindings are resolved again at execution, provider collision priority is
+stable, CG repeat events pass through and throttling uses monotonic uptime.
+Production-dispatcher fixtures passed with inert event/action dependencies,
+including deletion/reassignment, rapid disable/re-enable, provider replacement,
+recording, permission, shared-tap reset and unrelated-setting preservation.
+Dock regression fixtures passed. The final full app build/signature checks
+passed (`build/shortcut-lifecycle-final-build.log`). No real keys/window actions
+were injected. Native routing and OS conflict checks remain open. The overnight
+automation remains paused; this is directly requested daytime work.
