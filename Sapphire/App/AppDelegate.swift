@@ -714,6 +714,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         #endif
         finderCutPasteManager.removeTap()
         snippetManager.removeHandler()
+        #if !SAPPHIRE_FULL_BUILD
+        MouseButtonRemapManager.shared.stop()
+        #endif
         mouseControlManager.shutdown()
         focusFollowsMouseManager.removeMonitors()
         extraClickFilterManager.shutdown()
@@ -915,6 +918,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         _ = mouseControlManager
         #else
         mouseControlManager.start()
+        #if !SAPPHIRE_FULL_BUILD
+        MouseButtonRemapManager.shared.start()
+        #endif
         #endif
         focusFollowsMouseManager.start()
         extraClickFilterManager.start()

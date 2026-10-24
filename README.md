@@ -135,8 +135,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   and [focus follows mouse](docs/focus-follows-mouse.md) also have public code and
   isolated tests; native [keyboard](docs/keyboard-debounce.md) and mouse verification
   remains open. [Discrete mouse-wheel direction and speed](docs/mouse-wheel.md)
-  now also have public code; acceleration, button remapping and smooth/linear
-  scrolling remain unimplemented. [Command-key Hyper mapping](docs/super-key.md)
+  now also have public code. [Middle/side-button menu-command remapping](docs/mouse-buttons.md)
+  now has opt-in configuration and injected tests; native hardware/menu checks,
+  system button actions, acceleration and smooth/linear scrolling remain open. [Command-key Hyper mapping](docs/super-key.md)
   implements the supported Super Key source keys; Caps Lock and native verification
   remain open. [Text snippets](docs/text-snippets.md) now have guarded Accessibility
   replacement and date/time/clipboard placeholders; native editor verification and

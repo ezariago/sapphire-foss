@@ -27,5 +27,6 @@ zero/invalid/extreme values and real unposted CGEvent objects, verifying the
 delta fields, metadata retention and gesture/modifier bypasses. It does not send
 scrolling to a real app. Native wheels, continuous mice, horizontal scroll,
 excluded apps, permission loss/recovery, sleep/wake and third-party app behavior
-remain manual verification. This does not implement pointer acceleration, button
-remapping, smooth/linear scrolling or Super Key.
+remain manual verification. [Opt-in button menu-command remapping](mouse-buttons.md)
+is implemented separately. This wheel path does not implement pointer acceleration,
+smooth/linear scrolling or Super Key.

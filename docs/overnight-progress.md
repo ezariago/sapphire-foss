@@ -634,3 +634,24 @@ then released its client (`build/hinge-hardware-sample.log`). It did not move th
 lid, sleep the Mac, capture the desktop or change power settings. Native capture,
 visual/permission/Spaces/input behaviour and physical lid/sleep checks remain
 open. See [hinge evidence and limits](hinge-animation.md).
+
+Added independent opt-in remapping for middle/side clicks to enabled foreground
+app menu commands, with configuration for standard navigation/edit/window actions,
+keyboard alternates and a reserved mouse modifier. Unsupported saved actions keep
+native input. The path posts no keys and reads no clipboard/selection text.
+Mapped gestures preserve consumed pairs, cancel drag/long-hold actions and reject
+old requests after configuration, focus, session or tap changes. New user input
+cancels pending delivery; one main-queue/AX lookup is outstanding at a time, with
+bounded traversal and final expiry/context checks. Remapped Close Window is skipped
+where Sapphire's keyboard close protection applies.
+
+Production policy, real unposted CGEvent, asynchronous single-flight and native
+manager lifecycle fixtures passed (`build/mouse-button-tests.log`); native manager
+tests use fake settings and inert hooks and invoke no real menus. Click-filter,
+wheel and quit-protection regressions also passed (`build/mouse-button-regression.log`).
+Full app/signature/ZIP checks passed (`build/mouse-button-final-build.log`). No test
+posted input or changed documents/clipboard. Native hardware/driver numbering,
+Accessibility, app menu/keyboard-layout compatibility and physical transitions
+remain pending. Pointer acceleration, system button actions and smooth scrolling
+are still unimplemented. README and [button details](mouse-buttons.md) record the
+supported subset and its limits.

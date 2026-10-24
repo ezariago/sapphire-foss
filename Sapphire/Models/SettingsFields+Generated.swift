@@ -213,6 +213,7 @@ extension SettingsField {
         SettingsField(\.emojiSkinTone),
         SettingsField(\.emojiPickerShortcut),
         SettingsField(\.mouseControlEnabled),
+        SettingsField(\.mouseButtonRemappingEnabled),
         SettingsField(\.mouseInvertScroll),
         SettingsField(\.mouseInvertHorizontalScroll),
         SettingsField(\.mouseScrollSpeed),

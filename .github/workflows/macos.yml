@@ -46,6 +46,7 @@ jobs:
           ./scripts/test-auto-quit.sh
           ./scripts/test-keyboard-bounce.sh
           ./scripts/test-mouse-click-bounce.sh
+          ./scripts/test-mouse-buttons.sh
           ./scripts/test-hover-focus.sh
           ./scripts/test-mouse-scroll.sh
           ./scripts/test-super-key.sh

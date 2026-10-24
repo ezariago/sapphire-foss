@@ -82,6 +82,7 @@ struct MouseSettingsView: View {
                 Text("\(settings.settings.mouseScrollSpeed, specifier: "%.2f")× wheel speed")
                 Text("Requires Accessibility. Applies to discrete wheel events in the foreground app. Trackpad/continuous gestures and scrolling with shortcut modifiers retain native behavior. Integer-only apps have a minimum of one step. No system preferences are changed.").foregroundStyle(.secondary)
             }
+            MouseButtonRemapSettingsSection()
             Section("Keyboard debounce") {
                 Toggle("Filter accidental repeated key presses", isOn: $settings.settings.keyboardDebounceEnabled)
                 Text("For worn keyboards that produce duplicate presses shortly after a release. Requires Accessibility permission. Native held-key repeat is retained. No typed text is recorded.").foregroundStyle(.secondary)
@@ -130,7 +131,7 @@ struct MouseSettingsView: View {
                 Button("Add application…") { chooseExcludedApps() }
             }
             Section("Other mouse features") {
-                Text("Pointer acceleration, button remapping and smooth/linear scroll are not available in this build.").foregroundStyle(.secondary)
+                Text("Pointer acceleration, system mouse-button actions (Mission Control, Launchpad, desktop, app switcher, Spotlight, lock) and smooth/linear scroll are not available in this build.").foregroundStyle(.secondary)
             }
             Section("Super Key") {
                 Toggle("Use a Command key as Hyper (⌃⌥⇧⌘)", isOn: $settings.settings.superKeyEnabled)

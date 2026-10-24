@@ -1409,6 +1409,7 @@ struct Settings: Codable, Equatable {
     var emojiSkinTone: EmojiSkinTone = .none
     var emojiPickerShortcut: KeyboardShortcut = KeyboardShortcut(key: "Space", modifiers: [.control, .command])
     var mouseControlEnabled: Bool = false
+    var mouseButtonRemappingEnabled: Bool = false
     var mouseInvertScroll: Bool = false
     var mouseInvertHorizontalScroll: Bool = false
     var mouseScrollSpeed: Double = 1.0
@@ -2445,6 +2446,7 @@ struct EventHandlingSettingsSnapshot {
     let enableBrightnessHUD: Bool
 
     let mouseControlEnabled: Bool
+    let mouseButtonRemappingEnabled: Bool
     let mouseInvertScroll: Bool
     let mouseInvertHorizontalScroll: Bool
     let mouseScrollSpeed: Double
@@ -2522,6 +2524,7 @@ struct EventHandlingSettingsSnapshot {
 
     private static func hasSameMouseInputs(_ lhs: Settings, _ rhs: Settings) -> Bool {
         lhs.mouseControlEnabled == rhs.mouseControlEnabled
+            && lhs.mouseButtonRemappingEnabled == rhs.mouseButtonRemappingEnabled
             && lhs.mouseInvertScroll == rhs.mouseInvertScroll
             && lhs.mouseInvertHorizontalScroll == rhs.mouseInvertHorizontalScroll
             && lhs.mouseScrollSpeed == rhs.mouseScrollSpeed
@@ -2594,6 +2597,7 @@ struct EventHandlingSettingsSnapshot {
         enableBrightnessHUD = settings.enableBrightnessHUD
 
         mouseControlEnabled = settings.mouseControlEnabled
+        mouseButtonRemappingEnabled = settings.mouseButtonRemappingEnabled
         mouseInvertScroll = settings.mouseInvertScroll
         mouseInvertHorizontalScroll = settings.mouseInvertHorizontalScroll
         mouseScrollSpeed = settings.mouseScrollSpeed
