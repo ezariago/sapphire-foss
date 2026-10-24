@@ -892,7 +892,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         _ = ocrScreenshotMonitor
         _ = AppLockPanicShortcut.shared
         requestScreenRecordingForSystemEnhanceIfNeeded()
-        _ = emojiShortcutManager
+        emojiShortcutManager.start()
         _ = clipboardPickerManager
         ClipboardManager.shared.startMonitoring()
         clipboardAutoClearManager.start()

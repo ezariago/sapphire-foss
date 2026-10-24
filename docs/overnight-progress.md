@@ -323,3 +323,11 @@ discovery (`build/snippets-native-test.log`). It did not focus a user app, injec
 typing or access the user's clipboard. Global key routing, real secure-field
 enforcement, input methods, undo and third-party editor compatibility remain open.
 See [text snippet evidence](text-snippets.md).
+
+Replaced the Emoji settings/manager placeholders with an opt-in macOS Emoji &
+Symbols action, configurable shared-dispatcher shortcut, stale-configuration
+guards, conflict reporting and app exclusions. macOS owns search, skin tone and
+insertion; colon-triggered suggestions remain unimplemented. The full local app
+build and signature checks passed (`build/emoji-picker-build.log`). The picker was
+not opened automatically over user content and actual presentation/insertion and
+OS shortcut coexistence remain manual checks. See [picker notes](emoji-picker.md).

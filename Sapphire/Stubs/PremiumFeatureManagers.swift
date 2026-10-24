@@ -24,11 +24,6 @@ final class SystemEnhanceHingeAnimationManager {
 
 
 
-final class EmojiShortcutManager {
-    static let shared = EmojiShortcutManager()
-    private init() {}
-    func stopMonitoring() {}
-}
 
 
 
