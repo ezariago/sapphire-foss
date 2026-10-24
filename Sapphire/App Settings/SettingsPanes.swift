@@ -11488,7 +11488,11 @@ struct MenuBarProfilesSettingsView: View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Menu Bar Profiles").font(.title2.bold())
+                #if SAPPHIRE_FULL_BUILD
                 Text("Reveal hidden menu bar items when a condition is met — battery level, active Focus, Wi-Fi network, or a script's exit code — and bind profiles to displays, Spaces, or Focus filters.").font(.caption).foregroundColor(.secondary)
+                #else
+                Text("Reveal hidden items for battery, charging or readable Wi-Fi conditions. Checks run every 10 seconds while enabled. Focus, scripts and display/Space bindings are not implemented.").font(.caption).foregroundColor(.secondary)
+                #endif
             }
 
             VStack(spacing: 0) {
@@ -11578,6 +11582,11 @@ private struct MenuBarProfileCardView: View {
 
                 Spacer()
 
+                #if !SAPPHIRE_FULL_BUILD
+                if !MenuBarProfilePolicy.isSupported(profile) {
+                    Text("Inactive: unsupported condition or binding").font(.caption).foregroundStyle(.orange)
+                }
+                #endif
                 Text(profile.summaryText)
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -11637,6 +11646,9 @@ private struct MenuBarRevealConditionsSection: View {
                         } label: {
                             Label(kind.displayName, systemImage: kind.systemImage)
                         }
+                        #if !SAPPHIRE_FULL_BUILD
+                        .disabled(!MenuBarProfilePolicy.supportedKinds.contains(kind))
+                        #endif
                     }
                 } label: {
                     Label("Add Condition", systemImage: "plus.circle")
@@ -11646,6 +11658,10 @@ private struct MenuBarRevealConditionsSection: View {
                 .fixedSize()
             }
 
+            #if !SAPPHIRE_FULL_BUILD
+            Text("Any supported condition can reveal items. Profiles with unsupported conditions or bindings remain inactive. Wi-Fi matching needs a readable network name; Location permission may be required.")
+                .font(.caption).foregroundStyle(.secondary)
+            #endif
             if profile.revealConditions.isEmpty {
                 Text("No conditions — this profile will never reveal items.")
                     .font(.caption)
@@ -11695,6 +11711,9 @@ private struct MenuBarRevealConditionEditor: View {
             Picker("", selection: $condition.kind) {
                 ForEach(MenuBarRevealConditionKind.allCases) { kind in
                     Text(kind.displayName).tag(kind)
+                        #if !SAPPHIRE_FULL_BUILD
+                        .disabled(!MenuBarProfilePolicy.supportedKinds.contains(kind))
+                        #endif
                 }
             }
             .pickerStyle(.menu)
@@ -11712,9 +11731,13 @@ private struct MenuBarRevealConditionEditor: View {
                 }
 
             case .charging:
+                #if !SAPPHIRE_FULL_BUILD
+                Text("while actively charging").font(.caption).foregroundColor(.secondary)
+                #else
                 Text("while plugged in")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                #endif
 
             case .onBatteryPower:
                 Text("while unplugged")
@@ -11790,6 +11813,10 @@ private struct MenuBarProfileBindingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Bind To").font(.subheadline.weight(.semibold))
+            #if !SAPPHIRE_FULL_BUILD
+            Text("Display, Space and Focus bindings are not implemented. Turn these bindings off to use battery/Wi-Fi conditions.")
+                .font(.caption).foregroundStyle(.secondary)
+            #endif
 
             ToggleRow(
                 title: "Displays",

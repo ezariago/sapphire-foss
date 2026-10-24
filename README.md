@@ -164,6 +164,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   [Power display availability](docs/power-readings.md) now distinguishes missing
   adapter telemetry from zero and removes the fabricated system-load fallback;
   real charger/sensor verification remains pending.
+  [Menu-bar profile automation](docs/menu-bar-profiles.md) now evaluates battery
+  and readable Wi-Fi conditions; Focus/scripts and display/Space bindings remain
+  unsupported, and native menu-bar interaction checks remain open.
 - [ ] Implement the missing 8D/surround audio views and verify their integration
   with the existing audio engine after feature access is available. Public
   [per-app controls and bounded parameter wiring](docs/spatial-audio.md) are added;

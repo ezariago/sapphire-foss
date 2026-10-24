@@ -444,3 +444,18 @@ Dock regression fixtures passed. The final full app build/signature checks
 passed (`build/shortcut-lifecycle-final-build.log`). No real keys/window actions
 were injected. Native routing and OS conflict checks remain open. The overnight
 automation remains paused; this is directly requested daytime work.
+
+
+Implemented the public menu-bar profile engine for battery thresholds, actual
+charging/battery power and readable Wi-Fi conditions. Async current-state reads
+are opt-in, bounded by generation/freshness checks, stop/restart and simulated
+sleep/wake handling. Unsupported Focus/script conditions and display/Space/Focus
+bindings leave the profile inactive; no script path is executed. Settings report
+these limits. Controller wiring now holds profile reveals against auto-rehide,
+yields to Zen mode and rechecks on Zen exit, including clearing on disable.
+
+Policy and production-engine fixtures passed with injected readings; no actual
+Wi-Fi/power changes, scripts or physical sleep tests were used. Final full app
+build/signature checks passed (`build/menu-bar-profiles-final-build.log`). Actual
+menu-bar layout/gesture/Zen behavior, Location permission and charger/network
+transitions remain native checks in [menu-bar profile notes](menu-bar-profiles.md).

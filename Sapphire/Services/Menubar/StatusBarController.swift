@@ -129,17 +129,19 @@ final class StatusBarController {
     }
 
     @objc private func profilesDidChange() {
-        guard SettingsModel.shared.current.menuBarProfilesEnabled, !isZenModeActive else { return }
+        guard !isZenModeActive else { return }
         let engine = MenuBarProfileEngine.shared
-        if engine.isRevealRequested {
+        if SettingsModel.shared.current.menuBarProfilesEnabled && engine.isRevealRequested {
+            stopAutoRehide()
             if isCollapsed {
                 isConditionRevealed = true
-                expand()
+                expand(inline: true)
             }
-        } else if isConditionRevealed {
+        } else {
+            let wasConditionRevealed = isConditionRevealed
             isConditionRevealed = false
-            if !statusSettings.autoRehide, !isEditing, isCollapsed == false {
-                if !isPointerInMenuBar() {
+            if wasConditionRevealed, !statusSettings.autoRehide, !isEditing, isCollapsed == false {
+                if !isPointerInMenuBar(), !Self.isAnyMenuOpen() {
                     collapse()
                 }
             } else {
@@ -390,6 +392,7 @@ final class StatusBarController {
             collapse()
         }
         updateAllItemVisuals()
+        if !enabled { profilesDidChange() }
     }
 
     func showAlwaysHiddenSection() {
@@ -915,7 +918,7 @@ final class StatusBarController {
     private func configureAutoRehide() {
         stopAutoRehide()
 
-        guard statusSettings.autoRehide, !isCollapsed, !isEditing else { return }
+        guard statusSettings.autoRehide, !isCollapsed, !isEditing, !isRevealRequestedByProfile else { return }
 
         let strategy = statusSettings.rehideStrategy
 

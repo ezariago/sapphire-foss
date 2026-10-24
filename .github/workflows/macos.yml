@@ -53,6 +53,8 @@ jobs:
         run: ./scripts/test-storage.sh
       - name: Monitoring thresholds and deferred-delivery checks
         run: ./scripts/test-monitoring.sh
+      - name: Menu-bar profile policy and lifecycle checks
+        run: ./scripts/test-menu-bar-profiles.sh
       - name: Power sensor availability checks
         run: ./scripts/test-power-telemetry.sh
       - name: Spatial audio parameter and persistence checks
