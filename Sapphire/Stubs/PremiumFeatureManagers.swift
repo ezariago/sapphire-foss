@@ -38,18 +38,5 @@ final class SnippetManager {
     func removeHandler() {}
 }
 
-final class MouseControlManager {
-    static let shared = MouseControlManager()
-    private init() {}
-    func shutdown() {}
-    func restoreSystemSettings() {}
-}
 
-
-final class SuperKeyManager {
-    static let shared = SuperKeyManager()
-    private init() {}
-    func start() {}
-    func stopMonitoring() {}
-}
 #endif

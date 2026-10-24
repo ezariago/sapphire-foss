@@ -899,7 +899,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         cleanURLManager.start()
         finderCutPasteManager.start()
         snippetManager.start()
-        _ = mouseControlManager
+        mouseControlManager.start()
         focusFollowsMouseManager.start()
         extraClickFilterManager.start()
         keyboardDebounceManager.start()

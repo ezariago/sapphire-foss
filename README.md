@@ -128,7 +128,11 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   event-filter implementation and per-key overrides. [Extra-click filtering](docs/mouse-click-filter.md)
   and [focus follows mouse](docs/focus-follows-mouse.md) also have public code and
   isolated tests; native [keyboard](docs/keyboard-debounce.md) and mouse verification
-  remains open.
+  remains open. [Discrete mouse-wheel direction and speed](docs/mouse-wheel.md)
+  now also have public code; acceleration, button remapping and smooth/linear
+  scrolling remain unimplemented. [Command-key Hyper mapping](docs/super-key.md)
+  implements the supported Super Key source keys; Caps Lock and native verification
+  remain open.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
   These now have public implementations and policy tests; [native interaction

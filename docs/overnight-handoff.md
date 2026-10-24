@@ -35,10 +35,10 @@ The final local development ZIP is `build/Sapphire-local.zip` (source checkpoint
 `fd48db926c6751f1ea5f314a45eef7d88980c8b7be3adccd1ebff9119a270c57`.
 Its input inventory is `build/dependency-inventory.json`. Both are ignored local
 outputs; this checksum identifies that ZIP and is not a reproducibility or
-provenance audit. Hosted CI for `51785fa` passed; the later focus checkpoint's
-[hosted run](https://github.com/ezariago/sapphire-foss/actions/runs/40041328603)
-passed its test steps and was still building at the last pre-cutoff check. Its
-final build/artifact outcome remains unverified.
+provenance audit. At the later user-requested continuation, hosted CI was confirmed
+successful for both the [focus checkpoint](https://github.com/ezariago/sapphire-foss/actions/runs/40041328603)
+and [morning documentation checkpoint](https://github.com/ezariago/sapphire-foss/actions/runs/40042750301).
+See subsequent entries in the progress log for work after the overnight cutoff.
 
 ## Next work
 

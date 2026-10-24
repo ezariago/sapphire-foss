@@ -74,6 +74,14 @@ struct MouseSettingsView: View {
     @State private var error: String?
     var body: some View {
         Form {
+            Section("Mouse wheel") {
+                Toggle("Customize mouse-wheel scrolling", isOn: $settings.settings.mouseControlEnabled)
+                Toggle("Reverse vertical wheel direction", isOn: $settings.settings.mouseInvertScroll)
+                Toggle("Reverse horizontal wheel direction", isOn: $settings.settings.mouseInvertHorizontalScroll)
+                Slider(value: $settings.settings.mouseScrollSpeed, in: 0.25...4) { Text("Wheel speed") }
+                Text("\(settings.settings.mouseScrollSpeed, specifier: "%.2f")× wheel speed")
+                Text("Requires Accessibility. Applies to discrete wheel events in the foreground app. Trackpad/continuous gestures and scrolling with shortcut modifiers retain native behavior. Integer-only apps have a minimum of one step. No system preferences are changed.").foregroundStyle(.secondary)
+            }
             Section("Keyboard debounce") {
                 Toggle("Filter accidental repeated key presses", isOn: $settings.settings.keyboardDebounceEnabled)
                 Text("For worn keyboards that produce duplicate presses shortly after a release. Requires Accessibility permission. Native held-key repeat is retained. No typed text is recorded.").foregroundStyle(.secondary)
@@ -122,18 +130,41 @@ struct MouseSettingsView: View {
                 Button("Add application…") { chooseExcludedApps() }
             }
             Section("Other mouse features") {
-                Text("Other pointer controls and Super Key are not available in this build.").foregroundStyle(.secondary)
+                Text("Pointer acceleration, button remapping and smooth/linear scroll are not available in this build.").foregroundStyle(.secondary)
+            }
+            Section("Super Key") {
+                Toggle("Use a Command key as Hyper (⌃⌥⇧⌘)", isOn: $settings.settings.superKeyEnabled)
+                Picker("Source key", selection: $settings.settings.superKeyKeyRaw) {
+                    Text("Right Command").tag("rightCommand")
+                    Text("Left Command").tag("leftCommand")
+                    if !["rightCommand", "leftCommand"].contains(settings.settings.superKeyKeyRaw) {
+                        Text("Unsupported saved source — choose a Command key").tag(settings.settings.superKeyKeyRaw)
+                    }
+                }
+                Text("Requires Accessibility. Adds Control, Option and Shift while the chosen Command key is held. The other Command key works normally. A tap has no separate action. Caps Lock is unsupported; no persistent key mapping is installed.").foregroundStyle(.secondary)
+                ForEach(Array(Set(settings.settings.superKeyExcludedAppBundleIDs)).sorted(), id: \.self) { id in
+                    HStack {
+                        Text(AppShieldManager.displayName(for: id))
+                        Spacer()
+                        Button("Remove exclusion") { settings.settings.superKeyExcludedAppBundleIDs.removeAll { $0 == id } }
+                    }
+                }
+                Button("Exclude an application…") { chooseExcludedApps(superKey: true) }
             }
         }.formStyle(.grouped)
     }
-    private func chooseExcludedApps() {
+    private func chooseExcludedApps(superKey: Bool = false) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = true
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
-            if let id = Bundle(url: url)?.bundleIdentifier, !settings.settings.mouseExcludedAppBundleIDs.contains(id) {
-                settings.settings.mouseExcludedAppBundleIDs.append(id)
+            if let id = Bundle(url: url)?.bundleIdentifier {
+                if superKey {
+                    if !settings.settings.superKeyExcludedAppBundleIDs.contains(id) { settings.settings.superKeyExcludedAppBundleIDs.append(id) }
+                } else if !settings.settings.mouseExcludedAppBundleIDs.contains(id) {
+                    settings.settings.mouseExcludedAppBundleIDs.append(id)
+                }
             }
         }
     }

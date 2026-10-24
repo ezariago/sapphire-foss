@@ -278,3 +278,31 @@ See [the final handoff](overnight-handoff.md) for implemented paths, evidence,
 remaining source/credential/permission blockers and the unfinished roadmap.
 The companion checkout remains unchanged at `67edf0d` and synchronized with its
 upstream. This documentation checkpoint is pushed with the implementation.
+
+## User-requested daytime continuation — 24 October 2026
+
+The user explicitly requested continuation after the overnight stop. The overnight
+automation remains paused; this is a direct continuation, not a renewed unattended
+schedule. Hosted CI is now confirmed successful for both `bc1fcbc` and `a2603af`.
+Initial account usage remaining was 80% in the five-hour window and 82% weekly.
+
+Added opt-in discrete wheel speed/direction controls and side-specific Command-key
+Hyper mapping, replacing their managers' stubs. Native gestures and modified
+scroll are bypassed by wheel customization. Hyper adds flags to original events
+without posting input or retaining a held-key latch. Separate Super Key and shared
+mouse exclusions are configurable. No persistent input/system preference changes
+or physical phone input were performed. Caps Lock, pointer acceleration, button
+remapping and smooth/linear scroll remain open.
+
+The wheel and Super Key fixtures passed using pure policies and unposted
+CGEvent objects, including their wheel-modifier interaction. A fixture assertion
+initially assumed a keyboard-only field could be set on every mouse event type;
+it was corrected to compare the actual pre-transform field value. No production
+failure was masked by that change. Full app build and native interaction evidence
+are recorded separately after verification completes.
+
+The final full local app build and signature verification passed for the wheel
+and Super Key implementations (`build/mouse-super-key-build.log`). Both new test
+scripts are included in CI. Actual wheel/keyboard and permission transitions
+remain pending as documented in [wheel controls](mouse-wheel.md) and
+[Super Key](super-key.md); no native input behavior is claimed from the build.
