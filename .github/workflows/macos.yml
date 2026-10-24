@@ -52,6 +52,8 @@ jobs:
         run: ./scripts/test-storage.sh
       - name: Monitoring thresholds and deferred-delivery checks
         run: ./scripts/test-monitoring.sh
+      - name: Power sensor availability checks
+        run: ./scripts/test-power-telemetry.sh
       - name: Phone protocol and crypto tests
         run: ./scripts/test-phone-reconstruction.sh
       - name: Build and verify macOS app

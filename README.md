@@ -159,6 +159,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   [Monitoring settings and delivery guards](docs/monitoring.md) now configure the
   public readout/alert engines; native permissions, alert delivery, adapter readings
   and profile automation remain open.
+  [Power display availability](docs/power-readings.md) now distinguishes missing
+  adapter telemetry from zero and removes the fabricated system-load fallback;
+  real charger/sensor verification remains pending.
 - [ ] Implement the missing 8D/surround audio views and verify their integration
   with the existing audio engine after feature access is available.
 - [ ] Implement sports scores/commentary and finance quotes, including settings,

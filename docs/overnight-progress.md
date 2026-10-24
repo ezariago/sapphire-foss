@@ -366,3 +366,17 @@ Actual permission/readout/alert behavior remains on the native checklist in
 original full-build behavior; this is not a claim that unavailable private full
 build dependencies have been tested. Hosted `c4b4c33` succeeded, including the
 snippet code/tests from the previously cancelled pending checkpoint.
+
+Corrected power telemetry presentation: missing/invalid sensor values are distinct
+from measured zero, the System Power headline uses system load, and an unavailable
+adapter reading no longer borrows that value or charger metadata. AC status uses
+the battery monitor's source state and unknown source state is labelled. Replaced
+the solid placeholder bar with comparative system/adapter bars and clarified the
+debug menu's charger rating label.
+
+Pure telemetry and production battery-view-model publisher fixtures passed with
+injected providers, including missing/zero/invalid values and stop/restart. The
+final full app build/signature checks passed (`build/power-readings-final-build.log`).
+No power setting, charger or phone state was changed by these tests. Actual sensor
+availability/calibration and charger/dock transitions remain hardware checks in
+[power evidence](power-readings.md).

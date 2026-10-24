@@ -143,7 +143,7 @@ struct BatteryDebugMenu: View {
             .font(.caption.monospaced())
 
             if let adapter {
-                Text("Adapter: \(adapter.name) · \(adapter.power)W · \(adapter.voltage)mV · \(adapter.current)mA")
+                Text("Adapter: \(adapter.name) · rating \(adapter.maxPower > 0 ? "\(adapter.maxPower) W" : "unavailable") · reported \(adapter.voltage)mV · \(adapter.current)mA")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }

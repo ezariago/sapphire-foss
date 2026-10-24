@@ -15,12 +15,20 @@ struct BatteryWidgetView: View {
     // MARK: - System Power hero (mirrors the hero card in BatteryDetailView)
 
     private var power: SystemPowerReading {
+        #if SAPPHIRE_FULL_BUILD
+        SystemPowerReading(systemLoad: stats.systemPower, adapterPower: stats.adapterPower,
+            adapterConnected: stats.isPluggedIn, isCharging: stats.isCharging)
+        #else
         SystemPowerReading(
             systemLoad: stats.systemPower,
             adapterPower: stats.adapterPower,
-            adapterConnected: (stats.powerAdapterInfo?.maxPower ?? 0) > 0,
-            isCharging: stats.isCharging
+            adapterConnected: stats.isPluggedIn,
+            isCharging: stats.isCharging,
+            systemAvailable: stats.hasSystemPowerReading,
+            adapterAvailable: stats.hasAdapterPowerReading,
+            powerSourceAvailable: stats.hasPowerSourceReading
         )
+        #endif
     }
 
     private static let wattsFont: NSFont = {
@@ -35,7 +43,7 @@ struct BatteryWidgetView: View {
 
     var body: some View {
         let power = self.power
-        let wattsText = power.heroWatts > 0 ? String(format: "%.2f", power.heroWatts) : "--"
+        let wattsText = stats.hasSystemPowerReading ? String(format: "%.2f", power.heroWatts) : "--"
 
         Button {
             Task {
@@ -53,7 +61,7 @@ struct BatteryWidgetView: View {
                     LayerNumericText(text: wattsText, font: Self.wattsFont, color: .white)
                         .textBaseline()
                         .accessibilityLabel(Text(wattsText))
-                    if power.heroWatts > 0 {
+                    if stats.hasSystemPowerReading {
                         Text("W")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundColor(.white.opacity(0.7))

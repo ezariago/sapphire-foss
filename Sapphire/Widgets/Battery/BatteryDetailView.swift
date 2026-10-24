@@ -52,12 +52,20 @@ struct BatteryDetailView: View {
     // MARK: - System Power hero (mirrors the Settings power hero card)
 
     private var power: SystemPowerReading {
+        #if SAPPHIRE_FULL_BUILD
+        SystemPowerReading(systemLoad: stats.systemPower, adapterPower: stats.adapterPower,
+            adapterConnected: stats.isPluggedIn, isCharging: stats.isCharging)
+        #else
         SystemPowerReading(
             systemLoad: stats.systemPower,
             adapterPower: stats.adapterPower,
-            adapterConnected: (stats.powerAdapterInfo?.maxPower ?? 0) > 0,
-            isCharging: stats.isCharging
+            adapterConnected: stats.isPluggedIn,
+            isCharging: stats.isCharging,
+            systemAvailable: stats.hasSystemPowerReading,
+            adapterAvailable: stats.hasAdapterPowerReading,
+            powerSourceAvailable: stats.hasPowerSourceReading
         )
+        #endif
     }
 
     var body: some View {
@@ -241,12 +249,12 @@ struct BatteryDetailView: View {
             }
 
             HStack(alignment: .lastTextBaseline, spacing: 5) {
-                Text(String(format: "%.2f", power.heroWatts))
+                Text(stats.hasSystemPowerReading ? String(format: "%.2f", power.heroWatts) : "--")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .monospacedDigit()
                     .contentTransition(.numericText())
-                Text("W")
+                Text(stats.hasSystemPowerReading ? "W" : "")
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(.white.opacity(0.7))
                 Spacer(minLength: 0)
@@ -260,9 +268,9 @@ struct BatteryDetailView: View {
 
             HStack(spacing: 12) {
                 if power.adapterConnected {
-                    powerMetaChip(icon: "bolt.horizontal.fill", text: String(format: "Adapter %.0f W", power.adapterDisplayWatts))
+                    powerMetaChip(icon: "bolt.horizontal.fill", text: stats.hasAdapterPowerReading ? String(format: "Adapter %.0f W", power.adapterDisplayWatts) : "Adapter —")
                 }
-                powerMetaChip(icon: "laptopcomputer", text: String(format: "Draw %.2f W", power.systemLoad))
+                powerMetaChip(icon: "laptopcomputer", text: stats.hasSystemPowerReading ? String(format: "Draw %.2f W", power.systemLoad) : "Draw —")
                 Spacer(minLength: 0)
             }
         }

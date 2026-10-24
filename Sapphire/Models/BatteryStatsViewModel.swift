@@ -14,10 +14,12 @@ class BatteryStatsViewModel: ObservableObject {
     private struct Snapshot: Equatable {
         var batteryLevel = 0
         var isCharging = false
+        var isPluggedIn = false
+        var hasPowerSourceReading = false
         var timeRemaining = "--"
         var temperature: Double = 0
-        var systemPower: Double = 0
-        var adapterPower: Double = 0
+        var systemPower: Double?
+        var adapterPower: Double?
         var powerConsumption: Double = 0
         var amperage = 0
         var voltage: Double = 0
@@ -36,10 +38,14 @@ class BatteryStatsViewModel: ObservableObject {
 
     var batteryLevel: Int { snapshot.batteryLevel }
     var isCharging: Bool { snapshot.isCharging }
+    var isPluggedIn: Bool { snapshot.hasPowerSourceReading && snapshot.isPluggedIn }
+    var hasPowerSourceReading: Bool { snapshot.hasPowerSourceReading }
     var timeRemaining: String { snapshot.timeRemaining }
     var temperature: Double { snapshot.temperature }
-    var systemPower: Double { snapshot.systemPower }
-    var adapterPower: Double { snapshot.adapterPower }
+    var systemPower: Double { snapshot.systemPower ?? 0 }
+    var adapterPower: Double { snapshot.adapterPower ?? 0 }
+    var hasSystemPowerReading: Bool { snapshot.systemPower != nil }
+    var hasAdapterPowerReading: Bool { snapshot.adapterPower != nil }
     var powerConsumption: Double { snapshot.powerConsumption }
     var amperage: Int { snapshot.amperage }
     var voltage: Double { snapshot.voltage }
@@ -66,6 +72,7 @@ class BatteryStatsViewModel: ObservableObject {
     func start(highFrequency _: Bool = false) {
         guard !isStarted else { return }
         isStarted = true
+        updateSnapshot { $0.systemPower = nil; $0.adapterPower = nil; $0.hasPowerSourceReading = false }
         setupBindings()
         fetchStats()
     }
@@ -73,26 +80,34 @@ class BatteryStatsViewModel: ObservableObject {
     func stop() {
         cancellables.removeAll()
         isStarted = false
+        updateSnapshot { $0.systemPower = nil; $0.adapterPower = nil; $0.hasPowerSourceReading = false }
     }
 
     private func setupBindings() {
-        batteryMonitor.$currentState.compactMap { $0 }.receive(on: DispatchQueue.main)
+        batteryMonitor.$currentState.receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.updateSnapshot {
-                    $0.batteryLevel = state.level
-                    $0.isCharging = state.isCharging
+                guard let self, self.isStarted else { return }
+                self.updateSnapshot {
+                    $0.hasPowerSourceReading = state != nil
+                    $0.isPluggedIn = state?.isPluggedIn ?? false
+                    $0.isCharging = state?.isCharging ?? false
+                    if let state { $0.batteryLevel = state.level }
                 }
             }.store(in: &cancellables)
 
-        statsManager.$currentStats.compactMap { $0 }.receive(on: DispatchQueue.main)
+        statsManager.$currentStats.receive(on: DispatchQueue.main)
             .sink { [weak self] payload in
-                guard let self else { return }
+                guard let self, self.isStarted else { return }
+                guard let payload else {
+                    self.updateSnapshot { $0.systemPower = nil; $0.adapterPower = nil }
+                    return
+                }
                 let batteryStats = payload.battery
                 let isCharging = self.snapshot.isCharging
                 let timeToUse = isCharging ? batteryStats?.timeToCharge : batteryStats?.timeToEmpty
                 self.updateSnapshot {
-                    if let power = payload.systemPower { $0.systemPower = power }
-                    $0.adapterPower = payload.sensors?.sensors.first { $0.key == "PDTR" }?.value ?? 0
+                    $0.systemPower = PowerTelemetry.validWatts(payload.systemPower)
+                    $0.adapterPower = PowerTelemetry.validWatts(payload.sensors?.sensors.first { $0.key == "PDTR" }?.value)
                     if let batteryStats {
                         $0.powerConsumption = batteryStats.powerDraw
                         $0.amperage = batteryStats.amperage
