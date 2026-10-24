@@ -419,3 +419,14 @@ artifact, not a public notarized release or reproducibility/provenance audit.
 The overnight automation remains paused; daytime continuation was directly
 requested by the user. The roadmap is still incomplete, with the native,
 third-party source/credentials and substantial implementation blockers above.
+
+
+Daytime stopping checkpoint, 24 October 2026: account usage reported 96% used
+in the five-hour window (4% remaining) and 30% used weekly (70% remaining).
+Stopped further implementation per the user's threshold. Shortcut catalog
+`0c137f7` and lifecycle follow-up notes `fbc1d47` were pushed. The connected
+Samsung received `KEYCODE_SLEEP` and reported `mWakefulness=Dozing`,
+`mStayOn=false`. No persistent wake, notification or alarm setting was changed;
+this verifies current sleep only and cannot guarantee the phone never wakes.
+The overnight automation remains paused. Remaining implementation and native
+checks are explicitly open; the complete README roadmap is not finished.
