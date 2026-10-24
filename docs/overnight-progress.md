@@ -719,3 +719,11 @@ The final full build was still running and the hosted rerun pending at this
 checkpoint; neither is claimed passed yet. Other latest local evidence remains
 29 shell scripts, four fake live-harness cases, full Mac/Android builds and the
 scoped live BLE proof above. Remaining README work is not complete.
+
+Final closure: the full local app/signature/ZIP build for the Space Map compiler
+fix passed (`build/storage-ci-typecheck-build.log`). The hosted rerun is still
+pending, so current hosted success is not claimed. The fix checkpoint was pushed,
+KEYCODE_SLEEP was sent as explicitly requested even with the user's call ongoing,
+and wakefulness was observed Dozing with mStayOn=false. No call action or persistent
+wake/notification setting was changed. The continuation automation remains PAUSED;
+no more implementation proceeds after the under-5% threshold.
