@@ -709,6 +709,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         cleanURLManager.stopMonitoring()
         #if !SAPPHIRE_FULL_BUILD
         MediaOptimizerManager.shared.stop()
+        SmartInboxMonitor.shared.stop()
         #endif
         finderCutPasteManager.removeTap()
         snippetManager.removeHandler()
@@ -890,6 +891,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             .filter { $0 }
             .sink { _ in SportsAPIService.shared.bootstrapIfNeeded() }
             .store(in: &cancellables)
+        #if !SAPPHIRE_FULL_BUILD
+        SmartInboxMonitor.shared.start()
+        #endif
         MediaOptimizerManager.shared.start()
         FileOperationProgressRouter.shared.start()
         _ = ocrScreenshotMonitor

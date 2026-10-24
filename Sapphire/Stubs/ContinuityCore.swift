@@ -200,6 +200,7 @@ final class ContinuityNotificationBridge: ObservableObject {
         pending.removeAll { $0.key == entry.key || !store.contains(key: $0.key, revision: $0.revision) }
         if let latest, !store.contains(key: latest.key, revision: latest.revision), latest.key != entry.key { clearLatest() }
         if alert {
+            SmartInboxMonitor.shared.ingestNotification(id: "phone:" + entry.id, source: entry.appName, title: entry.title, body: entry.text, date: Date())
             if latest == nil || latest?.key == entry.key { latest = entry }
             else { pending.append(entry); pending = Array(pending.suffix(30)) }
             if SettingsModel.shared.current.continuityNotificationsAsBanners { postBanner(entry) }
@@ -244,6 +245,7 @@ final class ContinuityNotificationBridge: ObservableObject {
     func clearLatest() { latest = pending.isEmpty ? nil : pending.removeFirst() }
     func contains(key: String, revision: String) -> Bool { store.contains(key: key, revision: revision) }
     func reset() {
+        SmartInboxMonitor.shared.removePhoneItems()
         let identifiers = notifications.map { bannerID($0.key) }
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)

@@ -425,6 +425,7 @@ class NotificationManager: ObservableObject {
         let settings = settingsModel.settings
         let allowed = notifications.filter { Self.shouldShowNotification($0, settings: settings) }
         guard !allowed.isEmpty else { return }
+        #if SAPPHIRE_FULL_BUILD
         for notification in allowed {
             if let code = notification.verificationCode {
                 let source = notification.appName
@@ -440,6 +441,14 @@ class NotificationManager: ObservableObject {
                 }
             }
         }
+        #else
+        for notification in allowed {
+            guard let ticket = SmartInboxInputGate.shared.capture() else { continue }
+            let id = "mac:" + notification.appIdentifier + ":" + notification.id
+            let source = notification.appName, title = notification.title, body = notification.body, date = notification.date
+            Task { @MainActor in SmartInboxMonitor.shared.ingestNotification(id: id, source: source, title: title, body: body, date: date, ticket: ticket) }
+        }
+        #endif
         present(allowed)
     }
 

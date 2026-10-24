@@ -5084,6 +5084,12 @@ struct NotificationsSettingsView: View {
                             description: "Watch Mail.app unread messages for verification codes (no AI).",
                             isOn: $settings.settings.mailOTPDetectionEnabled
                         )
+                        #if !SAPPHIRE_FULL_BUILD
+                        .disabled(true)
+                        #endif
+                        #if !SAPPHIRE_FULL_BUILD
+                        Text("Mail scanning is not implemented. Permitted notification codes can still be detected.").font(.caption).foregroundStyle(.secondary).padding(.horizontal)
+                        #endif
                     }
                     .modifier(SettingsContainerModifier())
                     .disabled(!settings.settings.masterNotificationsEnabled)
@@ -5097,15 +5103,15 @@ struct NotificationsSettingsView: View {
 
                         ToggleRow(
                             title: "Enable Smart Inbox",
-                            description: "AI-independent Mail features: OTP detection and parcel tracking.",
+                            description: "Detect code and parcel references in permitted notifications; no carrier status is fetched.",
                             isOn: $settings.settings.smartInboxEnabled
                         )
 
                         Divider().padding(.leading, 20)
 
                         ToggleRow(
-                            title: "Parcel tracking from email",
-                            description: "Detect UPS/FedEx/USPS/DHL/Amazon tracking numbers in Mail.",
+                            title: "Detect parcel references",
+                            description: "Find selected UPS/FedEx/USPS/DHL formats in permitted notifications. References are unverified.",
                             isOn: $settings.settings.parcelTrackingEnabled
                         )
 
@@ -5113,9 +5119,12 @@ struct NotificationsSettingsView: View {
 
                         ToggleRow(
                             title: "Parcel notch popover",
-                            description: "Show live package status in the notch when a shipment is active.",
+                            description: "Show detected, unverified parcel references in the notch; no carrier status is fetched.",
                             isOn: $settings.settings.parcelLiveActivityEnabled
                         )
+                        #if !SAPPHIRE_FULL_BUILD
+                        SmartInboxStatusView()
+                        #endif
                     }
                     .modifier(SettingsContainerModifier())
 

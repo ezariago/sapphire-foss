@@ -45,19 +45,7 @@ enum ParcelCarrier: String, Codable, CaseIterable {
         }
     }
 
-    var trackingURL: (String) -> URL? { { _ in nil } }
+    var trackingURL: (String) -> URL? { { SmartInboxPolicy.carrierURL(self, number: $0) } }
 }
 
-final class SmartInboxMonitor: ObservableObject {
-    static let shared = SmartInboxMonitor()
-    private init() {}
-
-    @Published private(set) var latestOTP: OTPEvent?
-    @Published private(set) var activeParcels: [ParcelShipment] = []
-
-    func presentOTP(code: String, source: String, title: String, body: String) {}
-    func consumeOTP(_ code: String) {}
-    func hasConsumedOTP(_ code: String) -> Bool { false }
-    func dismissOTP() {}
-}
 #endif

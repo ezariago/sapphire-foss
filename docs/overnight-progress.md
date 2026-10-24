@@ -553,3 +553,26 @@ app/signature/ZIP verification passed (`build/phone-file-transfer-final-build.lo
 The normal companion was not updated by isolated testing. Live BLE/Save/File Shelf/
 OEM interaction remains open; Wi-Fi/bulk, reverse transfer, phone browsing and
 file/image clipboard are not implemented. See [file evidence](phone-file-transfer.md).
+
+Implemented the public Smart Inbox notification path around the previously inert
+models: conservative context-based code detection, selected carrier reference
+formats, bounded in-memory expiry/replay handling, Settings actions and notch
+integration. Copied items are marked concealed and guarded by expiry, lock state,
+configuration generation and clipboard revision. Revealing a code resets when a
+new event arrives; consumed codes suppress another popover under a new event ID.
+References remain explicitly Unverified; carrier buttons open landing pages
+without submitting identifiers. Mail scanning is disabled in the public Settings
+and carrier status/Amazon integration remain unfinished.
+
+All 25 configured Mac regression scripts passed
+(`build/smart-inbox-full-regression.log`). Expanded production-monitor fixtures
+also passed after review, including lock-state rejection and clearing, stale
+queued writes and duplicate-code presentation suppression
+(`build/smart-inbox-tests.log`). They use injected inputs and a private named
+pasteboard, without accessing user notifications, Mail, the general clipboard or
+network. Full local app/signature/ZIP verification is recorded in
+`build/smart-inbox-verified-build.log`. Native permission, actual notification/
+phone mirroring, browser and notch interaction checks remain pending. See
+[Smart Inbox evidence and limits](smart-inbox.md). The companion source remains
+unchanged from the verified file-transfer checkpoint and its normal phone app
+was not updated.

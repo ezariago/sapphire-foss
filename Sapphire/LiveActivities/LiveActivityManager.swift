@@ -2416,6 +2416,12 @@ class LiveActivityManager {
     }
 
     private func checkForOTP() -> (ActivityType, LiveActivityContent, TimeInterval?)? {
+        #if !SAPPHIRE_FULL_BUILD
+        guard settingsModel.current.smartInboxEnabled, settingsModel.current.masterNotificationsEnabled, settingsModel.current.otpLiveActivityEnabled else { return nil }
+        notificationManager.start()
+        guard let event = SmartInboxMonitor.shared.otpForPresentation(keepingCurrent: currentActivity == .otp && (activityContent.id?.base as? String) == SmartInboxMonitor.shared.latestOTP?.id) else { return nil }
+        return (.otp, .full(view: AnyView(OTPLiveActivityView(event: event)), id: event.id), 20.0)
+        #else
         guard settingsModel.current.otpLiveActivityEnabled else { return nil }
 
         if let event = SmartInboxMonitor.shared.latestOTP {
@@ -2448,13 +2454,19 @@ class LiveActivityManager {
             return (.otp, .full(view: AnyView(view), id: event.id), 20.0)
         }
         return nil
+        #endif
     }
 
     private func checkForParcel() -> (ActivityType, LiveActivityContent, TimeInterval?)? {
         guard settingsModel.current.parcelLiveActivityEnabled,
               settingsModel.current.parcelTrackingEnabled else { return nil }
+        #if !SAPPHIRE_FULL_BUILD
+        let currentParcelID = currentActivity == .parcel ? (activityContent.id?.base as? String)?.split(separator: "|").first.map(String.init) : nil
+        guard let parcel = SmartInboxMonitor.shared.parcelForPresentation(currentID: currentParcelID) else { return nil }
+        #else
         let parcels = SmartInboxMonitor.shared.activeParcels.filter { !$0.isDelivered }
         guard let parcel = parcels.first else { return nil }
+        #endif
         let view = ParcelLiveActivityView(parcel: parcel)
         let id = [parcel.id, parcel.status, parcel.detail, String(parcel.lastUpdated.timeIntervalSince1970)].joined(separator: "|")
         return (.parcel, .full(view: AnyView(view), id: id), 18.0)

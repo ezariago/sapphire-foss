@@ -178,7 +178,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   and Blip UI. Gemini Live has public source and is excluded from the legacy
   Gemini stub by the local build helper.
 - [ ] Implement Smart Inbox OTP/parcel monitoring and actions around the existing
-  data models and verification-code detector.
+  data models and verification-code detector. Public [notification detection and
+  private copy actions](docs/smart-inbox.md) are implemented; Mail, carrier status
+  fetching, Amazon integration and native interaction verification remain open.
 - [ ] Replace the camera, virtual microphone, File Provider and Finder Sync
   extension placeholders with functional implementations and installation/setup.
 

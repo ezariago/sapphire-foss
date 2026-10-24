@@ -2110,12 +2110,7 @@ struct OTPLiveActivityView: View {
 
             if settings.settings.showCopyButtonForVerificationCodes {
                 Button {
-                    NSPasteboard.general.copyString(event.code)
-                    withAnimation(.spring) { didCopy = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                        SmartInboxMonitor.shared.dismissOTP()
-                        liveActivityManager.dismissCurrentActivity()
-                    }
+                    copyCode(dismissAfterCopy: true)
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
@@ -2143,11 +2138,32 @@ struct OTPLiveActivityView: View {
                 isShowing = true
             }
             if settings.settings.autoCopyVerificationCodes {
-                NSPasteboard.general.copyString(event.code)
-                didCopy = true
+                copyCode(dismissAfterCopy: false)
             }
         }
     }
+    private func copyCode(dismissAfterCopy: Bool) {
+        let copied: (Bool) -> Void = { success in
+            guard success else { return }
+            withAnimation(.spring) { didCopy = true }
+            guard dismissAfterCopy else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                guard liveActivityManager.currentActivity == .otp,
+                      (liveActivityManager.activityContent.id?.base as? String) == event.id else { return }
+                #if !SAPPHIRE_FULL_BUILD
+                guard SmartInboxMonitor.shared.latestOTP?.id == event.id else { return }
+                #endif
+                SmartInboxMonitor.shared.dismissOTP()
+                liveActivityManager.dismissCurrentActivity()
+            }
+        }
+        #if SAPPHIRE_FULL_BUILD
+        NSPasteboard.general.copyString(event.code); copied(true)
+        #else
+        SmartInboxMonitor.shared.copyOTP(event, completion: copied)
+        #endif
+    }
+
 }
 
 struct ParcelLiveActivityView: View {
@@ -2185,7 +2201,7 @@ struct ParcelLiveActivityView: View {
                     .lineLimit(1)
                 Spacer()
                 if let url = parcel.trackingURL {
-                    Button("Track") {
+                    Button("Carrier site") {
                         NSWorkspace.shared.open(url)
                     }
                     .buttonStyle(.plain)

@@ -60,6 +60,8 @@ jobs:
         run: ./scripts/test-power-telemetry.sh
       - name: Spatial audio parameter and persistence checks
         run: ./scripts/test-spatial-audio.sh
+      - name: Smart Inbox policy and private delivery tests
+        run: ./scripts/test-smart-inbox.sh
       - name: Phone protocol and crypto tests
         run: |
           ./scripts/test-phone-reconstruction.sh
