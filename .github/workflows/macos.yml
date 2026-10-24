@@ -34,6 +34,7 @@ jobs:
           ./scripts/test-clipboard-image-optimization.sh
           ./scripts/test-dmg-installer.sh
           ./scripts/test-media-tools.sh
+          ./scripts/test-region-text-search.sh
       - name: Foundation security and FOSS access tests
         run: ./scripts/test-foundation.sh
       - name: Dock/window policies and quit protection tests

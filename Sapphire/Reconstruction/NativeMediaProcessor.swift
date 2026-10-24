@@ -98,7 +98,7 @@ enum NativeMediaProcessor {
         return MediaOptimizeResult(sourceURL: source, outputURL: output, kind: kind, originalBytes: Int64(bytes), optimizedBytes: Int64(optimized))
     }
 
-    static func recognizeText(in source: URL, language: String = "en-US") throws -> String {
+    static func recognizeText(in source: URL, language: String = "en-US", useCPUOnly: Bool = false) throws -> String {
         guard source.isFileURL, MediaOptimizer.canOCR(source),
               let bytes = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize,
               bytes > 0, bytes <= 300 * 1024 * 1024 else { throw MediaOptimizeError.unsupportedFile }
@@ -120,16 +120,17 @@ enum NativeMediaProcessor {
                 context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: width, height: height))
                 context.concatenate(reference.getDrawingTransform(.mediaBox, rect: CGRect(x: 0, y: 0, width: width, height: height), rotate: 0, preserveAspectRatio: true))
                 context.drawPDFPage(reference)
-                if let image = context.makeImage() { pages.append(try recognize(image, language: language)) }
+                if let image = context.makeImage() { pages.append(try recognize(image, language: language, useCPUOnly: useCPUOnly)) }
             }
             return String(pages.joined(separator: "\n\n").prefix(1_000_000))
         }
         guard let input = CGImageSourceCreateWithURL(source as CFURL, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(input, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 4096] as CFDictionary) else { throw MediaOptimizeError.unsupportedFile }
-        return try recognize(image, language: language)
+        return try recognize(image, language: language, useCPUOnly: useCPUOnly)
     }
-    private static func recognize(_ image: CGImage, language: String) throws -> String {
+    private static func recognize(_ image: CGImage, language: String, useCPUOnly: Bool) throws -> String {
         let request = VNRecognizeTextRequest()
+        request.usesCPUOnly = useCPUOnly
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
         if (try? request.supportedRecognitionLanguages().contains(language)) == true { request.recognitionLanguages = [language] }

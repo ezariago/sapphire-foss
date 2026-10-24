@@ -1188,6 +1188,8 @@ struct Settings: Codable, Equatable {
     var installedAppUpdateNotificationsEnabled: Bool = false
     var notchButtonOrder: [NotchButtonType] = [.settings, .fileShelf, .notes, .clipboard, .intelligence, .focusSession, .spacer, .continuity, .battery, .multiAudio, .caffeine, .pin]
     var notchBarSpacerWidth: CGFloat = NotchBarSpacerPolicy.automaticWidth
+    // Separate opt-in prevents the former placeholder default from enabling capture on upgrade.
+    var regionTextSearchEnabled: Bool = false
     var circleToSearchEnabled: Bool = true
     var circleToSearchShortcut: KeyboardShortcut = KeyboardShortcut(key: "C", modifiers: [.control, .shift])
     var circleToSearchBrowserEngine: CircleSearchBrowserEngine = .google

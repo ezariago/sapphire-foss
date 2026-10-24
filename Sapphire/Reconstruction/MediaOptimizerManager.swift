@@ -54,6 +54,7 @@ struct MediaOptimizerSettingsView: View {
     @ObservedObject private var settings = SettingsModel.shared
     @ObservedObject private var manager = MediaOptimizerManager.shared
     @ObservedObject private var screenshots = OCRScreenshotMonitor.shared
+    @ObservedObject private var regionSearch = CircleToSearchManager.shared
     private var imageDimension: Binding<Double> {
         Binding(get: {
             let value = settings.settings.mediaToolsMaxImageDimension
@@ -85,6 +86,22 @@ struct MediaOptimizerSettingsView: View {
                 Text("Uses Apple's Vision framework. Images and PDFs are processed on this Mac.").foregroundStyle(.secondary)
                 TextField("Preferred recognition language", text: $settings.settings.mediaToolsOCRLanguage)
                 Button("Extract text from files…") { manager.chooseFiles(ocr: true) }.disabled(manager.isProcessing)
+            }
+            Section("Screen text search") {
+                Toggle("Enable region text search", isOn: $settings.settings.regionTextSearchEnabled)
+                Text("Select a region, review locally recognized text, then explicitly search Google in your browser. No image upload or reverse-image search. Screen Recording permission is required.").foregroundStyle(.secondary)
+                Button("Select region for search…") { CircleToSearchManager.shared.selectRegion() }
+                    .disabled(!settings.settings.regionTextSearchEnabled)
+                Toggle("Enable region search shortcut", isOn: $settings.settings.circleToSearchEnabled)
+                Text(KeyboardShortcutHelper.description(for: settings.settings.circleToSearchShortcut.modifiers) + settings.settings.circleToSearchShortcut.key)
+                if regionSearch.shortcutUnavailable || settings.settings.disabledShortcutIDs.contains(ShortcutIdentifier.circleToSearch) {
+                    Text("Region search shortcut is unavailable or disabled. Choose another combination in shortcut settings.").foregroundStyle(.orange)
+                }
+                Button("Record region search shortcut…") {
+                    GlobalShortcutRecorder.shared.startRecording(identifier: ShortcutIdentifier.circleToSearch) { key, modifiers in
+                        settings.settings.circleToSearchShortcut = KeyboardShortcut(key: key, modifiers: modifiers)
+                    }
+                }
             }
             Section("Screenshot text") {
                 Button("Select screen region…") { screenshots.captureRegion() }.disabled(screenshots.isProcessing)

@@ -65,3 +65,11 @@ concealed/multi-item bypass, stale revision/configuration rejection and marker
 recursion prevention. Full builds check manager lifecycle wiring. Actual copying/
 pasting across apps, privacy/input transitions and coexistence with clipboard
 history/sharing/clearing remain native checks. No user image was read for tests.
+
+## Region text search
+
+A separate opt-in now implements local region OCR, editable query review and
+explicit Google text search. It does not upload images or implement visual
+Circle to Search. See [scope and verification](region-text-search.md). Policy,
+native compilation/generated-image fixtures and a full local build passed;
+real screen selection, permissions and browser interaction remain unverified.

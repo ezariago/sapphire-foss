@@ -19,7 +19,7 @@ struct KeyboardShortcutsSettingsView: View {
     var body: some View {
         Form {
             Section("Shared global shortcuts") {
-                Text("Configure clipboard, emoji, OCR, App Lock privacy, Dock presets, planes and existing Snap Zone bindings. Feature switches still apply. Other features keep their own shortcut controls.").foregroundStyle(.secondary)
+                Text("Configure clipboard, emoji, OCR, screen text search, App Lock privacy, Dock presets, planes and existing Snap Zone bindings. Feature switches still apply. Other features keep their own shortcut controls.").foregroundStyle(.secondary)
                 if !AXIsProcessTrusted() {
                     Text("Accessibility permission is required for global key delivery.").foregroundStyle(.orange)
                     Button("Allow Accessibility…") { AccessibilityPermission.request() }
@@ -102,6 +102,8 @@ struct KeyboardShortcutsSettingsView: View {
                   featureEnabled: config.emojiEnabled, clearable: false, update: { if let value = $0 { EmojiShortcutManager.shared.setShortcut(value) } }),
             .init(id: ShortcutIdentifier.ocrScreenshot, name: "OCR screen region", shortcut: config.mediaToolsOCRShortcut,
                   featureEnabled: config.mediaToolsOCRShortcutEnabled, clearable: false, update: { if let value = $0 { settings.settings.mediaToolsOCRShortcut = value } }),
+            .init(id: ShortcutIdentifier.circleToSearch, name: "Screen text search", shortcut: config.circleToSearchShortcut,
+                  featureEnabled: config.regionTextSearchEnabled && config.circleToSearchEnabled, clearable: false, update: { if let value = $0 { settings.settings.circleToSearchShortcut = value } }),
             .init(id: ShortcutIdentifier.appLockPanic, name: "App Lock privacy", shortcut: KeyboardShortcut(key: "S", modifiers: [.command, .option]),
                   featureEnabled: config.appLockEnabled && config.appLockPanicKeyEnabled, editable: false, clearable: false, update: { _ in })
         ]

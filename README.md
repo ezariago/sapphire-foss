@@ -156,7 +156,7 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   screenshot text monitoring are added; [test coverage and remaining checks](docs/media-tools.md)
   distinguish fixtures from live screen/video verification. Opt-in single-image
   clipboard optimization now has public code and isolated pasteboard tests; native
-  inter-app clipboard checks and Circle to Search remain open. File conversion is separate.
+  inter-app clipboard checks remain open. [Region text search](docs/region-text-search.md) now recognizes a selected region locally, lets you review/edit text and explicitly search Google. Image-based Circle to Search remains open. File conversion is separate.
 - [ ] Implement the DMG installer and its default-handler integration; complete
   the archive settings UI around the existing archive extractor. Both now have
   public code, including staged signed-app installation and a passing real-DMG

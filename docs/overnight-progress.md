@@ -743,3 +743,10 @@ staging. Refused output preserves staging. Six isolated harness scenarios passed
 Android JVM, debug/release builds and lint passed. README records picker/third-party
 provider/File Shelf gaps. Phone verified Dozing after cleanup; no personal files
 or messages used. Account remaining: 90% primary, 38% weekly.
+
+Region text search now replaces the Circle to Search result placeholder with an
+opt-in local OCR/review/explicit Google text-search path. Native compilation and
+generated-image Vision/private-temp cleanup tests passed, as did the full local
+Mac compile. Visual/image search and actual picker/notch/browser checks remain
+open. User steered ongoing work toward automatic clipboard sync and copied-link
+prompts; those are the next priority.

@@ -162,6 +162,7 @@ extension SettingsField {
         SettingsField(\.installedAppUpdateNotificationsEnabled),
         SettingsField(\.notchButtonOrder),
         SettingsField(\.notchBarSpacerWidth),
+        SettingsField(\.regionTextSearchEnabled),
         SettingsField(\.circleToSearchEnabled),
         SettingsField(\.circleToSearchShortcut),
         SettingsField(\.circleToSearchBrowserEngine),
