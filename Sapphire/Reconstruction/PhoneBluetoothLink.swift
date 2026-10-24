@@ -117,6 +117,17 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var phoneDraftsSupported = false
     @Published private(set) var phoneDraftPendingID: String?
     @Published private(set) var phoneDraftStatus = ""
+    @Published private(set) var fileTransferSupported = false
+    @Published private(set) var fileTransferID: String?
+    @Published private(set) var fileTransferProgress = 0.0
+    @Published private(set) var fileTransferStatus = ""
+    private var phoneFileMaxBytes = 0
+    private var outgoingFile: OutgoingPhoneFileTransfer?
+    private let filePreparer = PhoneFilePreparer()
+    private var filePreparation: Task<Void, Never>?
+    private var fileTimeout: Task<Void, Never>?
+    private var fileStep: UInt64 = 0
+    private var fileStartedAt = 0.0
     private var phoneDraftTimeout: Task<Void, Never>?
     private var handoffTimeout: Task<Void, Never>?
     private var receivedHandoffIDs: [String] = []
@@ -430,6 +441,92 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         }
     }
 
+    func chooseFileForPhone() {
+        guard fileTransferID == nil else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        sendFilesToPhone([url])
+    }
+
+    func sendFilesToPhone(_ urls: [URL]) {
+        guard fileTransferID == nil else { return }
+        guard urls.count == 1, let url = urls.first else { fileTransferStatus = "Choose one file at a time for Bluetooth transfer."; return }
+        guard isSecure, activeCompanion, fileTransferSupported else { fileTransferStatus = "Connect an updated Sapphire Companion with file transfer support."; return }
+        let id = UUID()
+        fileTransferID = id.uuidString; fileStartedAt = ProcessInfo.processInfo.systemUptime
+        fileTransferProgress = 0; fileTransferStatus = "Reading the selected file…"
+        armFileTimeout(id: id.uuidString)
+        let preparer = filePreparer
+        filePreparation = Task { [weak self] in
+            do {
+                let file = try await preparer.prepare(url)
+                guard let self, !Task.isCancelled, self.fileTransferID == id.uuidString else { return }
+                guard file.data.count <= self.phoneFileMaxBytes else { self.stopFileTransfer("The phone's file limit is smaller than this file.", notifyPhone: false); return }
+                let transfer = OutgoingPhoneFileTransfer(id: id, file: file)
+                self.outgoingFile = transfer
+                self.sendFilePacket(transfer.offer)
+            } catch {
+                guard let self, self.fileTransferID == id.uuidString else { return }
+                self.stopFileTransfer(error.localizedDescription, notifyPhone: false)
+            }
+        }
+    }
+
+    func cancelFileTransfer() {
+        guard fileTransferID != nil else { return }
+        stopFileTransfer("Transfer stopped. A file that already completed may still be staged on your phone.", notifyPhone: true)
+    }
+
+    private func stopFileTransfer(_ message: String, notifyPhone: Bool) {
+        let id = fileTransferID
+        filePreparation?.cancel(); filePreparation = nil
+        fileTimeout?.cancel(); fileTimeout = nil; fileStep &+= 1
+        outgoingFile = nil; fileTransferID = nil; fileTransferStatus = message
+        if notifyPhone, isSecure, let id { sendSecure("file.cancel", ["requestId": .string(id)]) }
+    }
+
+    private func armFileTimeout(id: String) {
+        guard let budget = PhoneFileTransferPolicy.phaseBudget(startedAt: fileStartedAt, now: ProcessInfo.processInfo.systemUptime) else {
+            stopFileTransfer("File transfer expired.", notifyPhone: true); return
+        }
+        fileStep &+= 1; let step = fileStep
+        fileTimeout?.cancel()
+        fileTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(budget))
+            guard !Task.isCancelled, let self, self.fileTransferID == id, self.fileStep == step else { return }
+            self.stopFileTransfer("File transfer timed out. Check your phone before retrying; a completed file may already be staged.", notifyPhone: true)
+        }
+    }
+
+    private func sendFilePacket(_ packet: OutgoingPhoneFileTransfer.Packet) {
+        guard let id = fileTransferID, isSecure,
+              PhoneFileTransferPolicy.phaseBudget(startedAt: fileStartedAt, now: ProcessInfo.processInfo.systemUptime) != nil else {
+            stopFileTransfer("File transfer expired or the connection closed.", notifyPhone: true); return
+        }
+        let message = packet.type == "file.finish" ? "Verifying the staged file on your phone…" : "Sending one file over encrypted Bluetooth…"
+        if fileTransferStatus != message { fileTransferStatus = message }
+        sendSecure(packet.type, packet.payload)
+        if fileTransferID == id { armFileTimeout(id: id) }
+    }
+
+    private func acceptFileReply(_ payload: [String: PhoneJSON]) {
+        guard var transfer = outgoingFile, fileTransferID == transfer.id else { return }
+        guard PhoneFileTransferPolicy.phaseBudget(startedAt: fileStartedAt, now: ProcessInfo.processInfo.systemUptime) != nil else {
+            stopFileTransfer("File transfer expired. Check your phone for a completed staged copy.", notifyPhone: true); return
+        }
+        let transition = transfer.accept(payload)
+        outgoingFile = transfer; fileTransferProgress = transfer.progress
+        switch transition {
+        case .ignored: break
+        case .send(let packet): sendFilePacket(packet)
+        case .complete:
+            stopFileTransfer("File verified in the phone's private cache. In Sapphire Companion → Features → Files from Mac, choose Save. The staged copy stays until Discard.", notifyPhone: false)
+            fileTransferProgress = 1
+        case .failed(let message): stopFileTransfer(message, notifyPhone: true)
+        }
+    }
+
     func preparePhoneDraft(kind: PhoneActionDraft.Kind, number: String, body: String = "") {
         guard phoneDraftPendingID == nil else { return }
         guard isSecure, activeCompanion, phoneDraftsSupported else {
@@ -651,6 +748,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         handoffStatus = ""; handoffState = ""
         phoneDraftTimeout?.cancel(); phoneDraftTimeout = nil; phoneDraftPendingID = nil
         phoneDraftsSupported = false; phoneDraftStatus = ""
+        stopFileTransfer("", notifyPhone: false)
+        fileTransferSupported = false; phoneFileMaxBytes = 0; fileTransferProgress = 0
         updateClipboardMonitoring()
         hotspotTask?.cancel(); hotspotTask = nil; hotspotRequestID = nil
         hotspotNeedsLocation = false; isHotspotBusy = false
@@ -831,6 +930,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
                 hotspotCanStop = p["hotspotStopSupported"]?.bool == true
                 handoffSupported = p["handoffSupported"]?.bool == true
                 phoneDraftsSupported = p["phoneActionDraftsSupported"]?.bool == true
+                let fileLimit = PhoneFileTransferPolicy.integer(p["fileTransferMaxBytes"]) ?? 0
+                fileTransferSupported = PhoneFileTransferPolicy.integer(p["fileTransferVersion"]) == 1 && fileLimit > 0
+                phoneFileMaxBytes = min(fileLimit, PhoneFileTransferPolicy.maxBytes)
             }
         case "media.state":
             guard encrypted else { throw PhoneWireError.unauthenticated }
@@ -861,6 +963,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             case "needs_permission": handoffStatus = "Allow Sapphire notifications and its Links from Mac channel on your phone."
             default: handoffStatus = "The phone could not receive this link. Check its connection and try again."
             }
+        case "file.transfer.result":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            acceptFileReply(p)
         case "phone.action.result":
             guard encrypted else { throw PhoneWireError.unauthenticated }
             guard let pending = phoneDraftPendingID, p["requestId"]?.string == pending else { break }

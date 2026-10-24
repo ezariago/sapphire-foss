@@ -161,8 +161,7 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   Trash actions, scoped scan history and candidate review; native permission,
   Trash recovery and tree/pie visualizations remain open.
   [Monitoring settings and delivery guards](docs/monitoring.md) now configure the
-  public readout/alert engines; native permissions, alert delivery, adapter readings
-  and profile automation remain open.
+  public readout/alert engines; native permissions and alert delivery remain open.
   [Power display availability](docs/power-readings.md) now distinguishes missing
   adapter telemetry from zero and removes the fabricated system-load fallback;
   real charger/sensor verification remains pending.
@@ -207,6 +206,9 @@ its individual findings need rechecking against the current source.
   incoming/remote call controls remain unimplemented; native review checks remain open.
 - [ ] Implement authenticated Wi-Fi/bulk file transfer, phone storage browsing
   and image/file clipboard delivery beyond the current text-only transport.
+  [One-file Mac-to-phone BLE transfer](docs/phone-file-transfer.md) now stages
+  verified files up to 5 MiB for phone-side Save/Discard. Wi-Fi/bulk, reverse
+  transfer, browsing and file clipboard remain open; live BLE/Save checks remain pending.
 - [ ] Implement screen mirroring, extended display and phone camera/microphone
   streaming, including photo capture and document scanning.
 - [ ] Implement Android widgets/external live activities, handoff/browser-tab

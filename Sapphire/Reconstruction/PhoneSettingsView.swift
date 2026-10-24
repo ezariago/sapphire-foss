@@ -110,6 +110,19 @@ struct ContinuitySettingsView: View {
                         }
                     }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
                 }
+                GroupBox("Files to phone") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Send one ordinary file up to 5 MiB over the encrypted Bluetooth link. Enable Receive files from paired Mac on Android. Completed files are held in private app cache; open Files from Mac in the companion to Save them before Android clears cache. This does not browse phone storage or use Wi-Fi.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        HStack {
+                            Button("Choose file to send…", action: link.chooseFileForPhone)
+                                .disabled(!link.isSecure || !link.fileTransferSupported || link.fileTransferID != nil)
+                            if link.fileTransferID != nil { Button("Cancel transfer", action: link.cancelFileTransfer) }
+                        }
+                        if link.fileTransferID != nil || link.fileTransferProgress > 0 { ProgressView(value: link.fileTransferProgress) }
+                        if !link.fileTransferStatus.isEmpty { Text(link.fileTransferStatus).font(.caption).textSelection(.enabled) }
+                    }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                }
                 GroupBox("Phone drafts") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Prepare an SMS draft or a dialer number. Review the private notification on your unlocked phone, then choose its SMS composer or dialer. Sapphire never sends a message or places a call.")

@@ -61,7 +61,9 @@ jobs:
       - name: Spatial audio parameter and persistence checks
         run: ./scripts/test-spatial-audio.sh
       - name: Phone protocol and crypto tests
-        run: ./scripts/test-phone-reconstruction.sh
+        run: |
+          ./scripts/test-phone-reconstruction.sh
+          ./scripts/test-phone-file-transfer.sh
       - name: Build and verify macOS app
         run: ./scripts/build-local.sh
       - name: Record dependency inputs and checksum

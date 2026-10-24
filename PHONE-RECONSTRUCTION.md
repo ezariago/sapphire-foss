@@ -532,3 +532,19 @@ external activity or reading user data; it was removed and the phone returned to
 Dozing. The normal companion APK was not installed by that fixture test. Native
 notification/review/lockscreen, actual encrypted request/reply and system-app
 presentation remain open. No real SMS or call was made for verification.
+
+
+## One-file Mac-to-phone transfer — 24 October 2026
+
+The source now implements authenticated, acknowledged BLE file offers/chunks/
+finish/cancel, up to 5 MiB, with exact size/hash verification and private phone
+cache staging. Save uses an explicit Android document picker; Discard requires
+phone confirmation. Completed staging is preserved on disconnect. The single-file
+Continuity send bridge now routes to this path for its active peer.
+
+See [file protocol/evidence](docs/phone-file-transfer.md) for bounds, source/target
+handling, the Mac/JVM/USB generated-packet fixture checks and native limitations.
+The separate fixture used only its own synthetic files and data; the production
+companion was not installed or instrumented. Live encrypted BLE transfer and
+actual user-selected document saving remain unverified. Wi-Fi/bulk transfer,
+reverse transfer, phone browsing and image/file clipboard are still incomplete.

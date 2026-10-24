@@ -531,3 +531,25 @@ and app/helper builds passed without adding lint suppressions. Existing warnings
 remain. No phone permission/radio/notification setting was changed; native denial/
 regrant recovery remains unverified. Companion source checkpoint is separate
 from its installed phone app. See its VERIFICATION.md for scope.
+
+
+Implemented one-file Mac-to-phone transfer (up to 5 MiB) over the existing encrypted
+BLE session, including the active-peer Continuity single-file bridge. Serial
+bounded source preparation rejects final symlinks/special files/oversize and
+detected changes. Chunk acknowledgements enforce exact sequence/counters and
+phase/total deadlines. Android streams to private staging, verifies size/SHA-256
+and publishes content/metadata together. Explicit phone Save verifies copied
+bytes and preserves staging until confirmed Discard; no remote path, broad
+storage permission, auto-open or automatic Downloads write is introduced.
+
+All 24 configured Mac scripts passed (`build/file-transfer-full-regression.log`),
+then expanded exact-limit/deadline fixtures passed separately. Android's 24 JVM
+cases passed, including exact 5 MiB reception and verified-copy failures. The
+separate USB fixture consumed Mac-generated packets and reconstructed/published/
+verified-copied 4,097 exact synthetic bytes in its own package. It did not launch
+external apps or touch normal companion/user data, was removed afterward, and
+the phone was verified Dozing. App/helper builds and debug lint passed. Final Mac
+app/signature/ZIP verification passed (`build/phone-file-transfer-final-build.log`).
+The normal companion was not updated by isolated testing. Live BLE/Save/File Shelf/
+OEM interaction remains open; Wi-Fi/bulk, reverse transfer, phone browsing and
+file/image clipboard are not implemented. See [file evidence](phone-file-transfer.md).

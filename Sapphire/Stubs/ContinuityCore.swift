@@ -388,7 +388,10 @@ final class ContinuityManager {
     func acceptReconstructedMedia(_ state: ContinuityMediaState, deviceName: String?) {
         mediaBridge.acceptReconstructed(state, deviceName: deviceName)
     }
-    func sendFiles(_ urls: [URL], toPeerID peerID: String) {}
+    func sendFiles(_ urls: [URL], toPeerID peerID: String) {
+        guard peerID == activePeerID, connectedPeer?.id == peerID else { return }
+        ReconstructedPhoneLink.shared.sendFilesToPhone(urls)
+    }
     func dismissNotificationOnPhone(peerID: String, key: String, revision: String? = nil) {
         guard peerID == activePeerID,
               let entry = notificationBridge.notifications.first(where: { $0.key == key }),
