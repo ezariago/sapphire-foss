@@ -123,7 +123,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   and green-button maximize are added; [implementation/test status](docs/window-controls.md)
   records remaining UI variants and device verification. [Selection Services](docs/selection-services.md)
   now provide opt-in text cleanup and URL tracking removal; native menu delivery
-  and hinge animation remain open. [Display scoping](docs/dock-display-scope.md)
+  remains open. A [bounded hinge snapshot effect](docs/hinge-animation.md) now has
+  public code and injected tests; real sensor, capture, visual and physical lid
+  verification remain open. [Display scoping](docs/dock-display-scope.md)
   now limits Sapphire previews/clicks to a selected monitor; native hot-plug/input
   verification and native Dock placement locking remain open.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
@@ -188,7 +190,7 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 - [ ] Replace the camera, virtual microphone, File Provider and Finder Sync
   extension placeholders with functional implementations and installation/setup.
 
-Evidence: [feature manager stubs](Sapphire/Stubs/PremiumFeatureManagers.swift),
+Evidence: [public reconstructed managers](Sapphire/Reconstruction),
 [feature model stubs](Sapphire/Stubs/PremiumFeatureModels.swift),
 [view stubs](Sapphire/Stubs/PremiumFeatureViews.swift),
 [remaining public stubs](Sapphire/Stubs), [extension placeholders](PublicExtensionStubs).

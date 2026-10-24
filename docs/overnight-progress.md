@@ -612,3 +612,25 @@ real preference write, physical sleep or lid-close test ran. Full app/signature/
 verification passed (`build/dock-display-build.log`). Real hot-plug, pointer/AX,
 permission and multi-display visual checks remain open. See
 [display scoping](dock-display-scope.md).
+
+Implemented the opt-in public hinge manager as a bounded frozen-snapshot dim/blur
+effect, with explicit status and limitations in Settings/README. It requires one
+built-in display, a supported reporting sensor, Screen Recording and an unlocked
+console session. A fresh post-interruption sensor tick and open-lid reading arm
+one gesture; captures have a two-second acceptance deadline and effects a
+four-second total limit. Configuration/clock/sensor/session/display failures
+clear the image and invalidate capture tickets. A single outstanding native
+request is retained until return even if cancellation is ignored.
+
+Production policy/async-engine fixtures passed for freshness, arming/deadlines,
+invalid configuration/readings, failure gates, stale/cancelled/oversized results,
+restart, bounded capture concurrency and reentrant sensor callbacks. A separate
+fake-settings/sensor fixture compiled the actual native manager/renderer and
+verified disabled/invalid startup and teardown without desktop capture or panels.
+Dock display regressions also passed. Full local app/signature/ZIP verification
+passed (`build/hinge-animation-final-build.log`). A separate bounded hardware
+probe found the Mac14,2 standard lid sensor and read one valid native report,
+then released its client (`build/hinge-hardware-sample.log`). It did not move the
+lid, sleep the Mac, capture the desktop or change power settings. Native capture,
+visual/permission/Spaces/input behaviour and physical lid/sleep checks remain
+open. See [hinge evidence and limits](hinge-animation.md).

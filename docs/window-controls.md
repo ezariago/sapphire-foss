@@ -16,8 +16,9 @@ Added 2026-10-24. All controls remain opt-in.
 in macOS CI. The former uses a fresh UUID-named CFPreferences domain and does not
 change the real Dock. [Selection Services](selection-services.md) now implement
 explicit text cleanup and URL tracking removal. Native Services discovery and
-editor interaction and hinge animations remain on the README
-roadmap. [Display scoping](dock-display-scope.md) limits Sapphire previews/clicks
+editor interaction remain on the README roadmap. The [hinge snapshot effect](hinge-animation.md)
+now has public source and injected tests; native sensor/capture/visual and physical
+lid checks remain open. [Display scoping](dock-display-scope.md) limits Sapphire previews/clicks
 to a selected monitor; actual Dock placement locking and native display/input
 checks remain open. A successful compile
 is not recorded as end-to-end feature parity.

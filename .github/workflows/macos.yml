@@ -40,6 +40,7 @@ jobs:
         run: |
           ./scripts/test-dock-layouts.sh
           ./scripts/test-dock-display-scope.sh
+          ./scripts/test-hinge-animation.sh
           ./scripts/test-quit-protection.sh
           ./scripts/test-window-cycling.sh
           ./scripts/test-auto-quit.sh

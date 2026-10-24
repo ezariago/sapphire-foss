@@ -9,12 +9,7 @@ import Combine
 import Foundation
 
 
-final class SystemEnhanceHingeAnimationManager {
-    static let shared = SystemEnhanceHingeAnimationManager()
-    private init() {}
-    func start() {}
-    func stop() {}
-}
+
 
 
 

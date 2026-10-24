@@ -557,6 +557,9 @@ struct SystemEnhanceSettingsView: View {
 private struct SystemEnhanceHingeAnimationSettingsCard: View {
     @EditingSettings private var settings: SettingsEditingSession
     @ObservedObject private var lidAngleSensor = LidAngleSensor.shared
+    #if !SAPPHIRE_FULL_BUILD
+    @ObservedObject private var hingeAnimation = SystemEnhanceHingeAnimationManager.shared
+    #endif
     @ObservedObject private var permissionsManager = PermissionsManager.shared
 
     private var currentLidAngleText: String {
@@ -574,6 +577,11 @@ private struct SystemEnhanceHingeAnimationSettingsCard: View {
                 isOn: $settings.settings.systemEnhanceHingeAnimationEnabled
             )
             if settings.settings.systemEnhanceHingeAnimationEnabled {
+                #if !SAPPHIRE_FULL_BUILD
+                Text(hingeAnimation.status).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
+                Text("Uses one in-memory built-in display snapshot per closing gesture, up to 2048 px and four seconds. This is a temporary frozen-image dim/blur effect, not live desktop blur. Requires a supported sensor and Screen Recording permission. Open at least 5° past the activation angle to rearm. It does not prevent system sleep or change brightness. Physical lid/permission verification remains pending.")
+                    .font(.caption).foregroundStyle(.secondary).padding()
+                #endif
                 Divider().padding(.leading, 20)
                 SettingsDetailRow(title: "Current Lid Angle") {
                     Text(currentLidAngleText).monospacedDigit()
