@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Native fixed-clipboard probe. Keeps original phone clip opaque/in-memory; restores only its own fixture."""
+"""Native fixed-clipboard probe. Keeps original phone clip opaque/in-memory; restores only its own fixture. Never sleeps the phone."""
 import argparse,json,subprocess,time,uuid,re
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--serial',required=True);a=p.parse_args()
 run=str(uuid.uuid4())
 def adb(*args):return subprocess.check_output(['adb','-s',a.serial,*args],text=True,stderr=subprocess.DEVNULL,timeout=25)
-def start(action):adb('shell','am','start','-W','-n','dev.sapphire.companion.hotspothelper/dev.sapphire.helper.ClipboardFixtureActivity','--es','fixture',action,'--es','run',run)
+def start(action):adb('shell','am','start','-W','-f','0x18000000','-n','dev.sapphire.companion.hotspothelper/dev.sapphire.helper.ClipboardFixtureActivity','--es','fixture',action,'--es','run',run)
 def report(wanted,seconds=15):
  end=time.monotonic()+seconds
  while time.monotonic()<end:
@@ -28,11 +28,4 @@ finally:
   if state!='restored' and state_before_cleanup!='locked':raise RuntimeError('Fixture restoration was not confirmed; check whether the phone needs unlocking')
   print('PASS: locked setup touched no clipboard/preferences' if state_before_cleanup=='locked' else 'PASS: original helper preference restored; original clip restored only if own fixture still current',flush=True)
  finally:
-  adb('shell','input','keyevent','KEYCODE_SLEEP')
-  end=time.monotonic()+6
-  while time.monotonic()<end:
-   power=adb('shell','dumpsys','power')
-   match=re.search(r'mWakefulness=(Asleep|Dozing)\b',power)
-   if match:print('Phone verified:',match[1],flush=True);break
-   time.sleep(.2)
-  else:raise RuntimeError('Phone sleep could not be verified')
+  print("Phone left awake as requested; no sleep key sent.",flush=True)

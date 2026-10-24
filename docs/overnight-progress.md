@@ -766,3 +766,18 @@ notification-only fixture verified private review notification and expiry by six
 seconds; no clipboard access/browser opening. Latest APKs installed in place.
 Background capture still awaits human unlock, and helper sending remains opt-in.
 The phone was verified Dozing after tests; no persistent wake/alarm setting changed.
+
+Attended continuation: user unlocked the phone and instructed that no further
+phone screen-off action be sent, superseding the earlier threshold/test sleep
+instruction. Standalone background helper read and restoration now pass. Fixed
+its launcher to use separate tasks so Android cannot reuse the begin window for
+restore. Live relay/filtering/notch expiry now pass with Launcher in front and
+both Sapphire activities unfocused. Helper opt-out/re-enable recovered after a
+bounded automatic retry with no clipboard replay; a fresh later copy passed.
+Normal clipboard/Helper switches are enabled, receive-links already enabled.
+Opaque phone clipboard/configuration snapshots were restored for owned runs;
+Mac used only its private fixture pasteboard and returned to normal startup.
+Full Mac build and Companion/Helper debug/release builds, lint and 26 JVM cases
+pass. README reflects verified scope; visual/browser clicks and OEM/reboot tests
+remain open. Current source adds only fixed fixture diagnostic commands and
+whitelisted booleans, never arbitrary clipboard input or pairing approval.

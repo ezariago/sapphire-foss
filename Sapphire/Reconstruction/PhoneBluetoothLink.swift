@@ -187,6 +187,9 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     private var workspaceObservers: [NSObjectProtocol] = []
     private var diagnosticFileID: String?
     private var diagnosticFileReply = "idle"
+    private static let clipboardFixtureText = "Sapphire clipboard fixture https://example.com/sapphire-clipboard-test"
+    private var clipboardFixtureBoard: NSPasteboard?
+    private var clipboardFixtureReceiveCount = 0
     private var diagnosticDirectory: URL?
     private var diagnosticTimer: Timer?
     private var diagnosticSubscription: AnyCancellable?
@@ -223,6 +226,13 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         let fixtureMedia = media?.appId == "dev.sapphire.companion"
             && ["Sapphire media fixture 1", "Sapphire media fixture 2"].contains(media?.title ?? "")
         let snapshot: [String: Any] = [
+            "clipboardFixtureActive": clipboardFixtureBoard != nil,
+            "clipboardFixtureDelivered": clipboardFixtureBoard?.string(forType: .string) == Self.clipboardFixtureText
+                && clipboardFixtureBoard?.types?.contains(PhoneClipboardDelivery.marker) == true,
+            "clipboardFixtureReceiveCount": clipboardFixtureReceiveCount,
+            "clipboardFixturePrompt": copiedLinkPrompt?.url.absoluteString == "https://example.com/sapphire-clipboard-test",
+            "clipboardFixturePromptVisible": activityManager?.currentActivity == .continuityLink
+                && copiedLinkPrompt?.url.absoluteString == "https://example.com/sapphire-clipboard-test",
             "fileTransferSupported": fileTransferSupported, "fileTransferBusy": fileTransferID != nil,
             "fileFixtureID": diagnosticFileID ?? "",
             "fileFixtureReply": diagnosticFileReply,
@@ -289,6 +299,14 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         case "notification-test-reply": notificationFixtureCommand("reply")
         case "notification-test-dismiss": notificationFixtureCommand("dismiss")
         case "handoff-test-send": sendLinkToPhone("https://example.com/sapphire-handoff-test")
+        case "clipboard-test-begin":
+            guard isSecure, copiedLinkPrompt == nil, clipboardFixtureBoard == nil else { return }
+            clipboardFixtureBoard = NSPasteboard.withUniqueName(); clipboardFixtureReceiveCount = 0
+            updateClipboardMonitoring()
+        case "clipboard-test-end":
+            clipboardFixtureBoard?.releaseGlobally(); clipboardFixtureBoard = nil
+            if let prompt = copiedLinkPrompt, prompt.url.absoluteString == "https://example.com/sapphire-clipboard-test" { dismissCopiedLink(id: prompt.id) }
+            updateClipboardMonitoring()
         case "file-test-send":
             guard fileTransferID == nil else { return }
             let fixture = diagnosticDirectory.appendingPathComponent(PhoneFileTransferDiagnosticFixture.name)
@@ -590,7 +608,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         if let clipboardToken { PasteboardChangeMonitor.shared.unsubscribe(clipboardToken) }
         clipboardToken = nil
         clipboardChanges.skip(through: NSPasteboard.general.changeCount)
-        guard automaticClipboard, isSecure else { return }
+        guard automaticClipboard, isSecure, clipboardFixtureBoard == nil else { return }
         clipboardToken = PasteboardChangeMonitor.shared.subscribe(interval: 0.25, priority: 10) { [weak self] change in
             guard let self, self.isSecure, self.automaticClipboard else { return }
             let board = NSPasteboard.general
@@ -1037,6 +1055,13 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             guard encrypted else { throw PhoneWireError.unauthenticated }
             guard p["contentType"]?.string == "text", let text = p["text"]?.string,
                   !text.isEmpty, text.utf8.count < 12000, !text.contains("\0") else { break }
+            if let board = clipboardFixtureBoard {
+                guard text == Self.clipboardFixtureText else { break }
+                clipboardFixtureReceiveCount += 1
+                _ = PhoneClipboardDelivery.write(text, to: board)
+                offerCopiedLink(text)
+                break
+            }
             receivedText = text
             if SettingsModel.shared.current.continuityEnabled && SettingsModel.shared.current.continuityClipboardSync {
                 if PhoneClipboardDelivery.write(text, to: .general) { clipboardChanges.skip(through: NSPasteboard.general.changeCount) }

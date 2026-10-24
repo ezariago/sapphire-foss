@@ -68,7 +68,7 @@ Implemented for device testing:
 - Store this replacement's pairing key in macOS Keychain under its own service name; the official app's pairing store is untouched.
 - Reconnect and establish authenticated, replay-protected BLE sessions.
 - Read phone battery/status, receive phone media state and send playback commands.
-- Send text below 12 KB explicitly or automatically while Companion has focus; the Mac now supports automatic marked clipboard delivery. Optional Shizuku background sending and five-second copied-link prompts have public implementations; native background verification is pending phone unlock. See [current setup/evidence](docs/clipboard-link-handoff.md).
+- Send text below 12 KB explicitly or automatically while Companion has focus; the Mac now supports automatic marked clipboard delivery. Optional Shizuku background sending and five-second copied-link prompts have public implementations; native background relay/filtering/recovery and notch selection/expiry now pass. See [current setup/evidence](docs/clipboard-link-handoff.md).
 - Mirror phone notifications with per-app muting, supported actions and replies.
 - Control the phone's internet hotspot through its authorized helper.
 - Share web links in either direction, with explicit opening on the receiving device.
@@ -579,3 +579,17 @@ to button-only Android sending/manual Mac copying describe the previous path.
 [Setup and evidence](docs/clipboard-link-handoff.md) distinguish new public code
 from device verification. No claim of seamless background operation follows
 from compilation or a helper ready state.
+
+### Attended background clipboard relay/recovery checkpoint
+
+The phone was unlocked and the full synthetic path passed: background helper and
+Companion (neither app focused), encrypted BLE, marked private Mac pasteboard,
+compact notch prompt selection/expiry, sensitive/remote-copy rejection and a
+later fresh same-text copy. Helper opt-out/re-enable also recovered through the
+bounded automatic retry without clipboard replay. The opaque original phone
+clipboard and configuration snapshots were restored; normal Mac startup resumed.
+Normal-use clipboard switches and Helper clipboard access were then enabled.
+The user superseded the older sleep instruction: further tests leave the phone
+awake and do not send KEYCODE_SLEEP. A debug-only ten-minute wake lock covers
+the fixture session without changing persistent device settings. See current
+[evidence and limits](docs/clipboard-link-handoff.md).

@@ -203,13 +203,13 @@ its individual findings need rechecking against the current source.
 
 ### Android / Continuity feature parity
 
-- [ ] Complete automatic clipboard and copied-link verification. Public implementations
-  now add foreground Android sending, marked automatic Mac delivery, an expiring
-  Android link notification and compact Mac notch Open/Dismiss prompt. An optional
-  signature-protected Shizuku helper supplies background clipboard code while keeping
-  the current keyboard. [Setup and evidence](docs/clipboard-link-handoff.md) record
-  passing policy/build checks and a real Android notification-expiry check; background
-  clipboard capture is blocked on phone unlock, and notch/open interaction is unverified.
+- [x] Implement automatic Android text clipboard sending, optional Shizuku background
+  capture, marked automatic Mac delivery, and five-second copied-link suggestions.
+  [Real-device checks](docs/clipboard-link-handoff.md) now pass background relay with
+  both apps out of focus, sensitive/remote-copy filtering, fresh repeated copies,
+  helper opt-out/recovery, Android notification expiry and Mac notch selection/expiry.
+  Browser-open clicks, unlocked heads-up appearance and broader OEM/profile behaviour
+  remain interaction checks; image/file clipboard remains on the separate roadmap.
 
 - [x] Implement opt-in phone media state/playback commands and Mac phone-media
   presentation, verified with a silent Android MediaSession fixture. Third-party

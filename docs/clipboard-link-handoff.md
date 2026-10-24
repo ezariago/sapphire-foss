@@ -61,15 +61,40 @@ did shortcut, media and file-harness regressions. The full local Mac build,
 Android JVM tests, Companion/Helper debug and release builds and debug lint pass.
 The earlier storage repair also passed its full hosted CI run.
 
-The native background helper probe was blocked by the phone lock screen before
-any fixture clipboard/pref setup. Pending test activities were removed and the
-phone returned to sleep. A debug-only fixed synthetic probe is ready; it keeps
-the original clipboard opaque/in-memory, checks a generated copy while its app
-is out of focus, and restores only its own still-current fixture and original
-helper switch. It does not log/persist the original clipboard. This probe and
-actual background clipboard capture and notch/open interactions remain unverified
-until the phone can be unlocked. No background-working claim follows from a ready label
-or a passing build.
+The original lock-screen blocker was resolved in the next attended check. The
+production helper read a fixed synthetic copy while its test app was out of focus,
+and cleanup restored the opaque original clipboard and original helper switch.
+The launcher now creates distinct fixture tasks: Android had reused the first
+window, preventing its initial restore request from being handled.
+
+The subsequent live relay check passed with the phone launcher in front and
+neither Companion nor Helper holding window focus:
+
+- Production helper → normal Companion client → authenticated BLE → a marked,
+  private Mac pasteboard, with the expected bytes only.
+- Actual live-activity manager selection and five-second expiry of the compact
+  copied-link prompt, with no browser opening.
+- Sensitive and Mac-origin synthetic copies skipped without relay or a prompt.
+- A later fresh copy of identical text relayed again.
+- Helper opt-out propagated to Companion, then access recovered automatically
+  after the bounded retry delay, with no existing-clipboard replay.
+
+The Companion and Helper preference snapshots and phone clipboard were restored
+only for the owned run; the Mac general clipboard was not used for assertions or
+fixture delivery. Normal Mac startup was restored and its private diagnostic
+files removed. Afterward the requested normal clipboard switches and Helper
+access were enabled; receive-links was already enabled. No phone sleep command
+is sent by the new relay test or the updated standalone helper test. A debug-only
+timed wake lock holds the screen during the synthetic session (at most ten
+minutes), then releases without changing persistent wake/alarm settings.
+
+Evidence: `build/background-clipboard-helper-live.log`,
+`build/clipboard-relay-recovery-live.log`, `build/clipboard-relay-android-build.log`,
+and `build/clipboard-recovery-android-build.log`. Both Android apps' debug/release
+builds, debug lint, all 26 JVM cases and the full local Mac build passed.
+Shizuku process death/reboot and work-profile/OEM variations still need their own
+checks. Actual browser-open clicks and visual heads-up/notch appearance remain
+manual interaction checks; activity selection is not a visual audit.
 
 A separate notification-only native probe passed while the phone was locked. It
 called production copied-text handoff using a fixed `example.com` link, verified
@@ -81,3 +106,12 @@ Both debug fixtures are absent from release manifests. Companion 0.6.0 and Helpe
 0.2.0 were installed in place with matching existing debug certificates and retained
 app data. Android blocked an external direct start of the non-exported link service;
 it was kept private. Reopen Companion/Start connection after unlocking as needed.
+
+## Automatic retry
+
+While the secure link and both sending switches remain enabled, missing or stale
+helper bindings and unavailable authorization retry at a bounded 30-second
+interval. Ready bindings do not churn. Helper opt-out explicitly reports disabled
+before removing the listener, and disabling sending cancels/rejects callbacks
+immediately. The manual Retry control checks setup without waiting for the timer.
+Recovery registers for new copies; it does not replay the current clipboard.
