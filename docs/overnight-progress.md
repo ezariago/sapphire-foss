@@ -795,5 +795,5 @@ condition and explicit permission UI. Unknown/revoked status cannot match, and
 no permission prompt runs automatically. Named Focus identities/bindings, Space
 bindings and scripts remain unsupported. Injected policy/production-engine and
 native-adapter compilation pass, including permission loss during pending reads
-and query-start freshness. Full local build is underway; native grant/revocation
+and query-start freshness. Full local Mac build and final packaged purpose-string check passed; native grant/revocation
 and Focus transitions remain human checks, with no Focus changes during tests.

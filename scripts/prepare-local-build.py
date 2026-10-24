@@ -53,7 +53,8 @@ def main():
     # Public Services only advertise implemented selectors. Preserve the upstream
     # plist for private builds, whose camera/document services are separate.
     public_info = plistlib.loads((ROOT / "Sapphire/App/Info.plist").read_bytes())
-    public_info["NSFocusStatusUsageDescription"] = "Sapphire uses your shared Focus status to evaluate menu-bar profiles and show Focus indicators."
+    focus_purpose = "Sapphire uses your shared Focus status to evaluate menu-bar profiles and show Focus indicators."
+    public_info["NSFocusStatusUsageDescription"] = focus_purpose
     public_info["NSServices"] = plistlib.loads((ROOT / "scripts/public-services.plist").read_bytes())
     public_info_path = ROOT / "build/Local/Sapphire-Public-Info.plist"
     public_info_path.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +62,7 @@ def main():
     configs = objects[app["buildConfigurationList"]]["buildConfigurations"]
     for config in configs:
         objects[config]["buildSettings"]["INFOPLIST_FILE"] = str(public_info_path)
+        objects[config]["buildSettings"]["INFOPLIST_KEY_NSFocusStatusUsageDescription"] = focus_purpose
         objects[config]["buildSettings"]["EXCLUDED_SOURCE_FILE_NAMES"] = "GeminiLiveManagerStub.swift"
         for key in ("NSLocationUsageDescription", "NSLocationWhenInUseUsageDescription"):
             objects[config]["buildSettings"]["INFOPLIST_KEY_" + key] = "Sapphire uses Location access to find and join your phone’s Wi-Fi hotspot, and for local weather."
