@@ -1061,6 +1061,7 @@ struct Settings: Codable, Equatable {
     var systemEnhancePreviewTriggerRaw: String = "hover"
     var systemEnhancePreviewDelay: Double = 0.25
     var systemEnhanceLivePreviewKeepAlive: Int = 2
+    var systemEnhanceServicesEnabled: Bool = false
     var systemEnhancePasteAsPlainTextEnabled: Bool = false
     var systemEnhancePasteAsPlainStripLinks: Bool = false
     var systemEnhancePasteAsPlainStripEmojis: Bool = false

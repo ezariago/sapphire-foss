@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>NSMenuItem</key>
+		<dict>
+			<key>default</key>
+			<string>Sapphire/Clean Selected Text</string>
+		</dict>
+		<key>NSMessage</key>
+		<string>sapphireCleanSelectedText</string>
+		<key>NSPortName</key>
+		<string>Sapphire</string>
+		<key>NSSendTypes</key>
+		<array>
+			<string>public.utf8-plain-text</string>
+		</array>
+		<key>NSReturnTypes</key>
+		<array>
+			<string>public.utf8-plain-text</string>
+		</array>
+		<key>NSRequiredContext</key>
+		<dict/>
+		<key>NSTimeout</key>
+		<integer>5000</integer>
+	</dict>
+	<dict>
+		<key>NSMenuItem</key>
+		<dict>
+			<key>default</key>
+			<string>Sapphire/Remove Tracking from URL</string>
+		</dict>
+		<key>NSMessage</key>
+		<string>sapphireCleanSelectedURL</string>
+		<key>NSPortName</key>
+		<string>Sapphire</string>
+		<key>NSSendTypes</key>
+		<array>
+			<string>public.utf8-plain-text</string>
+		</array>
+		<key>NSReturnTypes</key>
+		<array>
+			<string>public.utf8-plain-text</string>
+		</array>
+		<key>NSRequiredContext</key>
+		<dict/>
+		<key>NSTimeout</key>
+		<integer>5000</integer>
+	</dict>
+</array>
+</plist>

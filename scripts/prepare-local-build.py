@@ -50,8 +50,16 @@ def main():
         phase for phase in app["buildPhases"]
         if objects[phase].get("name") != "Upload Crashlytics Symbols"
     ]
+    # Public Services only advertise implemented selectors. Preserve the upstream
+    # plist for private builds, whose camera/document services are separate.
+    public_info = plistlib.loads((ROOT / "Sapphire/App/Info.plist").read_bytes())
+    public_info["NSServices"] = plistlib.loads((ROOT / "scripts/public-services.plist").read_bytes())
+    public_info_path = ROOT / "build/Local/Sapphire-Public-Info.plist"
+    public_info_path.parent.mkdir(parents=True, exist_ok=True)
+    public_info_path.write_bytes(plistlib.dumps(public_info, sort_keys=False))
     configs = objects[app["buildConfigurationList"]]["buildConfigurations"]
     for config in configs:
+        objects[config]["buildSettings"]["INFOPLIST_FILE"] = str(public_info_path)
         objects[config]["buildSettings"]["EXCLUDED_SOURCE_FILE_NAMES"] = "GeminiLiveManagerStub.swift"
         for key in ("NSLocationUsageDescription", "NSLocationWhenInUseUsageDescription"):
             objects[config]["buildSettings"]["INFOPLIST_KEY_" + key] = "Sapphire uses Location access to find and join your phone’s Wi-Fi hotspot, and for local weather."

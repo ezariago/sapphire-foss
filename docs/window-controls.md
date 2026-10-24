@@ -14,7 +14,9 @@ Added 2026-10-24. All controls remain opt-in.
 
 `./scripts/test-dock-layouts.sh` and `./scripts/test-quit-protection.sh` are included
 in macOS CI. The former uses a fresh UUID-named CFPreferences domain and does not
-change the real Dock. Context-menu services, hinge animations and Dock locking remain on the README
+change the real Dock. [Selection Services](selection-services.md) now implement
+explicit text cleanup and URL tracking removal. Native Services discovery and
+editor interaction, hinge animations and Dock locking remain on the README
 roadmap. A successful compile
 is not recorded as end-to-end feature parity.
 

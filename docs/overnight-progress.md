@@ -576,3 +576,22 @@ phone mirroring, browser and notch interaction checks remain pending. See
 [Smart Inbox evidence and limits](smart-inbox.md). The companion source remains
 unchanged from the verified file-transfer checkpoint and its normal phone app
 was not updated.
+
+Resumed after the user's next usage reset. Added opt-in macOS Selection Services
+for selected-text cleanup and selected-URL tracking removal. The handler uses
+only the private Services selection board, bounds inputs/custom parameters,
+rejects marked/multiple/invalid selections and rechecks configuration/revision.
+It shares the existing sanitizer and URL policy; the global clipboard and native
+paste shortcut remain separate. The public generated Info.plist now advertises
+implemented selectors instead of the photo/scanning Services with empty handlers;
+the upstream plist remains unchanged for private builds.
+
+All 26 configured Mac regression scripts passed
+(`build/selection-services-full-regression.log`). Real selectors and named-board
+fixtures cover cleanup, Unicode/size/marker refusals, URL encoding/signature
+preservation and stale configuration/revision rejection. Final local app,
+signature and ZIP checks are recorded in `build/selection-services-final-build.log`.
+Native Services discovery/enabling, menu delivery and third-party editor style/
+replacement remain unverified. No user selection, Services registry, global
+clipboard or phone setting was changed by these fixtures. Details:
+[Selection Services](selection-services.md).

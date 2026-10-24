@@ -547,6 +547,7 @@ extension SettingsIndex {
         .init(key: "systemEnhancePasteAsPlainStripEmojis", title: "Remove Emojis", detail: "Strip emoji characters from pasted text.", section: .systemEnhance, range: nil, options: nil),
         .init(key: "systemEnhancePasteAsPlainStripLinks", title: "Remove Links", detail: "Strip web addresses from pasted text.", section: .systemEnhance, range: nil, options: nil),
         .init(key: "systemEnhancePasteAsPlainStripListMarkers", title: "Remove List Markers", detail: "Remove bullets and numbered markers such as •, -, and 1. from list items.", section: .systemEnhance, range: nil, options: nil),
+        .init(key: "systemEnhanceServicesEnabled", title: "Selection Services", detail: "Clean selected text or a selected URL through an app’s Services menu.", section: .systemEnhance, range: nil, options: nil),
         .init(key: "systemEnhancePasteAsPlainTextEnabled", title: "Paste as Plain Text", detail: "Paste without formatting using its own shortcut.", section: .systemEnhance, range: nil, options: nil),
         .init(key: "systemEnhancePreviewDelay", title: "Preview Delay", detail: nil, section: .dockLayouts, range: (0.0)...(1.0), options: nil),
         .init(key: "systemEnhancePreviewLayoutRaw", title: nil, detail: nil, section: nil, range: nil, options: nil),

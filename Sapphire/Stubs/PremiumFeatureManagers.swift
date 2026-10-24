@@ -9,12 +9,6 @@ import Combine
 import Foundation
 
 
-final class SystemEnhanceContextMenu {
-    static let shared = SystemEnhanceContextMenu()
-    private init() {}
-    func installIfNeeded() {}
-}
-
 final class SystemEnhanceHingeAnimationManager {
     static let shared = SystemEnhanceHingeAnimationManager()
     private init() {}

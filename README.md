@@ -121,7 +121,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   animations and Dock layout import/application. Public implementations for
   presets, AX window selection/previews, click actions, auto-quit, quit protection
   and green-button maximize are added; [implementation/test status](docs/window-controls.md)
-  records remaining UI variants and device verification.
+  records remaining UI variants and device verification. [Selection Services](docs/selection-services.md)
+  now provide opt-in text cleanup and URL tracking removal; native menu delivery,
+  hinge animation and display locking remain open.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,
   keyboard debounce, Super Key, emoji suggestions and text snippets; complete
   their settings and shortcut configuration UI. Keyboard debounce now has a public

@@ -418,7 +418,7 @@ final class ContinuityManager {
 @MainActor
 final class ContinuityServicesProvider: NSObject {
     static let shared = ContinuityServicesProvider()
-    func install() {}
+    func install() { SystemEnhanceContextMenu.shared.installIfNeeded() }
 }
 
 struct ContinuityNotchDetailView: View {

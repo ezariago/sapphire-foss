@@ -437,6 +437,14 @@ struct SystemEnhanceSettingsView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
 
                 SystemEnhanceHingeAnimationSettingsCard()
+                #if !SAPPHIRE_FULL_BUILD
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Selection Services").font(.headline).padding([.top, .horizontal])
+                    ToggleRow(title: "Selection Services", description: "Clean selected text or a selected URL through an app’s Services menu.", isOn: $settings.settings.systemEnhanceServicesEnabled)
+                    Text("Select text in a compatible app, then choose Services → Sapphire → Clean Selected Text or Remove Tracking from URL. Text cleanup uses the Remove Links, Emojis and List Markers options below. URL cleanup uses Clipboard’s custom tracking parameter list. Only the service selection is changed; your clipboard is left alone. Enable services in System Settings → Keyboard → Keyboard Shortcuts → Services if needed. Read-only selections and some apps cannot accept the result.")
+                        .font(.caption).foregroundStyle(.secondary).padding()
+                }.modifier(SettingsContainerModifier())
+                #endif
 
                 VStack(alignment: .leading, spacing: 0) {
                     PremiumFeatureView(feature: .windowsPreview) {
@@ -471,6 +479,8 @@ struct SystemEnhanceSettingsView: View {
                     if settings.settings.systemEnhancePasteAsPlainTextEnabled {
                         Divider().padding(.leading, 20)
                         PlainTextPasteShortcutRow()
+                    }
+                    if settings.settings.systemEnhancePasteAsPlainTextEnabled || settings.settings.systemEnhanceServicesEnabled {
                         Divider().padding(.leading, 20)
                         ToggleRow(title: "Remove Links", description: "Strip web addresses from pasted text.", isOn: $settings.settings.systemEnhancePasteAsPlainStripLinks)
                         Divider().padding(.leading, 20)

@@ -73,6 +73,7 @@ extension SettingsField {
         SettingsField(\.systemEnhancePreviewTriggerRaw),
         SettingsField(\.systemEnhancePreviewDelay),
         SettingsField(\.systemEnhanceLivePreviewKeepAlive),
+        SettingsField(\.systemEnhanceServicesEnabled),
         SettingsField(\.systemEnhancePasteAsPlainTextEnabled),
         SettingsField(\.systemEnhancePasteAsPlainStripLinks),
         SettingsField(\.systemEnhancePasteAsPlainStripEmojis),
