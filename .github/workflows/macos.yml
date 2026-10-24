@@ -30,6 +30,7 @@ jobs:
       - name: Clipboard, DMG and native media tests
         run: |
           ./scripts/test-clipboard-tools.sh
+          ./scripts/test-clipboard-image-optimization.sh
           ./scripts/test-dmg-installer.sh
           ./scripts/test-media-tools.sh
       - name: Foundation security and FOSS access tests

@@ -34,5 +34,34 @@ is a separate opt-in; clipboard sharing can forward that text to the paired phon
 preservation, image/PDF OCR, PDF writing and silent audio compression fixtures.
 No audio was played. Actual video codecs, Screen Recording denial/approval,
 interactive region selection, Spotlight screenshot detection and full UI actions
-remain manual checks. Automatic clipboard optimization and Circle to Search
-remain on the roadmap.
+remain manual checks. Circle to Search remains unimplemented.
+
+## Automatic clipboard image optimization
+
+The existing opt-in preference now processes newly copied single PNG/TIFF-only
+items. Encoding runs serially off the main actor, transforms orientation,
+retains alpha and outputs PNG only when it is smaller. PNG encoding is lossless,
+but resizing can discard detail: the configured maximum dimension is capped at
+4096 px for this automatic path. Inputs are bounded to 32 MiB of representations
+and 20 million pixels. Animated/multipage images are rejected. Original files
+are never opened or changed by this clipboard path, and enabling does not process
+the current clipboard. The file image-quality slider applies to file exports.
+
+Unknown/rich/marked types, multiple items, secure input and unknown/nonregular or
+ignored foreground apps are skipped. Pending work is invalidated by new copies,
+configuration changes, app activation changes, sleep, screen lock and shutdown.
+The serialized write lane rechecks the captured revision, representations and
+configuration before replacement. A marker prevents optimizing its own output.
+macOS has no atomic compare-and-swap across pasteboard clients: a very narrow
+external-copy/configuration race remains between the final check and write.
+Restoration after a failed write is attempted only for our still-empty revision.
+History and other apps may see the original before the asynchronous replacement;
+this does not retroactively rewrite existing history entries.
+
+`./scripts/test-clipboard-image-optimization.sh` uses real ImageIO and a unique
+named pasteboard, leaving the general clipboard untouched. It verifies PNG/TIFF
+capture, native resize/alpha/savings, invalid/oversized/multipage rejection, rich/
+concealed/multi-item bypass, stale revision/configuration rejection and marker
+recursion prevention. Full builds check manager lifecycle wiring. Actual copying/
+pasting across apps, privacy/input transitions and coexistence with clipboard
+history/sharing/clearing remain native checks. No user image was read for tests.

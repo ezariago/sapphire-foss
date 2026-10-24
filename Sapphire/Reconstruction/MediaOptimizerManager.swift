@@ -9,7 +9,8 @@ final class MediaOptimizerManager: ObservableObject {
     @Published private(set) var status: String?
     @Published private(set) var isProcessing = false
     private init() {}
-    func start() {}
+    func start() { ClipboardImageOptimizer.shared.start() }
+    func stop() { ClipboardImageOptimizer.shared.stop() }
     func optimizeFile(_ url: URL) async -> Result<MediaOptimizeResult, MediaOptimizeError> {
         let config = SettingsModel.shared.current
         do {
@@ -53,15 +54,32 @@ struct MediaOptimizerSettingsView: View {
     @ObservedObject private var settings = SettingsModel.shared
     @ObservedObject private var manager = MediaOptimizerManager.shared
     @ObservedObject private var screenshots = OCRScreenshotMonitor.shared
+    private var imageDimension: Binding<Double> {
+        Binding(get: {
+            let value = settings.settings.mediaToolsMaxImageDimension
+            return value.isFinite ? min(8192, max(256, value)) : 2048
+        }, set: { settings.settings.mediaToolsMaxImageDimension = $0.isFinite ? min(8192, max(256, $0)) : 2048 })
+    }
+    private var imageQuality: Binding<Double> {
+        Binding(get: {
+            let value = settings.settings.mediaToolsImageQuality
+            return value.isFinite ? min(1, max(0.1, value)) : 0.75
+        }, set: { settings.settings.mediaToolsImageQuality = $0.isFinite ? min(1, max(0.1, $0)) : 0.75 })
+    }
     var body: some View {
         Form {
             Section("Media optimization") {
                 Text("Creates a smaller copy beside the original. Images and PDFs use lossy screen-oriented compression; audio/video use native macOS export. The original stays unchanged, and outputs that are not smaller are discarded.")
                     .foregroundStyle(.secondary)
-                Slider(value: $settings.settings.mediaToolsImageQuality, in: 0.1...1) { Text("Image quality") }
-                Stepper("Maximum image dimension: \(Int(settings.settings.mediaToolsMaxImageDimension)) px", value: $settings.settings.mediaToolsMaxImageDimension, in: 256...8192, step: 256)
+                Slider(value: imageQuality, in: 0.1...1) { Text("Image quality") }
+                Stepper("Maximum image dimension: \(Int(imageDimension.wrappedValue)) px", value: imageDimension, in: 256...8192, step: 256)
                 Toggle("Show media actions in File Shelf", isOn: $settings.settings.mediaToolsShowShelfActions)
                 Button("Optimize files…") { manager.chooseFiles(ocr: false) }.disabled(manager.isProcessing)
+            }
+            Section("Clipboard images") {
+                Toggle("Optimize newly copied images automatically", isOn: $settings.settings.mediaToolsAutoOptimizeClipboard)
+                Text("Replaces a single PNG/TIFF-only clipboard item with a smaller PNG. It may reduce image dimensions (up to 4096 px); alpha is retained. File copies, rich content, marked items and images from ignored clipboard apps are skipped. Enabling does not process the current clipboard. Original image files stay unchanged.").foregroundStyle(.secondary)
+                Text("Clipboard history and other apps may observe the original image before replacement. Use this only when automatic resizing is wanted.").font(.caption).foregroundStyle(.secondary)
             }
             Section("Local text recognition") {
                 Text("Uses Apple's Vision framework. Images and PDFs are processed on this Mac.").foregroundStyle(.secondary)

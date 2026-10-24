@@ -459,3 +459,17 @@ Wi-Fi/power changes, scripts or physical sleep tests were used. Final full app
 build/signature checks passed (`build/menu-bar-profiles-final-build.log`). Actual
 menu-bar layout/gesture/Zen behavior, Location permission and charger/network
 transitions remain native checks in [menu-bar profile notes](menu-bar-profiles.md).
+
+
+Implemented opt-in automatic clipboard image optimization with serial bounded
+ImageIO PNG encoding, orientation/alpha handling and revision/configuration guards.
+Only declared PNG/TIFF image representations are captured; automatic pasteboard
+conversion aliases are distinguished from the actual item's formats. Rich,
+concealed, multi-item, unknown/ignored-app and secure-input cases are skipped.
+App changes, sleep, screen lock, new copies and shutdown invalidate pending work.
+Named-pasteboard/native image fixtures passed without touching the general
+clipboard. Full app builds/signature checks passed, including the final shutdown
+guard in the combined storage build (`build/storage-space-map-final-build.log`).
+Actual inter-app copy/paste/history/sharing coexistence remains native work;
+macOS pasteboard writes still have a documented narrow cross-client race.
+See [media notes](media-tools.md).

@@ -707,6 +707,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         clipboardPickerManager.stopMonitoring()
         clipboardAutoClearManager.stop()
         cleanURLManager.stopMonitoring()
+        #if !SAPPHIRE_FULL_BUILD
+        MediaOptimizerManager.shared.stop()
+        #endif
         finderCutPasteManager.removeTap()
         snippetManager.removeHandler()
         mouseControlManager.shutdown()
