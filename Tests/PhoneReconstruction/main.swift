@@ -215,7 +215,17 @@ for valid in ["https://example.com/path?q=test#part", "http://example.com:8080/"
 for invalid in ["", "file:///etc/passwd", "javascript:alert(1)", "intent://test", "https:///missing-host", "https://name:password@example.com", "https://example.com/a b", "https://example.com/\npath", "https://example.com\\@other.example/", "https://example.com:99999", "https://example.com/" + String(repeating: "a", count: 4096)] {
     try expect(PhoneHandoffURL.parse(invalid) == nil, "Web link handoff rejects unsafe or oversized URLs")
 }
-for kind in ["media.command", "media.state", "handoff.url", "handoff.result"] {
+for kind in ["media.command", "media.state", "handoff.url", "handoff.result", "phone.action.prepare", "phone.action.result"] {
     try expect(!PhoneHandshakePolicy.acceptsPlaintext(type: kind, isSecure: false), "Media and link handoff refuse plaintext \(kind)")
 }
+try expect(PhoneActionDraft.make(kind: .sms, number: " \t+15550100000\n", body: "Fixture")?.number == "+15550100000", "Phone drafts normalize ASCII outer whitespace")
+for number in ["911", "*#06#", "15550100000,1", "15550100000;1", "tel:+15550100000", "１２３４５６７８９０", "+1234567890123456", "+1 5550100000", "\0+15550100000"] {
+    try expect(PhoneActionDraft.make(kind: .dial, number: number) == nil, "Phone drafts reject short/service/URI/non-ASCII/control numbers")
+}
+try expect(PhoneActionDraft.make(kind: .dial, number: "+15550100000", body: "Nonempty") == nil, "Dialer drafts reject SMS body")
+try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: "nul\0") == nil, "SMS draft rejects NUL")
+try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: String(repeating: "😀", count: 1000)) != nil, "SMS byte bound includes Unicode")
+try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: String(repeating: "😀", count: 1001)) == nil, "SMS byte bound rejects oversized Unicode")
+try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: "control\u{3}") == nil, "SMS draft rejects control bytes")
+try expect(PhoneActionDraft.make(kind: .sms, number: "+15550100000", body: "Tabs\tand\nlines") != nil, "SMS draft accepts tabs and line breaks")
 print("Passed \(checks) phone protocol checks, including independent Java crypto fixtures.")

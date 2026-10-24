@@ -515,3 +515,20 @@ app builds had identical designated requirements; the updated build reopened and
 read its saved pairing successfully. A first transition may require **Always
 Allow** once for existing Keychain items. This does not change the login Keychain's
 lock policy. See [BUILDING.md](BUILDING.md#avoiding-repeated-keychain-prompts).
+
+
+## SMS and dialer draft bridge — 24 October 2026
+
+The source now supports authenticated `phone.action.prepare` / `phone.action.result`
+for opt-in, phone-reviewed SMS/dialer drafts. `phoneActionDraftsSupported` is
+advertised by the updated companion's encrypted status. This does not implement
+SMS inbox sync, automatic message sending or call placement/control. See
+[draft protocol, lifecycle and test limits](docs/phone-action-drafts.md).
+
+Mac tests now include draft validation and plaintext rejection. Android unit
+checks and app/helper builds passed. A separate fixture APK on the USB Samsung
+verified actual Android draft intents, crypto and framing without launching an
+external activity or reading user data; it was removed and the phone returned to
+Dozing. The normal companion APK was not installed by that fixture test. Native
+notification/review/lockscreen, actual encrypted request/reply and system-app
+presentation remain open. No real SMS or call was made for verification.

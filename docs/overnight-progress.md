@@ -487,3 +487,24 @@ the actual Space Map tab was visually reviewed. Final full app/signature/ZIP
 verification passed (`build/storage-space-map-final-build.log`). Actual pointer/
 keyboard/accessibility/TCC/recovery interactions, tree/pie and history workflows
 remain open in [storage notes](storage-workspace.md).
+
+
+Added the authenticated SMS/dialer draft bridge and Mac controls. Updated Android
+source advertises support and requires phone-side opt-in, private notification
+review and a final system composer/dialer action. In-memory drafts have bounded
+IDs, immutable review tokens, expiry and disconnect/disable/replacement guards.
+No SMS/call/contacts permission or actual sending/calling is introduced.
+
+All 23 configured Mac regression scripts passed (`build/resumed-full-regression.log`),
+including 144 phone protocol checks. Final Mac app/signature/ZIP verification
+passed (`build/phone-action-mac-final-build.log`). Android JVM policy tests and
+app/helper builds passed. A separate permission-free fixture APK verified actual
+Android intent construction and crypto/framing on the USB Samsung without
+launching external activities, reading user/companion data or replacing the
+normal companion. It was removed afterward and the phone was verified Dozing.
+Native encrypted request/reply, notification/review/lockscreen and actual composer/
+dialer presentation remain open; the normal companion update is not installed by
+those isolated tests. Full SMS inbox/call synchronization is not complete.
+See [draft evidence](phone-action-drafts.md). Hosted CI also confirmed shortcut
+lifecycle checkpoint `2c66969` successful. The intermediate clipboard-only hosted
+run `fabd1f0` was cancelled while pending, not a passing hosted run.

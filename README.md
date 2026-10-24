@@ -202,6 +202,9 @@ its individual findings need rechecking against the current source.
 - [ ] Extend notification verification to third-party apps, permission revocation,
   locked-phone/OEM behavior and optional macOS banners.
 - [ ] Implement SMS and calls, including the Mac message/call action bridges.
+  [SMS/dialer drafts](docs/phone-action-drafts.md) now have an authenticated bridge
+  and phone-side review flow. Full inbox/message synchronization, delivery and
+  incoming/remote call controls remain unimplemented; native review checks remain open.
 - [ ] Implement authenticated Wi-Fi/bulk file transfer, phone storage browsing
   and image/file clipboard delivery beyond the current text-only transport.
 - [ ] Implement screen mirroring, extended display and phone camera/microphone

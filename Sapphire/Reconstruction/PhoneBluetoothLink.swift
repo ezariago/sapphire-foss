@@ -114,6 +114,10 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     @Published private(set) var handoffState = ""
     @Published private(set) var handoffSupported = false
     @Published private(set) var handoffPendingID: String?
+    @Published private(set) var phoneDraftsSupported = false
+    @Published private(set) var phoneDraftPendingID: String?
+    @Published private(set) var phoneDraftStatus = ""
+    private var phoneDraftTimeout: Task<Void, Never>?
     private var handoffTimeout: Task<Void, Never>?
     private var receivedHandoffIDs: [String] = []
     @Published private(set) var lastError: String?
@@ -426,6 +430,30 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         }
     }
 
+    func preparePhoneDraft(kind: PhoneActionDraft.Kind, number: String, body: String = "") {
+        guard phoneDraftPendingID == nil else { return }
+        guard isSecure, activeCompanion, phoneDraftsSupported else {
+            phoneDraftStatus = "Connect an updated Sapphire Companion to prepare phone drafts."
+            return
+        }
+        guard let draft = PhoneActionDraft.make(kind: kind, number: number, body: body) else {
+            phoneDraftStatus = "Use 7–15 ASCII digits with an optional leading +, without extensions or service codes. SMS drafts allow up to 4,000 UTF-8 bytes."
+            return
+        }
+        let id = UUID().uuidString
+        phoneDraftPendingID = id
+        phoneDraftStatus = "Preparing a review notification on your phone…"
+        sendSecure("phone.action.prepare", ["requestId": .string(id), "kind": .string(draft.kind.rawValue),
+                                           "number": .string(draft.number), "body": .string(draft.body)])
+        phoneDraftTimeout?.cancel()
+        phoneDraftTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled, let self, self.phoneDraftPendingID == id else { return }
+            self.phoneDraftPendingID = nil
+            self.phoneDraftStatus = "No acknowledgement. Check your phone before retrying; this does not confirm sending or calling."
+        }
+    }
+
     func sendMedia(_ action: String, seekMs: Int? = nil) {
         guard let media = ContinuityManager.shared.mediaBridge.phoneMedia,
               !media.sessionId.isEmpty else { return }
@@ -621,6 +649,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         handoffTimeout?.cancel(); handoffTimeout = nil; handoffPendingID = nil
         receivedLink = nil; receivedHandoffIDs = []; handoffSupported = false
         handoffStatus = ""; handoffState = ""
+        phoneDraftTimeout?.cancel(); phoneDraftTimeout = nil; phoneDraftPendingID = nil
+        phoneDraftsSupported = false; phoneDraftStatus = ""
         updateClipboardMonitoring()
         hotspotTask?.cancel(); hotspotTask = nil; hotspotRequestID = nil
         hotspotNeedsLocation = false; isHotspotBusy = false
@@ -800,6 +830,7 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
                 hotspotInternet = p["hotspotMode"]?.string == "internet"
                 hotspotCanStop = p["hotspotStopSupported"]?.bool == true
                 handoffSupported = p["handoffSupported"]?.bool == true
+                phoneDraftsSupported = p["phoneActionDraftsSupported"]?.bool == true
             }
         case "media.state":
             guard encrypted else { throw PhoneWireError.unauthenticated }
@@ -829,6 +860,17 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
             case "disabled": handoffStatus = "Enable Receive web links from paired Mac in Sapphire Companion."
             case "needs_permission": handoffStatus = "Allow Sapphire notifications and its Links from Mac channel on your phone."
             default: handoffStatus = "The phone could not receive this link. Check its connection and try again."
+            }
+        case "phone.action.result":
+            guard encrypted else { throw PhoneWireError.unauthenticated }
+            guard let pending = phoneDraftPendingID, p["requestId"]?.string == pending else { break }
+            phoneDraftTimeout?.cancel(); phoneDraftTimeout = nil; phoneDraftPendingID = nil
+            switch p["state"]?.string {
+            case "ready": phoneDraftStatus = "Draft ready for review on your phone for two minutes. Nothing has been sent or called."
+            case "disabled": phoneDraftStatus = "Enable Receive SMS and dialer drafts in Sapphire Companion."
+            case "needs_permission": phoneDraftStatus = "Allow Sapphire notifications and its Phone drafts from Mac channel."
+            case "expired": phoneDraftStatus = "That draft expired or was replaced. Prepare a new draft if needed."
+            default: phoneDraftStatus = "The phone could not prepare this draft. Nothing has been sent or called."
             }
         case "clipboard.update":
             guard encrypted else { throw PhoneWireError.unauthenticated }

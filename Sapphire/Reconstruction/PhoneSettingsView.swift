@@ -7,6 +7,8 @@ struct ContinuitySettingsView: View {
     @ObservedObject private var mediaBridge = ContinuityManager.shared.mediaBridge
     @ObservedObject private var settings = SettingsModel.shared
     @State private var handoffURL = ""
+    @State private var phoneDraftNumber = ""
+    @State private var phoneDraftBody = ""
 
     var body: some View {
         ScrollView {
@@ -108,15 +110,33 @@ struct ContinuitySettingsView: View {
                         }
                     }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
                 }
+                GroupBox("Phone drafts") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Prepare an SMS draft or a dialer number. Review the private notification on your unlocked phone, then choose its SMS composer or dialer. Sapphire never sends a message or places a call.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        TextField("Phone number: +15550100000", text: $phoneDraftNumber).textFieldStyle(.roundedBorder)
+                        TextField("SMS draft (optional)", text: $phoneDraftBody, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder)
+                        HStack {
+                            Group {
+                                Button("Prepare SMS on phone") { link.preparePhoneDraft(kind: .sms, number: phoneDraftNumber, body: phoneDraftBody) }
+                                Button("Prepare dialer on phone") { link.preparePhoneDraft(kind: .dial, number: phoneDraftNumber) }
+                            }.disabled(!link.isSecure || !link.phoneDraftsSupported || link.phoneDraftPendingID != nil)
+                            Button("Clear fields") { phoneDraftNumber = ""; phoneDraftBody = "" }
+                        }
+                        if !link.phoneDraftsSupported { Text("Requires an updated Sapphire Companion with phone draft support.").font(.caption).foregroundStyle(.secondary) }
+                        if !link.phoneDraftStatus.isEmpty { Text(link.phoneDraftStatus).font(.caption).textSelection(.enabled) }
+                        Text("Phone-side opt-in and notifications are required. Drafts expire after two minutes or disconnect. SMS inbox sync, call answering and call audio are not implemented.").font(.caption).foregroundStyle(.secondary)
+                    }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                }
                 PhoneNotificationsSettingsView()
-                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, text clipboard messages, hotspot control, phone media, web-link handoff and notification mirroring with supported actions/replies. Wi-Fi transfer, phone storage, screen mirroring, calls, widgets and camera/microphone support are not implemented yet.")
+                Text("This replacement currently supports encrypted Bluetooth pairing, phone status, text clipboard messages, hotspot control, phone media, web-link handoff and notification mirroring with supported actions/replies. Wi-Fi transfer, phone storage, screen mirroring, full SMS/call control, widgets and camera/microphone support are not implemented yet.")
                     .font(.caption).foregroundStyle(.secondary)
                 if !link.isSecure && link.hotspotConnected {
                     Button("Disconnect phone hotspot", action: link.leaveHotspot)
                 }
                 if link.pairedName != nil { Button("Forget this phone", role: .destructive, action: link.forget) }
             }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-        }
+        }.onDisappear { phoneDraftNumber = ""; phoneDraftBody = "" }
     }
 
     @ViewBuilder private var nearbyPhones: some View {
