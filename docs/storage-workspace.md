@@ -48,7 +48,7 @@ the fixture now uses a real offscreen window and the production scroll container
 
 Native folder-picker/TCC behavior, successful Trash/restore and low-disk/removable-
 volume recovery still require attended checks. Interactive tree/pie visualizations
-and history/recommendation workflows remain incomplete. Monitoring, power and
+remain incomplete. Monitoring, power and
 menu-bar profiles have separate implementation evidence linked from the README.
 
 ## Space Map
@@ -75,3 +75,29 @@ workspace's Space Map tab in an offscreen fixture window; the resulting
 `build/storage-tests/space-map.png` was visually reviewed. No user folders were
 scanned or trashed. Actual tile keyboard/pointer interaction, screen readers,
 folder navigation and TCC/removable-volume recovery remain native checks.
+
+
+## History and candidate review
+
+The workspace now exposes the existing engine's completed scan history for the
+current folder and shallow/deep mode, showing the latest 30 records. Accounted
+scope bytes and bytes moved to Trash are kept distinct; legacy `spaceFreed` data
+is not presented as recovered disk capacity. Unknown dates/durations and negative
+imported counts are handled without integer-conversion traps. The engine's
+bounded persisted history/normalization behavior is unchanged.
+
+Review lists the engine's cleanup candidates as estimates that can overlap,
+without a summed promise of savings. Each retained candidate uses the existing
+reviewed per-item Trash path. Already-trashed entries are inspection-only;
+duplicate recommendations open the existing group review because those
+recommendations deliberately have no flat file list. The `isAutomatic` model
+flag never triggers deletion. Lists show 50 candidates per recommendation and
+explain their limit. No broad “clear all” action is added.
+
+Real isolated scanner fixtures additionally verify history scope/mode boundaries
+and recommendation invariants, including the duplicate-group case. Offscreen
+renders of the actual History and Review tabs were visually inspected using
+`--render-history` and `--render-review`. Their ignored PNGs live beside the
+Space Map render. No user folders were scanned or files trashed. Actual
+DisclosureGroup/tile/keyboard/screen-reader interaction, Trash/restore, TCC and
+physical hardware behavior remain native checks. Tree and pie views remain open.

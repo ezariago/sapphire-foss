@@ -17,6 +17,6 @@ import pathlib, plistlib, sys
 with (pathlib.Path(sys.argv[1]) / 'Fixture.app/Contents/Info.plist').open('wb') as file:
     plistlib.dump({'CFBundleIdentifier': sys.argv[2], 'CFBundleExecutable': 'Fixture', 'CFBundlePackageType': 'APPL'}, file)
 PY
-xcrun swiftc -parse-as-library -D SAPPHIRE_STORAGE_FIXTURE 'Sapphire/App Settings/AppStorageModels.swift' Sapphire/Reconstruction/StorageViews.swift Sapphire/Reconstruction/StorageTreemapLayout.swift Sapphire/Reconstruction/StorageSpaceMap.swift Sapphire/Reconstruction/StorageSpaceMapView.swift Tests/Storage/SpaceMapChecks.swift Tests/Storage/support.swift Tests/Storage/main.swift -o "$SAPPHIRE_STORAGE_TEST_ROOT/Fixture.app/Contents/MacOS/Fixture"
+xcrun swiftc -parse-as-library -D SAPPHIRE_STORAGE_FIXTURE 'Sapphire/App Settings/AppStorageModels.swift' Sapphire/Reconstruction/StorageViews.swift Sapphire/Reconstruction/StorageTreemapLayout.swift Sapphire/Reconstruction/StorageSpaceMap.swift Sapphire/Reconstruction/StorageSpaceMapView.swift Sapphire/Reconstruction/StorageScanHistoryView.swift Tests/Storage/SpaceMapChecks.swift Tests/Storage/support.swift Tests/Storage/main.swift -o "$SAPPHIRE_STORAGE_TEST_ROOT/Fixture.app/Contents/MacOS/Fixture"
 codesign --force --sign - "$SAPPHIRE_STORAGE_TEST_ROOT/Fixture.app"
 "$SAPPHIRE_STORAGE_TEST_ROOT/Fixture.app/Contents/MacOS/Fixture" "$SAPPHIRE_STORAGE_TEST_DATA" "$PWD/build/storage-tests/workspace.png" "$@"

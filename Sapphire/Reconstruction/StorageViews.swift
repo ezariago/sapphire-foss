@@ -66,7 +66,7 @@ struct StorageDetailView: View {
 
 struct StorageWorkspaceView: View {
     @ObservedObject var model: StorageViewModel
-    enum Results: String, CaseIterable { case files = "Files", spaceMap = "Space Map", categories = "Categories", duplicates = "Duplicates" }
+    enum Results: String, CaseIterable { case files = "Files", spaceMap = "Space Map", categories = "Categories", duplicates = "Duplicates", recommendations = "Review", history = "History" }
     @State private var results: Results
     @State private var selectedMapURL: URL?
     init(model: StorageViewModel, initialResults: Results = .files) {
@@ -131,6 +131,10 @@ struct StorageWorkspaceView: View {
                 } else {
                     Text("Select a tile to inspect, open its folder or reveal it in Finder.").font(.caption).foregroundStyle(.secondary)
                 }
+            } else if results == .history {
+                StorageScanHistoryView(history: model.currentScopeScanHistory)
+            } else if results == .recommendations {
+                recommendationResults
             } else if results == .categories {
                 ForEach(StorageCategory.allCases, id: \.rawValue) { category in
                     Button {
@@ -184,6 +188,39 @@ struct StorageWorkspaceView: View {
             }
         }
     }
+    private var recommendationResults: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Review scan candidates").font(.headline)
+            Text("Candidates and byte estimates can overlap. Inspect each item before moving it to Trash. Nothing is removed automatically, and no duplicate copy is chosen for you.")
+                .font(.caption).foregroundStyle(.secondary)
+            if model.recommendations.isEmpty { Text("No cleanup candidates in this scan.").foregroundStyle(.secondary) }
+            ForEach(model.recommendations) { recommendation in
+                DisclosureGroup {
+                    if recommendation.category == .duplicates {
+                        Button("Review duplicate groups") { results = .duplicates }
+                        Text("Choose copies individually after inspecting the group; no file is selected automatically.").font(.caption).foregroundStyle(.secondary)
+                    } else if recommendation.entries.isEmpty {
+                        Text("No individual candidate entries retained in this scan snapshot.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if recommendation.category == .trash {
+                        Text("Already in Trash. Review in Finder; Sapphire does not empty Trash.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    ForEach(recommendation.entries.prefix(50)) { entry in
+                        entryRow(entry, showPath: true, allowTrash: recommendation.category != .trash)
+                    }
+                    if recommendation.entries.count > 50 {
+                        Text("Showing 50 of \(recommendation.entries.count) candidates. Use Categories or Files to inspect more.").font(.caption).foregroundStyle(.secondary)
+                    }
+                } label: {
+                    HStack {
+                        Label(recommendation.category.rawValue, systemImage: recommendation.category.icon)
+                        Spacer()
+                        Text("Candidate bytes: " + max(0, recommendation.potentialSpaceFreed).formatted(.byteCount(style: .file))).font(.caption).monospacedDigit()
+                    }
+                }
+            }
+        }
+    }
     private var visibleEntries: [StorageEntry] {
         model.categoryFilter != nil && model.deepScanEnabled ? model.filteredAndSortedInsightEntries : model.filteredAndSortedEntries
     }
@@ -214,7 +251,7 @@ struct StorageWorkspaceView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         navigate(url)
     }
-    private func entryRow(_ entry: StorageEntry, showPath: Bool = false) -> some View {
+    private func entryRow(_ entry: StorageEntry, showPath: Bool = false, allowTrash: Bool = true) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: entry.isSymbolicLink ? "link" : (entry.isDirectory ? "folder" : "doc"))
                 .foregroundStyle(entry.category.color).frame(width: 22)
@@ -231,7 +268,7 @@ struct StorageWorkspaceView: View {
             }
             Button("Reveal") { model.reveal(entry) }
             Button("Trash…", role: .destructive) { model.requestRemoval(entry) }
-                .disabled(model.isRemoving || model.isLoading || entry.isSystemProtected)
+                .disabled(!allowTrash || model.isRemoving || model.isLoading || entry.isSystemProtected)
         }.padding(.vertical, 8)
     }
 }

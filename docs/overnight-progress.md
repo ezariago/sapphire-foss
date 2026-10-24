@@ -508,3 +508,26 @@ those isolated tests. Full SMS inbox/call synchronization is not complete.
 See [draft evidence](phone-action-drafts.md). Hosted CI also confirmed shortcut
 lifecycle checkpoint `2c66969` successful. The intermediate clipboard-only hosted
 run `fabd1f0` was cancelled while pending, not a passing hosted run.
+
+
+Exposed completed scan history by folder/mode and the existing cleanup candidate
+engine in Storage. History separates recorded accounted bytes from bytes moved
+to Trash and never treats legacy spaceFreed as recovered disk capacity. Review
+uses guarded per-item actions, inspection-only existing Trash, and the dedicated
+duplicate-group review instead of a nonexistent flat duplicate candidate list.
+No model isAutomatic flag triggers deletion. Real fixtures verify scope/mode
+history isolation and candidate invariants. Offscreen History/Review workspace
+renders were visually reviewed. Full app/signature/ZIP checks passed
+(`build/storage-review-history-build.log`). Native interaction/Trash recovery,
+permissions and remaining tree/pie views are still open.
+
+Companion debug lint exposed existing Bluetooth permission and API-28 compatibility
+gaps. Source now checks permission at transport boundaries, catches denial at the
+actual native calls, invalidates transient session/draft state and keeps saved
+pairing. Callback/advertisement identity and generation guards reject stale work.
+Failed writes stop frame processing; unrelated-peer response failures do not
+retire the active peer. All app/helper/isolated-fixture debug lint tasks, JVM tests
+and app/helper builds passed without adding lint suppressions. Existing warnings
+remain. No phone permission/radio/notification setting was changed; native denial/
+regrant recovery remains unverified. Companion source checkpoint is separate
+from its installed phone app. See its VERIFICATION.md for scope.
