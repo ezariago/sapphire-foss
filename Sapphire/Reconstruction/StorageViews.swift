@@ -66,8 +66,13 @@ struct StorageDetailView: View {
 
 struct StorageWorkspaceView: View {
     @ObservedObject var model: StorageViewModel
-    private enum Results: String, CaseIterable { case files = "Files", categories = "Categories", duplicates = "Duplicates" }
-    @State private var results = Results.files
+    enum Results: String, CaseIterable { case files = "Files", spaceMap = "Space Map", categories = "Categories", duplicates = "Duplicates" }
+    @State private var results: Results
+    @State private var selectedMapURL: URL?
+    init(model: StorageViewModel, initialResults: Results = .files) {
+        self.model = model
+        _results = State(initialValue: initialResults)
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             StorageCapacityCard(model: model)
@@ -92,12 +97,14 @@ struct StorageWorkspaceView: View {
             if let metrics = model.scanMetrics, metrics.isTrimmed {
                 Text("The scan reached its result limit. These results do not include every item.").foregroundStyle(.orange).font(.caption)
             }
-            if results == .files {
+            if results == .files || results == .spaceMap {
                 HStack {
                     TextField("Search scan results", text: $model.filterText).textFieldStyle(.roundedBorder)
-                    Picker("Sort", selection: $model.sortBy) {
-                        ForEach(StorageViewModel.SortOption.allCases, id: \.rawValue) { Text($0.rawValue).tag($0) }
-                    }.frame(maxWidth: 230)
+                    if results == .files {
+                        Picker("Sort", selection: $model.sortBy) {
+                            ForEach(StorageViewModel.SortOption.allCases, id: \.rawValue) { Text($0.rawValue).tag($0) }
+                        }.frame(maxWidth: 230)
+                    }
                 }
             } else if results == .duplicates {
                 TextField("Search duplicate paths", text: $model.filterText).textFieldStyle(.roundedBorder)
@@ -112,6 +119,17 @@ struct StorageWorkspaceView: View {
                 if visibleEntries.isEmpty { Text("No matching entries in this scan.").foregroundStyle(.secondary) }
                 LazyVStack(spacing: 0) {
                     ForEach(visibleEntries) { entry in entryRow(entry, showPath: model.categoryFilter != nil && model.deepScanEnabled) }
+                }
+            } else if results == .spaceMap {
+                if let category = model.categoryFilter {
+                    HStack { Text("Direct entries in \(category.rawValue)"); Button("Clear category filter") { model.categoryFilter = nil } }.font(.caption)
+                }
+                let snapshot = model.spaceMapSnapshot(maximumItems: 48)
+                StorageSpaceMapView(snapshot: snapshot, selectedURL: selectedMapURL) { selectedMapURL = $0.url }
+                if let selected = snapshot.items.compactMap(\.entry).first(where: { $0.url == selectedMapURL }) {
+                    entryRow(selected, showPath: true)
+                } else {
+                    Text("Select a tile to inspect, open its folder or reveal it in Finder.").font(.caption).foregroundStyle(.secondary)
                 }
             } else if results == .categories {
                 ForEach(StorageCategory.allCases, id: \.rawValue) { category in

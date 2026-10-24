@@ -473,3 +473,17 @@ guard in the combined storage build (`build/storage-space-map-final-build.log`).
 Actual inter-app copy/paste/history/sharing coexistence remains native work;
 macOS pasteboard writes still have a documented narrow cross-client race.
 See [media notes](media-tools.md).
+
+
+Replaced the empty Space Map compatibility model with bounded direct-entry
+snapshots and a selectable allocated-byte treemap in the storage workspace.
+Stable sorting, grouped remainders, zero/unknown sizes and scope-vs-volume labels
+keep the chart's meaning explicit. Selection uses the existing inspection,
+folder/reveal and reviewed Trash row; nothing is removed by selecting a tile.
+The actual storage fixture now compiles the real Space Map and tests bounded
+identity/grouping/extreme-size accounting plus area/proportion/non-overlap/finite
+layout invariants. Scanner/refusal regressions passed. An offscreen render of
+the actual Space Map tab was visually reviewed. Final full app/signature/ZIP
+verification passed (`build/storage-space-map-final-build.log`). Actual pointer/
+keyboard/accessibility/TCC/recovery interactions, tree/pie and history workflows
+remain open in [storage notes](storage-workspace.md).

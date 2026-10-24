@@ -145,8 +145,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 - [ ] Implement media optimization and OCR, screenshot text monitoring and Circle
   to Search. Native image/PDF/audio/video compression, local OCR and opt-in
   screenshot text monitoring are added; [test coverage and remaining checks](docs/media-tools.md)
-  distinguish fixtures from live screen/video verification. Circle to Search and
-  automatic clipboard optimization remain open. File conversion is separate.
+  distinguish fixtures from live screen/video verification. Opt-in single-image
+  clipboard optimization now has public code and isolated pasteboard tests; native
+  inter-app clipboard checks and Circle to Search remain open. File conversion is separate.
 - [ ] Implement the DMG installer and its default-handler integration; complete
   the archive settings UI around the existing archive extractor. Both now have
   public code, including staged signed-app installation and a passing real-DMG
@@ -156,8 +157,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   adapter-power readings and menu-bar profile automation. Storage scanning and
   system statistics already have public implementations. The [storage workspace
   and notch capacity views](docs/storage-workspace.md) now expose scans, file/category/
-  duplicate inspection and reviewed per-item Trash actions; native permission,
-  Trash recovery and remaining visualization/workflow checks are still open.
+  duplicate inspection, a bounded selectable Space Map and reviewed per-item
+  Trash actions; native permission, Trash recovery and remaining visualization/
+  workflow checks are still open.
   [Monitoring settings and delivery guards](docs/monitoring.md) now configure the
   public readout/alert engines; native permissions, alert delivery, adapter readings
   and profile automation remain open.

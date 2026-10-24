@@ -23,12 +23,6 @@ struct SEQuitProtectionRulesView: View {
     }
 }
 
-// The Space Map view is private and has no consumer in the public checkout.
-struct StorageSpaceMapSnapshot {
-    static func make(from entries: [StorageEntry], maximumItems: Int, used: Int64,
-                     total: Int64, deepScanEnabled: Bool,
-                     entriesSortedBySize: Bool) -> Self { Self() }
-}
 
 enum OCRScreenTextSupport {
     static func indexOfScreen(containing point: CGPoint, in frames: [CGRect]) -> Int? {

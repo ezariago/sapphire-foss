@@ -8,7 +8,9 @@ import SwiftUI
         assert(condition(), "Storage fixture deadline exceeded")
     }
     @MainActor static func main() async throws {
-        let render = CommandLine.arguments.contains("--render")
+        verifyStorageSpaceMap()
+        let renderMap = CommandLine.arguments.contains("--render-space-map")
+        let render = renderMap || CommandLine.arguments.contains("--render")
         if render {
             _ = NSApplication.shared
             NSApp.setActivationPolicy(.accessory)
@@ -68,7 +70,7 @@ import SwiftUI
         if render {
             // Match the real scroll container and attach a temporary window wholly
             // outside every display. Capture only this synthetic fixture view.
-            let host = NSHostingView(rootView: ScrollView { StorageWorkspaceView(model: model).padding(20) }.background(Color(nsColor: .windowBackgroundColor)).preferredColorScheme(.dark))
+            let host = NSHostingView(rootView: ScrollView { StorageWorkspaceView(model: model, initialResults: renderMap ? .spaceMap : .files).padding(20) }.background(Color(nsColor: .windowBackgroundColor)).preferredColorScheme(.dark))
             let minX = NSScreen.screens.map { $0.frame.minX }.min() ?? 0
             let window = NSWindow(contentRect: NSRect(x: minX - 2000, y: 0, width: 850, height: 900), styleMask: .borderless, backing: .buffered, defer: false)
             window.appearance = NSAppearance(named: .darkAqua)
@@ -79,7 +81,8 @@ import SwiftUI
             guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { fatalError("Fixture bitmap unavailable") }
             host.cacheDisplay(in: host.bounds, to: bitmap)
             guard let png = bitmap.representation(using: .png, properties: [:]) else { fatalError("Fixture PNG unavailable") }
-            try png.write(to: URL(fileURLWithPath: CommandLine.arguments[2]))
+            let target = URL(fileURLWithPath: CommandLine.arguments[2])
+            try png.write(to: renderMap ? target.deletingLastPathComponent().appendingPathComponent("space-map.png") : target)
             window.orderOut(nil)
         }
         print("Passed real isolated storage scans, duplicate hashing, filtering/sorting, capacity bounds, protected/out-of-scope/symlink rejection, cancel and stale-removal refusal; no files were trashed and no user data was scanned.")

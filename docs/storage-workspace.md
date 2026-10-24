@@ -31,8 +31,8 @@ The existing notch tap setting opens the capacity detail view.
 
 `./scripts/test-storage.sh` compiles the actual scanner/model and workspace with
 an explicit fixture-only flag excluding unrelated installed-app/uninstaller code.
-Only the unrelated feature-access/unused Space Map dependencies are supplied by
-the fixture; scanner, duplicate hashing, capacity, filtering, cancellation and
+Only unrelated feature access is supplied by the fixture; the Space Map,
+scanner, duplicate hashing, capacity, filtering, cancellation and
 removal guards are production code. A UUID-owned cache folder and defaults domain
 are created and removed. Real fixtures cover duplicate hashing, filtering/sorting,
 capacity bounds, protected/out-of-scope/symlink rejection, review cancellation and
@@ -47,7 +47,31 @@ The first unattached offscreen capture did not render native labels correctly;
 the fixture now uses a real offscreen window and the production scroll container.
 
 Native folder-picker/TCC behavior, successful Trash/restore and low-disk/removable-
-volume recovery still require attended checks. Interactive tree/Space Map/pie
-visualizations and history/recommendation workflows remain incomplete. Monitoring
-settings, adapter-power readings and menu-bar profile automation are separate
-unfinished roadmap paths; these views do not implement them.
+volume recovery still require attended checks. Interactive tree/pie visualizations
+and history/recommendation workflows remain incomplete. Monitoring, power and
+menu-bar profiles have separate implementation evidence linked from the README.
+
+## Space Map
+
+The empty compatibility snapshot now has a public implementation and selectable
+treemap in the workspace. It uses measured allocated sizes of the filtered direct
+entries, sorted by size with stable path ties, and groups smaller entries beyond
+the 48-tile limit. Zero/unknown sizes receive no area. It does not flatten recursive
+insight entries into the map, infer whole-disk use or claim bytes are reclaimable.
+Deep scans supply directory totals; shallow scans may only have file/directory
+metadata sizes. Existing partial/cancelled/trimmed scan warnings remain visible.
+Category filters are identified in the map and can be cleared.
+
+Selecting a tile exposes the existing inspection/open/reveal and reviewed Trash
+row; grouped remainder tiles do not remove or choose files. Each tile has a name/
+size accessibility label and path tooltip. Small tiles can omit visible labels.
+The binary partition uses normalized weights to avoid overflow and keeps sizes
+proportional; summed display bytes saturate at Int64.max for malformed extremes.
+
+The real storage fixture now also tests snapshot bounds/grouping, stable ties,
+duplicate identities, extreme sizes and area/proportion/non-overlap/finite layout
+invariants. `./scripts/test-storage.sh --render-space-map` renders the actual
+workspace's Space Map tab in an offscreen fixture window; the resulting
+`build/storage-tests/space-map.png` was visually reviewed. No user folders were
+scanned or trashed. Actual tile keyboard/pointer interaction, screen readers,
+folder navigation and TCC/removable-volume recovery remain native checks.
