@@ -31,12 +31,5 @@ final class EmojiShortcutManager {
 }
 
 
-final class SnippetManager {
-    static let shared = SnippetManager()
-    private init() {}
-    func start() {}
-    func removeHandler() {}
-}
-
 
 #endif

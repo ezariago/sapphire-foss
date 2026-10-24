@@ -132,7 +132,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   now also have public code; acceleration, button remapping and smooth/linear
   scrolling remain unimplemented. [Command-key Hyper mapping](docs/super-key.md)
   implements the supported Super Key source keys; Caps Lock and native verification
-  remain open.
+  remain open. [Text snippets](docs/text-snippets.md) now have guarded Accessibility
+  replacement and date/time/clipboard placeholders; native editor verification and
+  emoji suggestions remain open.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
   These now have public implementations and policy tests; [native interaction

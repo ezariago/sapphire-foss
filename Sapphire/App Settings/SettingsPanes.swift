@@ -2574,11 +2574,11 @@ struct ClipboardSettingsView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     PremiumFeatureView(feature: .clipboardAdvancedTools) {
                         VStack(alignment: .leading, spacing: 0) {
-                            SettingsSectionHeader(title: "Text Snippets", description: "Type a short trigger anywhere and it becomes your text. Use \"{{date}}\", \"{{time}}\", \"{{date:MMMM d}}\" or \"{{clipboard}}\" in the replacement. Sapphire never expands while you type inside Sapphire itself.")
+                            SettingsSectionHeader(title: "Text Snippets", description: "Expand 2–64 character triggers in editable Accessibility text fields. Requires Accessibility permission; secure fields and Sapphire itself are skipped. Up to 1,000 rules and 16,384 characters per replacement. Use \"{{date}}\", \"{{time}}\", \"{{date:MMMM d}}\" or \"{{clipboard}}\" in replacements; clipboard text is read only when that placeholder is expanded.")
 
                             ToggleRow(
                                 title: "Enable Text Snippets",
-                                description: "Expand triggers as you type in any app.",
+                                description: "Expand triggers in supported editable text fields. Custom editors may not expose the required Accessibility actions.",
                                 isOn: $settings.settings.snippetsEnabled
                             )
 
@@ -2600,6 +2600,7 @@ struct ClipboardSettingsView: View {
                                         Label("Add Snippet", systemImage: "plus.circle")
                                     }
                                     .buttonStyle(.borderless)
+                                    .disabled(settings.settings.snippetsList.count >= 1000)
                                 }
                                 .padding(.horizontal)
 
@@ -2627,12 +2628,18 @@ struct ClipboardSettingsView: View {
                                         TextField("Replacement text…", text: $snippet.replacement, axis: .vertical)
                                             .textFieldStyle(.roundedBorder)
                                             .lineLimit(1...4)
+                                        if !SnippetExpansionPolicy.validTrigger(snippet.trigger) {
+                                            Text("Use 2–64 characters without whitespace. Invalid triggers are skipped.").font(.caption).foregroundStyle(.secondary)
+                                        }
+                                        if snippet.replacement.utf16.count > 16_384 {
+                                            Text("Replacement exceeds 16,384 characters and will not expand.").font(.caption).foregroundStyle(.red)
+                                        }
                                     }
                                     .padding(.horizontal)
                                 }
 
                                 if settings.settings.snippetsList.isEmpty {
-                                    Text("No snippets yet — add one, then type its trigger in any app.")
+                                    Text("No snippets yet — add one, then type its trigger in a supported text field.")
                                         .font(.caption)
                                         .foregroundStyle(.tertiary)
                                         .padding(.horizontal)

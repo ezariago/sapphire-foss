@@ -306,3 +306,20 @@ and Super Key implementations (`build/mouse-super-key-build.log`). Both new test
 scripts are included in CI. Actual wheel/keyboard and permission transitions
 remain pending as documented in [wheel controls](mouse-wheel.md) and
 [Super Key](super-key.md); no native input behavior is claimed from the build.
+
+Text snippets now have a public manager, matching/placeholder policies and
+guarded AX edit transactions. Pending work requires a matching eligible press
+and release in the same foreground process and is invalidated by subsequent
+input, focus/lifecycle or configuration changes. Return/Tab never trigger it.
+Existing settings descriptions now identify supported AX fields rather than
+claiming every app is supported. Delimiters, UTF-16 boundaries, input tickets,
+refused writes and concurrent edits have fixtures. Date/time and lazy clipboard
+placeholders are bounded and do not recursively interpret inserted content.
+
+The isolated policy/transaction fixtures and full app build/signature checks
+passed (`build/snippets-final-build.log`). A separate real AX background-fixture
+test passed selected-range/text replacement and native secure-field subrole
+discovery (`build/snippets-native-test.log`). It did not focus a user app, inject
+typing or access the user's clipboard. Global key routing, real secure-field
+enforcement, input methods, undo and third-party editor compatibility remain open.
+See [text snippet evidence](text-snippets.md).

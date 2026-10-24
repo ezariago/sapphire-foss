@@ -496,7 +496,7 @@ extension SettingsIndex {
         .init(key: "snapOnWindowDragEnabled", title: "Activate on Window Drag", detail: "Show Snap Zones when dragging a window. Hold Command to temporarily hide them.", section: .snapZones, range: nil, options: nil),
         .init(key: "snapWindowAnimation", title: "Reposition & Resize", detail: nil, section: .snapZones, range: nil, options: SnapWindowAnimation.allCases.map(\.rawValue)),
         .init(key: "snapZoneViewMode", title: "Global Widget Style", detail: nil, section: .snapZones, range: nil, options: SnapZoneViewMode.allCases.map(\.rawValue)),
-        .init(key: "snippetsEnabled", title: "Enable Text Snippets", detail: "Expand triggers as you type in any app.", section: .clipboard, range: nil, options: nil),
+        .init(key: "snippetsEnabled", title: "Enable Text Snippets", detail: "Expand triggers in supported editable Accessibility text fields.", section: .clipboard, range: nil, options: nil),
         .init(key: "snippetsExpandAfterSpace", title: "Expand After Space or Punctuation", detail: "Off expands the moment the trigger completes.", section: .clipboard, range: nil, options: nil),
         .init(key: "sportsCommentaryInLiveActivity", title: "Show Commentary in Live Activity", detail: "Scroll play-by-play updates under the score, similar to synced lyrics.", section: .sports, range: nil, options: nil),
         .init(key: "sportsLiveActivityEnabled", title: "Sports Live Activity", detail: "Keep score and game clock visible while you work.", section: .liveActivities, range: nil, options: nil),
