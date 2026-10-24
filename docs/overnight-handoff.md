@@ -3,7 +3,8 @@
 The README roadmap is **unfinished**. Overnight work added public implementations
 and regression fixtures to previously missing paths. A buildable feature is not
 proof of upstream parity, complete source provenance or native device behavior.
-The unattended work window ends at 07:00 Asia/Jakarta; its final stop record is
+Unattended implementation stopped at 07:00 Asia/Jakarta. The automation is paused
+and the phone was verified Dozing after `KEYCODE_SLEEP`; its final stop record is
 in [overnight progress](overnight-progress.md).
 
 ## Implementations and evidence
@@ -28,6 +29,16 @@ it was not unlocked. Panel-only checks do not prove activation enforcement or
 physical display hotplug. Existing compiler warnings remain; this is not a
 completed Swift 6 migration. Local ZIPs are development builds, not notarized
 public releases.
+
+The final local development ZIP is `build/Sapphire-local.zip` (source checkpoint
+`bc1fcbc`, built before the documentation commit). SHA-256:
+`fd48db926c6751f1ea5f314a45eef7d88980c8b7be3adccd1ebff9119a270c57`.
+Its input inventory is `build/dependency-inventory.json`. Both are ignored local
+outputs; this checksum identifies that ZIP and is not a reproducibility or
+provenance audit. Hosted CI for `51785fa` passed; the later focus checkpoint's
+[hosted run](https://github.com/ezariago/sapphire-foss/actions/runs/40041328603)
+passed its test steps and was still building at the last pre-cutoff check. Its
+final build/artifact outcome remains unverified.
 
 ## Next work
 

@@ -258,3 +258,23 @@ replace native permission, activation or hardware verification. Build logs and
 local development artifacts are ignored build outputs, not committed evidence.
 Hosted CI for the preceding mouse-click checkpoint `51785fa` also succeeded:
 https://github.com/ezariago/sapphire-foss/actions/runs/40038240236.
+
+## Morning cutoff — 07:00 Asia/Jakarta, 24 October 2026
+
+Unattended implementation stopped at the scheduled cutoff, not because the
+roadmap was finished or usage ran out. The final implementation checkpoint is
+`bc1fcbc`; its full local build and all 14 local test/fixture invocations passed
+as described above. At the last pre-cutoff check, hosted run `40041328603` had
+passed its test steps and was still building; its final result remains unverified.
+No new feature work was started while waiting for that run and the cutoff.
+
+At 07:00, ADB sent `KEYCODE_SLEEP` to serial `RRCX102WVCZ` and reported
+`mWakefulness=Dozing`, `mStayOn=false`. No persistent phone settings were changed.
+The existing `sapphire-overnight-implementation` automation update returned
+`PAUSED`. Bounded Mac idle-sleep prevention was configured to expire at 07:00;
+no physical Mac sleep or lid-close test was performed.
+
+See [the final handoff](overnight-handoff.md) for implemented paths, evidence,
+remaining source/credential/permission blockers and the unfinished roadmap.
+The companion checkout remains unchanged at `67edf0d` and synchronized with its
+upstream. This documentation checkpoint is pushed with the implementation.
