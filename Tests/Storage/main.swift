@@ -42,6 +42,8 @@ import SwiftUI
         await wait { !model.isLoading }
         assert(model.scanState == .completed)
         assert(model.duplicateGroups.contains { Set($0.entries.map(\.name)) == Set(["alpha.bin", "beta.bin"]) })
+        // Capacity is delivered by a separate detached task, not the scan task.
+        await wait { model.total > 0 || model.capacityError != nil }
         assert(model.total > 0 && model.available >= 0 && model.availableForImportantUsage <= model.total)
         let record = model.entries.first { $0.url == alpha }!
         model.requestRemoval(StorageEntry(url: URL(fileURLWithPath: "/"), size: 0, isDirectory: true))

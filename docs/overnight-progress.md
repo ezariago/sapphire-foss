@@ -391,3 +391,31 @@ Spatial parameter/default/legacy decode/persistence fixtures passed without
 starting a mixer or playing audio. Full app build/signature checks passed
 (`build/spatial-audio-build.log`). Actual permission, routing, device recovery and
 acoustic checks remain explicitly pending in [spatial audio notes](spatial-audio.md).
+
+
+Replaced the central Keyboard Shortcuts placeholder with a searchable catalog
+for clipboard, Emoji, OCR, App Lock privacy, planes, existing Snap Zone mappings
+and Dock presets. It supports recording/clearing where applicable, per-action
+disabling, active catalog conflict checks, stale-target-safe writes and dispatcher
+mapping diagnostics. Mapping does not prove native key delivery or external OS
+conflict resolution. See [shortcut evidence](keyboard-shortcuts.md).
+
+The final full app build and signature checks passed
+(`build/shortcut-catalog-final-build.log`). The combined regression run initially
+found a storage fixture race: capacity is delivered independently from directory
+scan completion. The fixture now awaits capacity before asserting its bounds.
+All 20 configured CI test scripts passed across the initial run and resumed
+storage-through-phone checks (`build/daytime-regression.log` and
+`build/daytime-regression-remainder.log`). No synthetic keys, notifications,
+playback, SMS or calls were used. Native shortcut recording/delivery remains open.
+Hosted storage checkpoint `478e31b` succeeded; monitoring checkpoint `6eb5aed`
+was cancelled while pending, and later checkpoints include its code/tests.
+
+The current ignored development ZIP, rebuilt from the shortcut-catalog source
+before this documentation/test-only checkpoint, has SHA-256
+`11d5c5646f7bc89985e62382db39f27814af5d1aa903e32ec07c464162b98596`.
+Its input inventory was refreshed. This is a local ad-hoc-signed development
+artifact, not a public notarized release or reproducibility/provenance audit.
+The overnight automation remains paused; daytime continuation was directly
+requested by the user. The roadmap is still incomplete, with the native,
+third-party source/credentials and substantial implementation blockers above.

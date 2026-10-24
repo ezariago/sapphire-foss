@@ -134,6 +134,19 @@ class KeyboardShortcutManager {
         installTap()
     }
 
+    /// Configuration diagnostics only; a map entry does not prove native key delivery.
+    func isShortcutMapped(identifier: String, shortcut: KeyboardShortcut) -> Bool {
+        guard let trigger = trigger(for: shortcut) else { return false }
+        return cacheLock.withLock {
+            guard let action = registeredShortcuts[trigger] else { return false }
+            switch action {
+            case .plane(let plane): return identifier == ShortcutIdentifier.plane(plane.id)
+            case .snapZone(let mapping): return identifier == ShortcutIdentifier.snapZone(layoutID: mapping.layoutID, zoneID: mapping.zoneID)
+            case .external(let external): return identifier == external.identifier
+            }
+        }
+    }
+
     private func installTap(using settings: ShortcutRegistrationSettings) {
         guard !isAccessibilitySuspended, !isShortcutRecording else { return }
         removeTap()

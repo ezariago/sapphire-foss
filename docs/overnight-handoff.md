@@ -30,10 +30,11 @@ physical display hotplug. Existing compiler warnings remain; this is not a
 completed Swift 6 migration. Local ZIPs are development builds, not notarized
 public releases.
 
-The final local development ZIP is `build/Sapphire-local.zip` (source checkpoint
+The overnight development ZIP was `build/Sapphire-local.zip` (source checkpoint
 `bc1fcbc`, built before the documentation commit). SHA-256:
 `fd48db926c6751f1ea5f314a45eef7d88980c8b7be3adccd1ebff9119a270c57`.
-Its input inventory is `build/dependency-inventory.json`. Both are ignored local
+Later daytime builds overwrite that ZIP; the checksum above is historical.
+Its input inventory was `build/dependency-inventory.json`. Both are ignored local
 outputs; this checksum identifies that ZIP and is not a reproducibility or
 provenance audit. At the later user-requested continuation, hosted CI was confirmed
 successful for both the [focus checkpoint](https://github.com/ezariago/sapphire-foss/actions/runs/40041328603)

@@ -136,6 +136,8 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   replacement and date/time/clipboard placeholders; native editor verification and
   emoji suggestions remain open. The [system Emoji & Symbols shortcut](docs/emoji-picker.md)
   now has configuration and app exclusions; inline colon suggestions are unimplemented.
+  The [shared shortcut catalog](docs/keyboard-shortcuts.md) now replaces its settings
+  placeholder with recording, clearing, disabling and dispatcher diagnostics.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning
   and Finder cut/paste enhancements; retain the existing clipboard history code.
   These now have public implementations and policy tests; [native interaction
