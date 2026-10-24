@@ -100,7 +100,9 @@ evidence, native checks and remaining blockers.
   with a documented signing/notarization and update distribution workflow.
   [Build/test CI](.github/workflows/macos.yml) and development artifacts are added;
   hosted build/test runs have passed and uploaded development artifacts. A public
-  signed/notarized release and update distribution workflow remain pending.
+  signed/notarized release and update distribution workflow remain pending. See
+  [recent implementation and CI checkpoint notes](docs/overnight-progress.md) for
+  current verification limits, including the hosted Space Map compiler timeout.
 
 Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 [FOSS feature wrappers](Sapphire/Stubs/PremiumFeatureKit.swift),

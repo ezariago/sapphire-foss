@@ -14,21 +14,7 @@ struct StorageSpaceMapView: View {
                     let rects = snapshot.rectangles
                     ZStack(alignment: .topLeading) {
                         ForEach(Array(snapshot.items.enumerated()), id: \.element.id) { index, item in
-                            let rect = rects[index]
-                            let width = max(0, rect.width * geometry.size.width)
-                            let height = max(0, rect.height * geometry.size.height)
-                            Group {
-                                if let entry = item.entry {
-                                    Button { select(entry) } label: { tile(item, width: width, height: height) }.buttonStyle(.plain)
-                                        .accessibilityLabel(entry.name + ", " + item.bytes.formatted(.byteCount(style: .file)))
-                                        .help(entry.url.path + " · " + item.bytes.formatted(.byteCount(style: .file)))
-                                } else {
-                                    tile(item, width: width, height: height)
-                                        .help("\(item.count) smaller entries grouped together")
-                                }
-                            }
-                            .frame(width: width, height: height)
-                            .position(x: (rect.midX * geometry.size.width), y: (rect.midY * geometry.size.height))
+                            cell(item, rect: rects[index], size: geometry.size)
                         }
                     }
                 }.frame(height: 300).clipped()
@@ -43,8 +29,32 @@ struct StorageSpaceMapView: View {
             }
         }
     }
+    private func cell(_ item: StorageSpaceMapSnapshot.Item, rect: CGRect, size: CGSize) -> some View {
+        let width: CGFloat = max(0, rect.width * size.width)
+        let height: CGFloat = max(0, rect.height * size.height)
+        return tileControl(item, width: width, height: height)
+            .frame(width: width, height: height)
+            .position(x: rect.midX * size.width, y: rect.midY * size.height)
+    }
+    @ViewBuilder private func tileControl(_ item: StorageSpaceMapSnapshot.Item, width: CGFloat, height: CGFloat) -> some View {
+        if let entry = item.entry {
+            let bytes: String = item.bytes.formatted(.byteCount(style: .file))
+            let label = Text(entry.name + ", " + bytes)
+            let tooltip = Text(entry.url.path + " · " + bytes)
+            Button(action: { select(entry) }) { tile(item, width: width, height: height) }
+                .buttonStyle(.plain)
+                .accessibilityLabel(label)
+                .help(tooltip)
+        } else {
+            tile(item, width: width, height: height)
+                .help(Text("\(item.count) smaller entries grouped together"))
+        }
+    }
     private func tile(_ item: StorageSpaceMapSnapshot.Item, width: CGFloat, height: CGFloat) -> some View {
-        ZStack {
+        let selected = selectedURL != nil && item.entry?.url == selectedURL
+        let border: Color = selected ? .white : .black.opacity(0.3)
+        let borderWidth: CGFloat = selected ? 3 : 1
+        return ZStack {
             (item.entry?.category.color ?? .gray).opacity(0.8)
             if width >= 70, height >= 35 {
                 VStack(alignment: .leading, spacing: 2) {
@@ -53,7 +63,7 @@ struct StorageSpaceMapView: View {
                 }.padding(6).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
-        .overlay(Rectangle().stroke(item.entry?.url == selectedURL && selectedURL != nil ? Color.white : Color.black.opacity(0.3), lineWidth: item.entry?.url == selectedURL && selectedURL != nil ? 3 : 1))
+        .overlay(Rectangle().stroke(border, lineWidth: borderWidth))
         .clipped()
     }
 }

@@ -709,3 +709,13 @@ Further device checks were suspended at the user's request/context; the user
 explicitly retained display sleep at the usage threshold. Only Mac diagnostic
 cleanup and normal app restart followed; no further phone interactions occur
 until that threshold or later user direction.
+
+Usage reached 4% remaining; implementation stopped at the requested threshold.
+A final hosted-CI check exposed a Swift compiler timeout in the pre-existing
+Space Map tile expression, despite passing local tests. The tile control,
+formatted accessibility/help text and geometry now use separate typed helpers.
+The focused real storage fixture/render passed (`build/storage-ci-typecheck-fix.log`).
+The final full build was still running and the hosted rerun pending at this
+checkpoint; neither is claimed passed yet. Other latest local evidence remains
+29 shell scripts, four fake live-harness cases, full Mac/Android builds and the
+scoped live BLE proof above. Remaining README work is not complete.
