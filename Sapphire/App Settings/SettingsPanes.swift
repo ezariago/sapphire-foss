@@ -11518,7 +11518,7 @@ struct MenuBarProfilesSettingsView: View {
                 #if SAPPHIRE_FULL_BUILD
                 Text("Reveal hidden menu bar items when a condition is met — battery level, active Focus, Wi-Fi network, or a script's exit code — and bind profiles to displays, Spaces, or Focus filters.").font(.caption).foregroundColor(.secondary)
                 #else
-                Text("Reveal hidden items for battery, charging or readable Wi-Fi conditions. Checks run every 10 seconds while enabled. Focus, scripts and display/Space bindings are not implemented.").font(.caption).foregroundColor(.secondary)
+                Text("Reveal hidden items for battery, charging or readable Wi-Fi conditions. Checks run every 10 seconds while enabled. Display bindings follow the monitor hosting Sapphire’s control. Focus, scripts and Space bindings are not implemented.").font(.caption).foregroundColor(.secondary)
                 #endif
             }
 
@@ -11841,13 +11841,13 @@ private struct MenuBarProfileBindingsSection: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Bind To").font(.subheadline.weight(.semibold))
             #if !SAPPHIRE_FULL_BUILD
-            Text("Display, Space and Focus bindings are not implemented. Turn these bindings off to use battery/Wi-Fi conditions.")
+            Text("Display bindings use the monitor hosting Sapphire’s menu-bar control. They do not create separate menus on each monitor. Space and Focus bindings remain unsupported.")
                 .font(.caption).foregroundStyle(.secondary)
             #endif
 
             ToggleRow(
                 title: "Displays",
-                description: "Apply this profile only on the selected displays",
+                description: "Apply only when Sapphire’s menu-bar control is hosted on a selected display",
                 isOn: $profile.bindsToDisplays
             )
             if profile.bindsToDisplays {
@@ -11885,6 +11885,11 @@ private struct MenuBarDisplayBindingsEditor: View {
     @Binding var profile: MenuBarProfile
 
     private var connectedScreens: [NSScreen] { NSScreen.screens }
+    private var unavailableBindings: [MenuBarDisplayBinding] {
+        let connected = Set(connectedScreens.flatMap(\.displayIdentifierCandidates))
+        var seen = Set<String>()
+        return Array(profile.displayBindings.filter { !connected.contains($0.displayIdentifier) && seen.insert($0.displayIdentifier).inserted }.prefix(64))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -11896,6 +11901,19 @@ private struct MenuBarDisplayBindingsEditor: View {
             .labelsHidden()
 
             if profile.displayScope == .selectedDisplays {
+                if profile.displayBindings.isEmpty {
+                    Text("Choose at least one display. This profile stays inactive until a selected display hosts Sapphire’s menu-bar control.").font(.caption).foregroundStyle(.secondary)
+                }
+                if !unavailableBindings.isEmpty {
+                    ForEach(unavailableBindings) { binding in
+                        HStack {
+                            Text("Disconnected: " + (binding.displayLabel.isEmpty ? binding.displayIdentifier : binding.displayLabel)).font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Remove") { profile.displayBindings.removeAll { $0.displayIdentifier == binding.displayIdentifier } }
+                        }
+                    }
+                }
+                Button("Clear display selection") { profile.displayBindings.removeAll() }.disabled(profile.displayBindings.isEmpty)
                 if connectedScreens.isEmpty {
                     Text("No displays detected.")
                         .font(.caption)

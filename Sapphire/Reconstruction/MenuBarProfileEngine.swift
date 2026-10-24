@@ -26,15 +26,24 @@ final class MenuBarProfileEngine {
     private let snapshotProvider: SnapshotProvider
     private let clock: @Sendable () -> TimeInterval
     private var lastReadingAt: TimeInterval?
+    private var displayContextProvider: () -> Set<String>?
+    private var displayContext: Set<String>?
+    private var displayObservers: [NSObjectProtocol] = []
     private struct Configuration: Equatable {
         var enabled = false
         var profiles: [MenuBarProfile] = []
     }
 
-    init(clock: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+    init(displayContextProvider: @escaping () -> Set<String>? = { nil }, clock: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
          snapshotProvider: @escaping SnapshotProvider = { needsWiFi in
         await Task.detached(priority: .utility) { readSnapshot(needsWiFi: needsWiFi) }.value
-    }) { self.snapshotProvider = snapshotProvider; self.clock = clock }
+    }) { self.snapshotProvider = snapshotProvider; self.clock = clock; self.displayContextProvider = displayContextProvider }
+
+    func setDisplayContextProvider(_ provider: @escaping () -> Set<String>?) {
+        displayContextProvider = provider
+        invalidate(); displayContext = nil
+        if started { refresh() }
+    }
 
     func start() {
         guard !started else { return }
@@ -43,6 +52,14 @@ final class MenuBarProfileEngine {
             .map { Configuration(enabled: $0.menuBarProfilesEnabled, profiles: $0.menuBarProfiles) }
             .removeDuplicates()
             .sink { [weak self] value in self?.configure(value) }
+        displayObservers = [NSApplication.didChangeScreenParametersNotification, NSWindow.didChangeScreenNotification].map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.displayContextProvider() != self.displayContext else { return }
+                    self.refresh()
+                }
+            }
+        }
         let center = NSWorkspace.shared.notificationCenter
         observers = [
             center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
@@ -63,6 +80,8 @@ final class MenuBarProfileEngine {
         subscription = nil
         timer?.invalidate(); timer = nil
         observers.forEach(NSWorkspace.shared.notificationCenter.removeObserver); observers.removeAll()
+        displayObservers.forEach(NotificationCenter.default.removeObserver); displayObservers.removeAll()
+        displayContext = nil
         invalidate()
     }
     private func configure(_ value: Configuration) {
@@ -87,19 +106,26 @@ final class MenuBarProfileEngine {
     }
     func refresh() {
         guard started, !sleeping, configuration.enabled else { return }
+        let currentDisplay = displayContextProvider()
+        if currentDisplay != displayContext { invalidate(); displayContext = currentDisplay }
         let now = clock()
         if let previous = lastReadingAt, !Self.isFresh(previous, at: now) { setReveal(false) }
         guard refreshTask == nil else { return }
-        let profiles = configuration.profiles.filter { $0.isEnabled && !$0.revealConditions.isEmpty && MenuBarProfilePolicy.isSupported($0) }
+        let profiles = configuration.profiles.filter { $0.isEnabled && !$0.revealConditions.isEmpty && MenuBarProfilePolicy.isSupported($0)
+            && MenuBarProfilePolicy.displayMatches($0, identifiers: currentDisplay) }
         guard !profiles.isEmpty else { setReveal(false); return }
         let ticket = generation
         let needsWiFi = profiles.contains { $0.revealConditions.contains { [.wifiEquals, .wifiConnected].contains($0.kind) } }
         let provider = snapshotProvider
         refreshTask = Task { [weak self] in
-            let snapshot = await provider(needsWiFi)
+            var snapshot = await provider(needsWiFi)
             guard !Task.isCancelled, let self, self.started, !self.sleeping,
                   self.configuration.enabled, self.generation == ticket else { return }
             self.refreshTask = nil
+            guard self.displayContextProvider() == currentDisplay else {
+                self.invalidate(); self.refresh(); return
+            }
+            snapshot.menuBarDisplayIdentifiers = currentDisplay
             let completedAt = self.clock()
             self.lastReadingAt = completedAt
             self.setReveal(Self.isFresh(now, at: completedAt)

@@ -781,3 +781,11 @@ Full Mac build and Companion/Helper debug/release builds, lint and 26 JVM cases
 pass. README reflects verified scope; visual/browser clicks and OEM/reboot tests
 remain open. Current source adds only fixed fixture diagnostic commands and
 whitelisted booleans, never arbitrary clipboard input or pairing approval.
+
+25 October continuation: menu-bar profiles now have host-display binding code.
+The actual status-item window screen supplies identifier aliases; unknown or
+nonmatching hosts fail closed, and movement invalidates pending readings before
+fresh telemetry. The editor retains removable disconnected bindings. Injected
+policy/production-engine checks pass display aliases, empty/malformed/imported
+scopes, stale readings, notifications and teardown. The full local Mac build passed. Physical display migration/hot-plug and UI checks remain pending;
+Space/Focus/script bindings remain unsupported.

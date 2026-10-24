@@ -115,6 +115,12 @@ final class StatusBarController {
         self.appearanceManager = MenuBarAppearanceManager()
         self.screenCornerManager = ScreenCornerManager()
         self.profileEngine = MenuBarProfileEngine.shared
+        #if !SAPPHIRE_FULL_BUILD
+        self.profileEngine?.setDisplayContextProvider { [weak self] in
+            guard let screen = self?.expandCollapseItem.button?.window?.screen else { return nil }
+            return Set(screen.displayIdentifierCandidates)
+        }
+        #endif
         self.profileEngine?.start()
         let presentationMonitor = MenuBarPresentationMonitor { [weak self] engaged in
             self?.setAutomaticZenMode(engaged)
@@ -171,6 +177,9 @@ final class StatusBarController {
         agentHostObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
         agentHostObservers.removeAll()
         profileEngine?.stop()
+        #if !SAPPHIRE_FULL_BUILD
+        profileEngine?.setDisplayContextProvider { nil }
+        #endif
         profileEngine = nil
         presentationMonitor?.stop()
         presentationMonitor = nil

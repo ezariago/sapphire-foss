@@ -65,6 +65,29 @@ final class TestClock: @unchecked Sendable {
         assert(MenuBarProfilePolicy.matches(.init(kind: .wifiConnected), snapshot: .init(wifiSSID: "Fixture")))
         let decoded = try JSONDecoder().decode(MenuBarProfile.self, from: JSONEncoder().encode(profile))
         assert(profile == decoded)
+        var displayProfile = MenuBarProfile(name: "Bound fixture")
+        displayProfile.revealConditions = [.init(kind: .batteryBelow)]
+        displayProfile.bindsToDisplays = true
+        displayProfile.displayBindings = [.init(displayIdentifier: "uuid-A", displayLabel: "Fixture monitor")]
+        assert(MenuBarProfilePolicy.isSupported(displayProfile))
+        assert(!MenuBarProfilePolicy.requestsReveal(profiles: [displayProfile], snapshot: .init(batteryPercent: 10)))
+        assert(MenuBarProfilePolicy.requestsReveal(profiles: [displayProfile], snapshot: .init(batteryPercent: 10, menuBarDisplayIdentifiers: ["uuid-A", "legacy-A"])))
+        assert(!MenuBarProfilePolicy.requestsReveal(profiles: [displayProfile], snapshot: .init(batteryPercent: 10, menuBarDisplayIdentifiers: ["uuid-B"])))
+        displayProfile.displayBindings = [.init(displayIdentifier: "legacy-A")]
+        assert(MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: ["uuid-A", "legacy-A"]))
+        displayProfile.displayBindings = []; assert(!MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: ["uuid-A"]))
+        displayProfile.displayBindings = [.init(displayIdentifier: "bad\0id")]; assert(!MenuBarProfilePolicy.isSupported(displayProfile))
+        displayProfile.displayBindings = Array(repeating: .init(displayIdentifier: "uuid-A"), count: 65); assert(!MenuBarProfilePolicy.isSupported(displayProfile))
+        displayProfile.displayScope = .allDisplays
+        assert(MenuBarProfilePolicy.isSupported(displayProfile))
+        assert(MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: ["uuid-B"]))
+        assert(!MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: nil))
+        assert(!MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: []))
+        assert(!MenuBarProfilePolicy.displayMatches(displayProfile, identifiers: ["invalid\0id"]))
+        displayProfile.displayScope = .selectedDisplays
+        displayProfile.displayBindings = [.init(displayIdentifier: "uuid-A")]
+        let persistedDisplay = try JSONDecoder().decode(MenuBarProfile.self, from: JSONEncoder().encode(displayProfile))
+        assert(persistedDisplay == displayProfile)
         let reader = Reader()
         let clock = TestClock()
         let engine = MenuBarProfileEngine(clock: { clock.read() }, snapshotProvider: { await reader.read($0) })
@@ -138,6 +161,41 @@ final class TestClock: @unchecked Sendable {
         await reader.finish(.init(wifiSSID: "Fixture"))
         await wait { engine.isRevealRequested }
         engine.stop()
+        let displays = Reader()
+        var context: Set<String>? = ["uuid-A", "legacy-A"]
+        settings.settings.menuBarProfiles = [displayProfile]
+        let displayEngine = MenuBarProfileEngine(displayContextProvider: { context }, snapshotProvider: { await displays.read($0) })
+        displayEngine.start()
+        await wait { await displays.count == 1 }
+        context = ["uuid-B"]
+        NotificationCenter.default.post(name: NSWindow.didChangeScreenNotification, object: nil)
+        assert(!displayEngine.isRevealRequested)
+        await displays.finish(.init(batteryPercent: 10))
+        try await Task.sleep(for: .milliseconds(20))
+        assert(!displayEngine.isRevealRequested)
+        let excludedCount = await displays.count; assert(excludedCount == 0)
+        context = ["uuid-A", "legacy-A"]
+        NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        await wait { await displays.count == 1 }
+        await displays.finish(.init(batteryPercent: 10))
+        await wait { displayEngine.isRevealRequested }
+        context = nil
+        displayEngine.refresh(); assert(!displayEngine.isRevealRequested)
+        let unknownCount = await displays.count; assert(unknownCount == 0)
+        context = ["uuid-A"]
+        displayEngine.refresh(); await wait { await displays.count == 1 }
+        // Even without a notification, a moved target invalidates a completed reading.
+        context = ["uuid-B"]
+        await displays.finish(.init(batteryPercent: 10))
+        try await Task.sleep(for: .milliseconds(20)); assert(!displayEngine.isRevealRequested)
+        displayEngine.setDisplayContextProvider { ["uuid-A"] }
+        await wait { await displays.count == 1 }
+        await displays.finish(.init(batteryPercent: 10)); await wait { displayEngine.isRevealRequested }
+        displayEngine.stop()
+        context = ["uuid-B"]
+        NotificationCenter.default.post(name: NSWindow.didChangeScreenNotification, object: nil)
+        let stoppedCount = await displays.count; assert(stoppedCount == 0 && !displayEngine.isRevealRequested)
+        print("Passed host-display aliases, unknown/disconnected/empty scope, malformed/imported bindings, persistence, immediate context-change invalidation, late readings and display observer teardown with injected telemetry/context.")
         print("Passed profile condition/binding/unknown-data policies, persistence and production engine opt-in/disable/re-enable/deletion/stop/restart/freshness and simulated sleep/wake fixtures using injected readings. No actual Wi-Fi, power, scripts, Focus or menu-bar changes used.")
     }
 }
