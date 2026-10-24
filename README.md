@@ -176,8 +176,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   adapter telemetry from zero and removes the fabricated system-load fallback;
   real charger/sensor verification remains pending.
   [Menu-bar profile automation](docs/menu-bar-profiles.md) now evaluates battery
-  and readable Wi-Fi conditions with host-display bindings. Space/Focus bindings
-  and Focus/scripts remain unsupported; native menu-bar/monitor interaction checks
+  and readable Wi-Fi conditions, plus permission-gated shared Focus status and
+  host-display bindings. Space/named-Focus bindings and scripts remain unsupported;
+  native permission/menu-bar/monitor interaction checks
   remain open.
 - [ ] Implement the missing 8D/surround audio views and verify their integration
   with the existing audio engine after feature access is available. Public

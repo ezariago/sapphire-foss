@@ -19,8 +19,8 @@ clock rollback and late queries cannot retain a reveal. Settings changes,
 disable/re-enable, stop/restart and sleep invalidate pending work immediately.
 Wake starts a fresh read. The engine never runs a script.
 
-Focus conditions, script conditions, and Space/Focus bindings remain
-unimplemented. Adding unsupported conditions is disabled in the public settings;
+Named Focus conditions, script conditions, and Space/Focus bindings remain
+unimplemented. The optional public shared Focus-status condition is described below. Adding unsupported conditions is disabled in the public settings;
 imported profiles containing any unsupported condition or enabled Space/Focus binding remain
 inactive with an explanation. Imported paths/arguments are preserved as data and
 are never executed. Available Focus modes still return none.
@@ -71,3 +71,34 @@ queries, no telemetry query for excluded displays, and observer teardown. Actual
 monitor hot-plug, mirrored displays, status-item migration and native reveal/
 rehide remain hardware/UI checks. These tests do not manipulate physical screens
 or change the user’s menu-bar configuration.
+
+## Shared Focus status
+
+The public engine now supports **Shared Focus Status Is Active**, using Apple's
+optional notifications-silenced flag from `INFocusStatusCenter`. Only an explicitly
+shared, authorized `true` matches; `false`, unknown, denied or restricted access
+does not. This is not a named-mode identity or a way to activate Focus. The
+profile path does not read DoNotDisturb files or infer a mode name from other
+app state. Existing named Focus conditions and Focus bindings stay unsupported.
+
+The profile settings offer an explicit **Allow shared Focus status…** control and
+show authorization state. The engine never requests permission during polling.
+The public build includes `NSFocusStatusUsageDescription`; access is requested
+only after the user presses the permission control. See Apple's
+[status center](https://developer.apple.com/documentation/intents/infocusstatuscenter),
+[permission request](https://developer.apple.com/documentation/intents/infocusstatuscenter/requestauthorization(completionhandler:)),
+and [usage description](https://developer.apple.com/documentation/bundleresources/information-property-list/nsfocusstatususagedescription).
+
+The shared signal is sampled only for eligible profiles that use it. A fresh
+cached telemetry sample can be reevaluated when shared status becomes unknown
+or inactive, even while another telemetry query remains pending. Configuration,
+sleep and host changes clear the cache. The 20-second freshness bound now uses
+the query's starting time rather than extending old input age from completion.
+No shared Focus flag or network name is written to disk by this engine.
+
+Injected checks pass true/false/unknown/revoked status, an untrusted telemetry
+provider's attempted Focus flag, pending-query invalidation, query-start freshness
+and no shared-status reads for excluded display profiles. The real public API,
+permission and UI adapters compile in the same checks. Actual permission grant/
+revocation and native Focus transitions remain human interaction checks; no
+Focus mode was changed or system permission requested by automated tests.

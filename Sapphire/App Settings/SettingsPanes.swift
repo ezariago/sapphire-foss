@@ -11518,7 +11518,7 @@ struct MenuBarProfilesSettingsView: View {
                 #if SAPPHIRE_FULL_BUILD
                 Text("Reveal hidden menu bar items when a condition is met — battery level, active Focus, Wi-Fi network, or a script's exit code — and bind profiles to displays, Spaces, or Focus filters.").font(.caption).foregroundColor(.secondary)
                 #else
-                Text("Reveal hidden items for battery, charging or readable Wi-Fi conditions. Checks run every 10 seconds while enabled. Display bindings follow the monitor hosting Sapphire’s control. Focus, scripts and Space bindings are not implemented.").font(.caption).foregroundColor(.secondary)
+                Text("Reveal hidden items for battery, charging or readable Wi-Fi conditions. Checks run every 10 seconds while enabled. Display bindings follow the monitor hosting Sapphire’s control. Shared Focus status is available with permission. Scripts and named Focus/Space bindings are not implemented.").font(.caption).foregroundColor(.secondary)
                 #endif
             }
 
@@ -11533,6 +11533,9 @@ struct MenuBarProfilesSettingsView: View {
             }.modifier(SettingsContainerModifier())
 
             if settings.settings.menuBarProfilesEnabled {
+                #if !SAPPHIRE_FULL_BUILD
+                MenuBarFocusStatusAccessView().modifier(SettingsContainerModifier())
+                #endif
                 MenuBarProfileEditorView()
                     .premiumFeature(.menuBarProfiles)
             }
@@ -11772,10 +11775,15 @@ private struct MenuBarRevealConditionEditor: View {
                     .foregroundColor(.secondary)
 
             case .focusActive:
+                #if !SAPPHIRE_FULL_BUILD
+                Text("shared notifications-silenced status; requires permission")
+                    .font(.caption).foregroundStyle(.secondary)
+                #else
                 Text("any Focus mode")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                #endif
             case .focusIdentifier:
                 Picker("", selection: $condition.focusIdentifier) {
                     Text("Choose Focus…").tag("")

@@ -8,11 +8,12 @@ struct MenuBarProfileSnapshot: Sendable {
     var isPluggedIn: Bool?
     var wifiSSID: String?
     var menuBarDisplayIdentifiers: Set<String>?
+    var sharedFocusActive: Bool?
 }
 
 enum MenuBarProfilePolicy {
     static let supportedKinds: [MenuBarRevealConditionKind] = [
-        .batteryBelow, .batteryAbove, .charging, .onBatteryPower, .wifiEquals, .wifiConnected
+        .batteryBelow, .batteryAbove, .charging, .onBatteryPower, .wifiEquals, .wifiConnected, .focusActive
     ]
     static func isSupported(_ profile: MenuBarProfile) -> Bool {
         !profile.bindsToSpaces && !profile.bindsToFocus
@@ -47,7 +48,8 @@ enum MenuBarProfilePolicy {
         case .wifiEquals:
             guard !condition.wifiNetworkName.isEmpty, let name = snapshot.wifiSSID, !name.isEmpty else { return false }
             return name == condition.wifiNetworkName
-        case .focusActive, .focusIdentifier, .scriptSucceeds, .scriptFails, .scriptExitCode:
+        case .focusActive: return snapshot.sharedFocusActive == true
+        case .focusIdentifier, .scriptSucceeds, .scriptFails, .scriptExitCode:
             return false
         }
     }

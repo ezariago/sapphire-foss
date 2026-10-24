@@ -26,6 +26,8 @@ final class MenuBarProfileEngine {
     private let snapshotProvider: SnapshotProvider
     private let clock: @Sendable () -> TimeInterval
     private var lastReadingAt: TimeInterval?
+    private var sharedFocusProvider: @MainActor () -> Bool?
+    private var lastSnapshot: MenuBarProfileSnapshot?
     private var displayContextProvider: () -> Set<String>?
     private var displayContext: Set<String>?
     private var displayObservers: [NSObjectProtocol] = []
@@ -34,10 +36,10 @@ final class MenuBarProfileEngine {
         var profiles: [MenuBarProfile] = []
     }
 
-    init(displayContextProvider: @escaping () -> Set<String>? = { nil }, clock: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+    init(sharedFocusProvider: @escaping @MainActor () -> Bool? = { MenuBarSharedFocusStatus.read() }, displayContextProvider: @escaping () -> Set<String>? = { nil }, clock: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
          snapshotProvider: @escaping SnapshotProvider = { needsWiFi in
         await Task.detached(priority: .utility) { readSnapshot(needsWiFi: needsWiFi) }.value
-    }) { self.snapshotProvider = snapshotProvider; self.clock = clock; self.displayContextProvider = displayContextProvider }
+    }) { self.snapshotProvider = snapshotProvider; self.clock = clock; self.displayContextProvider = displayContextProvider; self.sharedFocusProvider = sharedFocusProvider }
 
     func setDisplayContextProvider(_ provider: @escaping () -> Set<String>?) {
         displayContextProvider = provider
@@ -100,7 +102,7 @@ final class MenuBarProfileEngine {
     }
     private func invalidate() {
         generation &+= 1
-        lastReadingAt = nil
+        lastReadingAt = nil; lastSnapshot = nil
         refreshTask?.cancel(); refreshTask = nil
         setReveal(false)
     }
@@ -109,11 +111,17 @@ final class MenuBarProfileEngine {
         let currentDisplay = displayContextProvider()
         if currentDisplay != displayContext { invalidate(); displayContext = currentDisplay }
         let now = clock()
-        if let previous = lastReadingAt, !Self.isFresh(previous, at: now) { setReveal(false) }
-        guard refreshTask == nil else { return }
+        if let previous = lastReadingAt, !Self.isFresh(previous, at: now) { lastSnapshot = nil; setReveal(false) }
         let profiles = configuration.profiles.filter { $0.isEnabled && !$0.revealConditions.isEmpty && MenuBarProfilePolicy.isSupported($0)
             && MenuBarProfilePolicy.displayMatches($0, identifiers: currentDisplay) }
         guard !profiles.isEmpty else { setReveal(false); return }
+        let needsFocus = profiles.contains { $0.revealConditions.contains { $0.kind == .focusActive } }
+        if var cached = lastSnapshot {
+            cached.sharedFocusActive = needsFocus ? sharedFocusProvider() : nil
+            lastSnapshot = cached
+            setReveal(MenuBarProfilePolicy.requestsReveal(profiles: profiles, snapshot: cached))
+        }
+        guard refreshTask == nil else { return }
         let ticket = generation
         let needsWiFi = profiles.contains { $0.revealConditions.contains { [.wifiEquals, .wifiConnected].contains($0.kind) } }
         let provider = snapshotProvider
@@ -126,10 +134,12 @@ final class MenuBarProfileEngine {
                 self.invalidate(); self.refresh(); return
             }
             snapshot.menuBarDisplayIdentifiers = currentDisplay
+            snapshot.sharedFocusActive = needsFocus ? self.sharedFocusProvider() : nil
             let completedAt = self.clock()
-            self.lastReadingAt = completedAt
-            self.setReveal(Self.isFresh(now, at: completedAt)
-                && MenuBarProfilePolicy.requestsReveal(profiles: profiles, snapshot: snapshot))
+            let fresh = Self.isFresh(now, at: completedAt)
+            self.lastReadingAt = fresh ? now : nil
+            self.lastSnapshot = fresh ? snapshot : nil
+            self.setReveal(fresh && MenuBarProfilePolicy.requestsReveal(profiles: profiles, snapshot: snapshot))
         }
     }
     private nonisolated static func isFresh(_ sampledAt: TimeInterval, at now: TimeInterval) -> Bool {

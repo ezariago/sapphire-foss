@@ -789,3 +789,11 @@ fresh telemetry. The editor retains removable disconnected bindings. Injected
 policy/production-engine checks pass display aliases, empty/malformed/imported
 scopes, stale readings, notifications and teardown. The full local Mac build passed. Physical display migration/hot-plug and UI checks remain pending;
 Space/Focus/script bindings remain unsupported.
+
+25 October: menu-bar profiles add the public optional shared Focus-status
+condition and explicit permission UI. Unknown/revoked status cannot match, and
+no permission prompt runs automatically. Named Focus identities/bindings, Space
+bindings and scripts remain unsupported. Injected policy/production-engine and
+native-adapter compilation pass, including permission loss during pending reads
+and query-start freshness. Full local build is underway; native grant/revocation
+and Focus transitions remain human checks, with no Focus changes during tests.

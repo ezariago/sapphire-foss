@@ -15,7 +15,7 @@ enum MenuBarRevealConditionKind: String, Codable, CaseIterable, Identifiable, Se
         case .batteryAbove: "Battery Level Above"
         case .charging: "Charging"
         case .onBatteryPower: "On Battery Power"
-        case .focusActive: "Any Focus Active"
+        case .focusActive: "Shared Focus Status Is Active"
         case .focusIdentifier: "Focus Mode Is"
         case .wifiEquals: "Wi-Fi Network Is"
         case .wifiConnected: "Wi-Fi Connected"

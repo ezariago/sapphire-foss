@@ -20,13 +20,13 @@ final class TestClock: @unchecked Sendable {
     func set(_ value: TimeInterval) { lock.lock(); time = value; lock.unlock() }
 }
 @main struct Checks {
-    @MainActor static func wait(_ condition: () async -> Bool) async {
+    @MainActor static func wait(_ condition: () async -> Bool, line: Int = #line) async {
         let deadline = ProcessInfo.processInfo.systemUptime + 5
         while !(await condition()), ProcessInfo.processInfo.systemUptime < deadline {
             try! await Task.sleep(for: .milliseconds(10))
         }
         let satisfied = await condition()
-        precondition(satisfied, "Fixture deadline")
+        precondition(satisfied, "Fixture deadline at line \(line)")
     }
     @MainActor static func main() async throws {
         let unknown = MenuBarProfileSnapshot()
@@ -41,7 +41,7 @@ final class TestClock: @unchecked Sendable {
         for field in [\MenuBarProfile.bindsToDisplays, \.bindsToSpaces, \.bindsToFocus] {
             profile[keyPath: field] = true; assert(!reveal(.init(batteryPercent: 19))); profile[keyPath: field] = false
         }
-        for kind in [MenuBarRevealConditionKind.focusActive, .focusIdentifier, .scriptSucceeds, .scriptFails, .scriptExitCode] {
+        for kind in [MenuBarRevealConditionKind.focusIdentifier, .scriptSucceeds, .scriptFails, .scriptExitCode] {
             profile.revealConditions = [condition, .init(kind: kind)]
             assert(!reveal(.init(batteryPercent: 19))) // Do not silently ignore unsupported AND/binding semantics.
         }
@@ -63,6 +63,9 @@ final class TestClock: @unchecked Sendable {
         assert(MenuBarProfilePolicy.matches(condition, snapshot: .init(wifiSSID: "Fixture WiFi")))
         assert(!MenuBarProfilePolicy.matches(.init(kind: .wifiConnected), snapshot: .init(wifiSSID: "")))
         assert(MenuBarProfilePolicy.matches(.init(kind: .wifiConnected), snapshot: .init(wifiSSID: "Fixture")))
+        assert(!MenuBarProfilePolicy.matches(.init(kind: .focusActive), snapshot: unknown))
+        assert(!MenuBarProfilePolicy.matches(.init(kind: .focusActive), snapshot: .init(sharedFocusActive: false)))
+        assert(MenuBarProfilePolicy.matches(.init(kind: .focusActive), snapshot: .init(sharedFocusActive: true)))
         let decoded = try JSONDecoder().decode(MenuBarProfile.self, from: JSONEncoder().encode(profile))
         assert(profile == decoded)
         var displayProfile = MenuBarProfile(name: "Bound fixture")
@@ -195,6 +198,40 @@ final class TestClock: @unchecked Sendable {
         context = ["uuid-B"]
         NotificationCenter.default.post(name: NSWindow.didChangeScreenNotification, object: nil)
         let stoppedCount = await displays.count; assert(stoppedCount == 0 && !displayEngine.isRevealRequested)
+        let focusReader = Reader()
+        let focusClock = TestClock()
+        var focus: Bool? = nil
+        var focusReads = 0
+        var focusProfile = MenuBarProfile(name: "Shared Focus fixture")
+        focusProfile.revealConditions = [.init(kind: .focusActive)]
+        settings.settings.menuBarProfiles = [focusProfile]
+        let focusEngine = MenuBarProfileEngine(sharedFocusProvider: { focusReads += 1; return focus },
+            clock: { focusClock.read() }, snapshotProvider: { await focusReader.read($0) })
+        focusEngine.start(); await wait { await focusReader.count == 1 }
+        await focusReader.finish(.init(sharedFocusActive: true)) // Provider cannot forge the separate shared signal.
+        try await Task.sleep(for: .milliseconds(20)); assert(!focusEngine.isRevealRequested)
+        focus = true; focusEngine.refresh(); assert(focusEngine.isRevealRequested)
+        await wait { await focusReader.count == 1 }
+        focus = nil; focusEngine.refresh(); assert(!focusEngine.isRevealRequested) // Revoked/unshared, even while telemetry is pending.
+        await focusReader.finish(.init(sharedFocusActive: true))
+        try await Task.sleep(for: .milliseconds(20)); assert(!focusEngine.isRevealRequested)
+        focus = false; focusEngine.refresh(); await wait { await focusReader.count == 1 }
+        await focusReader.finish(.init()); try await Task.sleep(for: .milliseconds(20)); assert(!focusEngine.isRevealRequested)
+        focus = true; focusClock.set(105); focusEngine.refresh()
+        await wait { await focusReader.count == 1 }
+        focus = nil; focusEngine.refresh(); assert(!focusEngine.isRevealRequested)
+        focus = true; focusClock.set(119)
+        await focusReader.finish(.init()); await wait { focusEngine.isRevealRequested }
+        focusClock.set(126); focusEngine.refresh() // Age is measured from query start (105), not its late completion (119).
+        assert(!focusEngine.isRevealRequested)
+        await wait { await focusReader.count == 1 }; await focusReader.finish(.init()); await wait { focusEngine.isRevealRequested }
+        focusEngine.stop()
+        let readsAtStop = focusReads
+        settings.settings.menuBarProfiles = [displayProfile]
+        focusEngine.start(); await Task.yield()
+        assert(focusReads == readsAtStop) // Excluded host requires no shared-status read.
+        focusEngine.stop()
+        print("Passed optional shared Focus signal, false/unknown/revoked status, pending-query invalidation, separately owned provider data, source-time freshness and no reads for excluded profiles. No native Focus query or permission prompt.")
         print("Passed host-display aliases, unknown/disconnected/empty scope, malformed/imported bindings, persistence, immediate context-change invalidation, late readings and display observer teardown with injected telemetry/context.")
         print("Passed profile condition/binding/unknown-data policies, persistence and production engine opt-in/disable/re-enable/deletion/stop/restart/freshness and simulated sleep/wake fixtures using injected readings. No actual Wi-Fi, power, scripts, Focus or menu-bar changes used.")
     }

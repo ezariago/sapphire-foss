@@ -53,6 +53,7 @@ def main():
     # Public Services only advertise implemented selectors. Preserve the upstream
     # plist for private builds, whose camera/document services are separate.
     public_info = plistlib.loads((ROOT / "Sapphire/App/Info.plist").read_bytes())
+    public_info["NSFocusStatusUsageDescription"] = "Sapphire uses your shared Focus status to evaluate menu-bar profiles and show Focus indicators."
     public_info["NSServices"] = plistlib.loads((ROOT / "scripts/public-services.plist").read_bytes())
     public_info_path = ROOT / "build/Local/Sapphire-Public-Info.plist"
     public_info_path.parent.mkdir(parents=True, exist_ok=True)
