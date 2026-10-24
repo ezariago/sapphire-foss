@@ -380,3 +380,14 @@ final full app build/signature checks passed (`build/power-readings-final-build.
 No power setting, charger or phone state was changed by these tests. Actual sensor
 availability/calibration and charger/dock transitions remain hardware checks in
 [power evidence](power-readings.md).
+
+Added per-app 8D and stereo-surround controls connected to the existing public
+manager/mixer, including live parameter bindings, reset and active-tap status.
+Extracted the existing settings models without changing Codable keys or legacy
+defaults and normalized all numeric inputs before renderer use. Parameter-only
+updates now notify the UI without unnecessarily restarting capture reconciliation.
+
+Spatial parameter/default/legacy decode/persistence fixtures passed without
+starting a mixer or playing audio. Full app build/signature checks passed
+(`build/spatial-audio-build.log`). Actual permission, routing, device recovery and
+acoustic checks remain explicitly pending in [spatial audio notes](spatial-audio.md).

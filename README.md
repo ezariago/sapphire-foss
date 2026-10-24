@@ -163,7 +163,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   adapter telemetry from zero and removes the fabricated system-load fallback;
   real charger/sensor verification remains pending.
 - [ ] Implement the missing 8D/surround audio views and verify their integration
-  with the existing audio engine after feature access is available.
+  with the existing audio engine after feature access is available. Public
+  [per-app controls and bounded parameter wiring](docs/spatial-audio.md) are added;
+  permission, live routing and acoustic verification remain open.
 - [ ] Implement sports scores/commentary and finance quotes, including settings,
   widgets, players and live activities; the current providers return no data.
 - [ ] Implement Intelligence task execution, screen perception, memory/monitoring

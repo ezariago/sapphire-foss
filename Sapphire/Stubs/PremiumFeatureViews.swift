@@ -31,17 +31,6 @@ struct KeyboardShortcutsSettingsView: View { var body: some View { PremiumUnavai
 
 
 
-struct EightDAudioView: View {
-    let bundleID: String
-    let appName: String
-    var body: some View { PremiumUnavailableView(title: "8D Audio") }
-}
-
-struct SurroundAudioView: View {
-    let bundleID: String
-    let appName: String
-    var body: some View { PremiumUnavailableView(title: "Surround Audio") }
-}
 
 
 struct ClipboardItemThumbnailView: View {

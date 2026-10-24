@@ -53,85 +53,6 @@ struct AudioDeviceSettings: Equatable, Codable {
     }
 }
 
-struct EightDAudioSettings: Equatable, Codable {
-    var enabled: Bool = false
-    var rotationSpeed: Double = 0.12
-    var depth: Double = 0.85
-    var distance: Double = 0.15
-    var elevationMotion: Double = 0.9
-    var frontBackMotion: Double = 0.95
-    var roomSize: Double = 0.82
-    var roomSpread: Double = 0.88
-    var bassBoost: Double = 0.0
-    var intensity: Double = 0.9
-    var centerFocus: Double = 0.35
-
-    private enum CodingKeys: String, CodingKey {
-        case enabled, rotationSpeed, depth, distance, elevationMotion, frontBackMotion, roomSize, roomSpread, bassBoost, intensity, centerFocus
-    }
-
-    init(enabled: Bool = false, rotationSpeed: Double = 0.10, depth: Double = 0.88, distance: Double = 0.18, elevationMotion: Double = 0.85, frontBackMotion: Double = 0.92, roomSize: Double = 0.78, roomSpread: Double = 0.85, bassBoost: Double = 0.0, intensity: Double = 0.9, centerFocus: Double = 0.35) {
-        self.enabled = enabled
-        self.rotationSpeed = rotationSpeed
-        self.depth = depth
-        self.distance = distance
-        self.elevationMotion = elevationMotion
-        self.frontBackMotion = frontBackMotion
-        self.roomSize = roomSize
-        self.roomSpread = roomSpread
-        self.bassBoost = bassBoost
-        self.intensity = intensity
-        self.centerFocus = centerFocus
-    }
-
-    init(from decoder: Decoder) throws {
-        let values = try decoder.container(keyedBy: CodingKeys.self)
-        enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
-        rotationSpeed = try values.decodeIfPresent(Double.self, forKey: .rotationSpeed) ?? 0.10
-        depth = try values.decodeIfPresent(Double.self, forKey: .depth) ?? 0.88
-        distance = try values.decodeIfPresent(Double.self, forKey: .distance) ?? 0.18
-        elevationMotion = try values.decodeIfPresent(Double.self, forKey: .elevationMotion) ?? 0.85
-        frontBackMotion = try values.decodeIfPresent(Double.self, forKey: .frontBackMotion) ?? 0.92
-        roomSize = try values.decodeIfPresent(Double.self, forKey: .roomSize) ?? 0.78
-        roomSpread = try values.decodeIfPresent(Double.self, forKey: .roomSpread) ?? 0.85
-        bassBoost = try values.decodeIfPresent(Double.self, forKey: .bassBoost) ?? 0.0
-        intensity = try values.decodeIfPresent(Double.self, forKey: .intensity) ?? 0.9
-        centerFocus = try values.decodeIfPresent(Double.self, forKey: .centerFocus) ?? 0.35
-    }
-}
-
-struct SurroundAudioSettings: Equatable, Codable {
-    var enabled: Bool = false
-    var width: Double = 1.7
-    var crossfeed: Double = 0.12
-    var ambience: Double = 0.4
-    var depth: Double = 0.55
-    var centerFocus: Double = 0.45
-
-    private enum CodingKeys: String, CodingKey {
-        case enabled, width, crossfeed, ambience, depth, centerFocus
-    }
-
-    init(enabled: Bool = false, width: Double = 1.7, crossfeed: Double = 0.12, ambience: Double = 0.4, depth: Double = 0.55, centerFocus: Double = 0.45) {
-        self.enabled = enabled
-        self.width = width
-        self.crossfeed = crossfeed
-        self.ambience = ambience
-        self.depth = depth
-        self.centerFocus = centerFocus
-    }
-
-    init(from decoder: Decoder) throws {
-        let values = try decoder.container(keyedBy: CodingKeys.self)
-        enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
-        width = try values.decodeIfPresent(Double.self, forKey: .width) ?? 1.7
-        crossfeed = try values.decodeIfPresent(Double.self, forKey: .crossfeed) ?? 0.12
-        ambience = try values.decodeIfPresent(Double.self, forKey: .ambience) ?? 0.4
-        depth = try values.decodeIfPresent(Double.self, forKey: .depth) ?? 0.55
-        centerFocus = try values.decodeIfPresent(Double.self, forKey: .centerFocus) ?? 0.45
-    }
-}
-
 @MainActor
 class MultiAudioManager: ObservableObject {
     static let shared = MultiAudioManager()
@@ -258,7 +179,7 @@ class MultiAudioManager: ObservableObject {
 
     func eightDAudioSettings(for bundleID: String) -> EightDAudioSettings {
         guard PremiumGate.hasAccess(.audio8D) else { return EightDAudioSettings() }
-        return eightDAudioSettingsByBundleID[bundleID] ?? EightDAudioSettings()
+        return (eightDAudioSettingsByBundleID[bundleID] ?? EightDAudioSettings()).normalized()
     }
 
     private func applyPremiumDSPAccess() {
@@ -269,50 +190,35 @@ class MultiAudioManager: ObservableObject {
 
     func setEightDAudioSettings(_ settings: EightDAudioSettings, for bundleID: String) {
         guard SubscriptionAccess.hasAccess(to: .audio8D) else { return }
-        var clamped = settings
-        clamped.rotationSpeed = min(max(clamped.rotationSpeed, 0.01), 1.0)
-        clamped.depth = min(max(clamped.depth, 0.0), 1.0)
-        clamped.distance = min(max(clamped.distance, 0.0), 1.0)
-        clamped.elevationMotion = min(max(clamped.elevationMotion, 0.0), 1.0)
-        clamped.frontBackMotion = min(max(clamped.frontBackMotion, 0.0), 1.0)
-        clamped.roomSize = min(max(clamped.roomSize, 0.0), 1.0)
-        clamped.roomSpread = min(max(clamped.roomSpread, 0.0), 1.0)
-        clamped.bassBoost = min(max(clamped.bassBoost, 0.0), 12.0)
-        clamped.intensity = min(max(clamped.intensity, 0.0), 1.0)
-        clamped.centerFocus = min(max(clamped.centerFocus, 0.0), 1.0)
+        let clamped = settings.normalized()
         let previous = eightDAudioSettingsByBundleID[bundleID] ?? EightDAudioSettings()
         guard previous != clamped else { return }
+        objectWillChange.send()
         eightDAudioSettingsByBundleID[bundleID] = clamped
         scheduleSettingsPersistence()
 
         pushAppParameters(for: bundleID)
         if previous.enabled != clamped.enabled {
-            objectWillChange.send()
             scheduleReconcile()
         }
     }
 
     func surroundAudioSettings(for bundleID: String) -> SurroundAudioSettings {
         guard PremiumGate.hasAccess(.surroundSound) else { return SurroundAudioSettings() }
-        return surroundAudioSettingsByBundleID[bundleID] ?? SurroundAudioSettings()
+        return (surroundAudioSettingsByBundleID[bundleID] ?? SurroundAudioSettings()).normalized()
     }
 
     func setSurroundAudioSettings(_ settings: SurroundAudioSettings, for bundleID: String) {
         guard SubscriptionAccess.hasAccess(to: .surroundSound) else { return }
-        var clamped = settings
-        clamped.width = min(max(clamped.width, 1.0), 2.5)
-        clamped.crossfeed = min(max(clamped.crossfeed, 0.0), 0.5)
-        clamped.ambience = min(max(clamped.ambience, 0.0), 1.0)
-        clamped.depth = min(max(clamped.depth, 0.0), 1.0)
-        clamped.centerFocus = min(max(clamped.centerFocus, 0.0), 1.0)
+        let clamped = settings.normalized()
         let previous = surroundAudioSettingsByBundleID[bundleID] ?? SurroundAudioSettings()
         guard previous != clamped else { return }
+        objectWillChange.send()
         surroundAudioSettingsByBundleID[bundleID] = clamped
         scheduleSettingsPersistence()
 
         pushAppParameters(for: bundleID)
         if previous.enabled != clamped.enabled {
-            objectWillChange.send()
             scheduleReconcile()
         }
     }
@@ -977,12 +883,14 @@ final class AppTapController {
     }
 
     func updateEightDAudio(settings: EightDAudioSettings) {
+        let settings = settings.normalized()
         os_unfair_lock_lock(parameterLock)
         pendingEightDSettings = settings
         os_unfair_lock_unlock(parameterLock)
     }
 
     func updateSurroundAudio(settings: SurroundAudioSettings) {
+        let settings = settings.normalized()
         os_unfair_lock_lock(parameterLock)
         pendingSurroundSettings = settings
         os_unfair_lock_unlock(parameterLock)

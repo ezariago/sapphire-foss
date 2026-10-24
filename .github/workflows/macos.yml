@@ -54,6 +54,8 @@ jobs:
         run: ./scripts/test-monitoring.sh
       - name: Power sensor availability checks
         run: ./scripts/test-power-telemetry.sh
+      - name: Spatial audio parameter and persistence checks
+        run: ./scripts/test-spatial-audio.sh
       - name: Phone protocol and crypto tests
         run: ./scripts/test-phone-reconstruction.sh
       - name: Build and verify macOS app
