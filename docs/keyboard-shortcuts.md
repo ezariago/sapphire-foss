@@ -26,3 +26,15 @@ are sent by configuration verification. Native recording, keyboard layouts,
 collision resolution, disable/re-enable, input permission and key routing remain
 attended checks. The catalog is not a claim that every upstream shortcut manager
 has been reconstructed.
+
+
+Source review found a remaining shared-dispatcher lifecycle issue: `perform`
+queues captured plane/Snap Zone actions and only rechecks their disabled IDs.
+Deleting or reassigning a target between key capture and main-queue execution
+can therefore leave a stale queued action. External provider lifecycle guards
+also vary: Emoji and Dock have additional validation, while the clipboard
+provider only rechecks feature enablement. Provider iteration order is not a
+stable collision priority. These are remaining implementation work, distinct
+from the catalog's stale-safe configuration writes; they have not been fixed
+or exercised with native input in this checkpoint. Add isolated lifecycle
+fixtures before changing routing, then verify permission/recording transitions.
