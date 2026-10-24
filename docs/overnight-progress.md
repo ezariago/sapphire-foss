@@ -331,3 +331,22 @@ insertion; colon-triggered suggestions remain unimplemented. The full local app
 build and signature checks passed (`build/emoji-picker-build.log`). The picker was
 not opened automatically over user content and actual presentation/insertion and
 OS shortcut coexistence remain manual checks. See [picker notes](emoji-picker.md).
+
+Implemented the storage workspace, notch widget and detail view using the public
+scanner/capacity model: scans/cancel, navigation, search/sort, categories, duplicate
+paths, issues and reviewed per-item Trash requests. Notch capacity refreshes do
+not scan files. Available/purgeable/free readings are distinguished. Scanner
+fixtures use a unique cache folder/defaults domain and test real duplicate hashes,
+filter/sort, capacity bounds, protected/out-of-scope/symlink rejection, cancellation
+and stale-removal refusal. No file was trashed and no user data was scanned.
+
+Both the ordinary fixture and optional native offscreen render passed; the
+synthetic workspace render was visually reviewed. The final full app build and
+signature checks passed (`build/storage-checkpoint-build.log`). Successful Trash
+and recovery, TCC/folder-picker behavior and actual notch placement remain native
+checks. Interactive Space Map/tree/pie and history/recommendation UI are still
+incomplete. See [storage evidence](storage-workspace.md).
+
+Hosted CI confirmed `2574bde` successful. The intermediate snippet-only run
+`af15a89` was cancelled while pending when a later checkpoint replaced it; it is
+not recorded as a passing hosted run. Later runs include that code and its tests.

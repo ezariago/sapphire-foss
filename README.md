@@ -152,7 +152,10 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   remain open.
 - [ ] Complete storage workspace/detail/widget UI and monitoring settings,
   adapter-power readings and menu-bar profile automation. Storage scanning and
-  system statistics already have public implementations.
+  system statistics already have public implementations. The [storage workspace
+  and notch capacity views](docs/storage-workspace.md) now expose scans, file/category/
+  duplicate inspection and reviewed per-item Trash actions; native permission,
+  Trash recovery and remaining visualization/workflow checks are still open.
 - [ ] Implement the missing 8D/surround audio views and verify their integration
   with the existing audio engine after feature access is available.
 - [ ] Implement sports scores/commentary and finance quotes, including settings,

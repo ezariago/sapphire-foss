@@ -2509,6 +2509,9 @@ enum DirectorySize {
     }
 }
 
+#if !SAPPHIRE_STORAGE_FIXTURE
+// The storage fixture compiles the actual scanner/model without the unrelated
+// installed-app uninstaller and its application-level settings dependencies.
 final class InstalledAppIconRepository: @unchecked Sendable {
     static let shared = InstalledAppIconRepository()
 
@@ -3174,6 +3177,8 @@ private enum InstalledAppScanner {
     }
 
 }
+
+#endif
 
 enum StorageCategory: String, Codable, CaseIterable, Sendable {
     case caches = "Caches"

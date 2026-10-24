@@ -46,10 +46,6 @@ struct MonitoringSettingsView: View { var body: some View { PremiumUnavailableVi
 
 
 
-struct StorageWorkspaceView: View {
-    @ObservedObject var model: StorageViewModel
-    var body: some View { PremiumUnavailableView(title: "Storage Workspace") }
-}
 
 struct EightDAudioView: View {
     let bundleID: String
@@ -63,13 +59,6 @@ struct SurroundAudioView: View {
     var body: some View { PremiumUnavailableView(title: "Surround Audio") }
 }
 
-struct StorageDetailView: View {
-    var body: some View { PremiumUnavailableView(title: "Storage") }
-}
-
-struct StorageWidgetView: View {
-    var body: some View { EmptyView() }
-}
 
 struct ClipboardItemThumbnailView: View {
     let item: ClipboardItem

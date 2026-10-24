@@ -48,6 +48,8 @@ jobs:
           ./scripts/test-snippets.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh
+      - name: Isolated storage scan and refusal checks
+        run: ./scripts/test-storage.sh
       - name: Phone protocol and crypto tests
         run: ./scripts/test-phone-reconstruction.sh
       - name: Build and verify macOS app
