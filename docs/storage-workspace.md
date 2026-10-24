@@ -100,4 +100,43 @@ renders of the actual History and Review tabs were visually inspected using
 `--render-history` and `--render-review`. Their ignored PNGs live beside the
 Space Map render. No user folders were scanned or files trashed. Actual
 DisclosureGroup/tile/keyboard/screen-reader interaction, Trash/restore, TCC and
-physical hardware behavior remain native checks. Tree and pie views remain open.
+physical hardware behavior remain native checks. Tree and pie views are described below.
+
+
+## Retained-record tree and category pie
+
+The Tree tab projects the current direct entries and retained scanner insights
+into a navigable hierarchy. It performs no extra directory enumeration or content
+read on expansion. Directory URL slashes are normalized consistently. Search and
+category matching preserve ancestor context; known parent records are marked
+Context, and inferred folders have neither fabricated byte totals nor actions.
+Only actual retained entries use the existing inspection/review row. Selecting
+Open folder and scanning still uses the existing scanner and guards.
+
+The default projection retains at most 500 matching records, 1000 total nodes and
+24 relative path components, reporting records omitted by those bounds or invalid
+ancestry. Limits are also capped internally for callers. Duplicate URL records
+are collapsed, and descendants beneath known symlinks, packages or nondirectories
+are rejected. This is not a complete recursive inventory: the scanner deliberately
+retains bounded insights. Folder estimates can already include descendant bytes,
+so tree rows must not be summed. Context rows explain search/filter ancestors.
+
+The Pie tab uses the scanner's normalized primary category allocation totals.
+Positive totals determine segment areas and legend percentages; zero/negative
+values have no segment. Integer display totals saturate for malformed overflow
+while relative weights remain finite. These are scoped accounted bytes, not disk
+capacity or reclaimable space. Cleanup filters may overlap; they are not summed
+into the pie. Segment/legend actions open the existing category filter in Files,
+whose broader facet matching can include additional records. No new removal path
+or automatic cleanup is introduced.
+
+`test-storage.sh` now also verifies tree canonicalization/ancestry/context/search/
+category/deduplication/bounds and primary pie weights/overflow. Actual workspace
+renders in an offscreen fixture window were reviewed with `--render-tree` and
+`--render-pie`; a separate `--render-pie-sample` renders the real pie view with
+four synthetic categories. Ignored artifacts are `build/storage-tests/tree.png`,
+`pie.png` and `pie-sample.png`. The nested tree render creates only fixture-owned
+files and rescans its isolated folder. No user data is scanned or trashed. Full
+app/signature/ZIP verification is recorded in `build/storage-visualization-build.log`.
+Actual expansion/selection, keyboard/screen-reader interaction, full recursive
+inventory, real TCC/hot-plug and Trash recovery remain open.

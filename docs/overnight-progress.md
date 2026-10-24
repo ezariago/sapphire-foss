@@ -655,3 +655,20 @@ Accessibility, app menu/keyboard-layout compatibility and physical transitions
 remain pending. Pointer acceleration, system button actions and smooth scrolling
 are still unimplemented. README and [button details](mouse-buttons.md) record the
 supported subset and its limits.
+
+Added Storage Tree/Pie tabs. The tree projects direct entries plus retained insights
+into bounded URL-normalized ancestry, keeping labelled context and rejecting paths
+beneath known symlink/package/nondirectory records. It reads no extra files on
+expansion and does not claim complete recursive inventory or invent context-folder
+sizes/actions. The pie uses primary scoped allocation totals, with finite relative
+weights, overflow-safe display totals and category-filter navigation. Existing
+reviewed filesystem actions are reused.
+
+Expanded real storage fixtures passed, including URL-directory canonicalization,
+search/category/context/bounds/ancestry and pie proportion/overflow checks. Actual
+workspace Tree/Pie and a multi-category synthetic pie render were visually reviewed
+in offscreen fixture windows. No user folder was scanned or file trashed. Full
+app/signature/ZIP verification passed (`build/storage-visualization-build.log`).
+README and storage documentation describe retained-record limits and pending native
+input/accessibility/TCC/Trash checks. ADB was disconnected during the checkpoint;
+the user said they would reconnect it. Mac-only work continues meanwhile.

@@ -66,9 +66,10 @@ struct StorageDetailView: View {
 
 struct StorageWorkspaceView: View {
     @ObservedObject var model: StorageViewModel
-    enum Results: String, CaseIterable { case files = "Files", spaceMap = "Space Map", categories = "Categories", duplicates = "Duplicates", recommendations = "Review", history = "History" }
+    enum Results: String, CaseIterable { case files = "Files", spaceMap = "Space Map", tree = "Tree", pie = "Pie", categories = "Categories", duplicates = "Duplicates", recommendations = "Review", history = "History" }
     @State private var results: Results
     @State private var selectedMapURL: URL?
+    @State private var selectedTreeURL: URL?
     init(model: StorageViewModel, initialResults: Results = .files) {
         self.model = model
         _results = State(initialValue: initialResults)
@@ -97,7 +98,7 @@ struct StorageWorkspaceView: View {
             if let metrics = model.scanMetrics, metrics.isTrimmed {
                 Text("The scan reached its result limit. These results do not include every item.").foregroundStyle(.orange).font(.caption)
             }
-            if results == .files || results == .spaceMap {
+            if results == .files || results == .spaceMap || results == .tree {
                 HStack {
                     TextField("Search scan results", text: $model.filterText).textFieldStyle(.roundedBorder)
                     if results == .files {
@@ -130,6 +131,19 @@ struct StorageWorkspaceView: View {
                     entryRow(selected, showPath: true)
                 } else {
                     Text("Select a tile to inspect, open its folder or reveal it in Finder.").font(.caption).foregroundStyle(.secondary)
+                }
+            } else if results == .tree {
+                let snapshot = StorageRetainedTreeSnapshot.make(root: model.currentURL, direct: model.entries, insights: model.insightEntries,
+                    search: model.filterText, category: model.categoryFilter)
+                if let category = model.categoryFilter {
+                    HStack { Text("Retained matches for \(category.rawValue)"); Button("Clear category filter") { model.categoryFilter = nil } }.font(.caption)
+                }
+                StorageRetainedTreeView(snapshot: snapshot) { selectedTreeURL = StorageRetainedTreeSnapshot.key(for: $0.url) }
+                if let url = selectedTreeURL, let entry = snapshot.records[url] { entryRow(entry, showPath: true) }
+                else { Text("Select a retained record to use the existing inspection and reviewed actions.").font(.caption).foregroundStyle(.secondary) }
+            } else if results == .pie {
+                StoragePieView(snapshot: .make(model.totalCategorySize)) { category in
+                    model.categoryFilter = category; results = .files
                 }
             } else if results == .history {
                 StorageScanHistoryView(history: model.currentScopeScanHistory)

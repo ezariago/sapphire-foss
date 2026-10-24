@@ -9,10 +9,14 @@ import SwiftUI
     }
     @MainActor static func main() async throws {
         verifyStorageSpaceMap()
+        verifyStorageVisualizations()
         let renderMap = CommandLine.arguments.contains("--render-space-map")
         let renderHistory = CommandLine.arguments.contains("--render-history")
         let renderReview = CommandLine.arguments.contains("--render-review")
-        let render = renderMap || renderHistory || renderReview || CommandLine.arguments.contains("--render")
+        let renderTree = CommandLine.arguments.contains("--render-tree")
+        let renderPie = CommandLine.arguments.contains("--render-pie")
+        let renderPieSample = CommandLine.arguments.contains("--render-pie-sample")
+        let render = renderMap || renderHistory || renderReview || renderTree || renderPie || renderPieSample || CommandLine.arguments.contains("--render")
         if render {
             _ = NSApplication.shared
             NSApp.setActivationPolicy(.accessory)
@@ -80,12 +84,26 @@ import SwiftUI
         model.rescan(); model.cancelScan()
         try await Task.sleep(for: .milliseconds(150))
         assert(!model.isLoading && model.scanState == .cancelled)
+        if renderTree {
+            let visualFolder = scope.appendingPathComponent("Reports/2026", isDirectory: true)
+            try fm.createDirectory(at: visualFolder, withIntermediateDirectories: true)
+            try Data(repeating: 7, count: 12345).write(to: visualFolder.appendingPathComponent("fixture.bin"))
+            model.filterText = ""; model.categoryFilter = nil; model.rescan()
+            await wait { !model.isLoading }
+            assert(model.scanState == .completed)
+        }
         if render {
             // Match the real scroll container and attach a temporary window wholly
             // outside every display. Capture only this synthetic fixture view.
-            let host = NSHostingView(rootView: ScrollView { StorageWorkspaceView(model: model, initialResults: renderMap ? .spaceMap : (renderHistory ? .history : (renderReview ? .recommendations : .files))).padding(20) }.background(Color(nsColor: .windowBackgroundColor)).preferredColorScheme(.dark))
+            let content: AnyView
+            if renderPieSample {
+                content = AnyView(StoragePieView(snapshot: .make([.caches: 40_000_000, .downloads: 30_000_000, .appSupport: 20_000_000, .other: 10_000_000])) { _ in }.padding(20))
+            } else {
+                content = AnyView(ScrollView { StorageWorkspaceView(model: model, initialResults: renderTree ? .tree : (renderPie ? .pie : (renderMap ? .spaceMap : (renderHistory ? .history : (renderReview ? .recommendations : .files))))).padding(20) })
+            }
+            let host = NSHostingView(rootView: content.background(Color(nsColor: .windowBackgroundColor)).preferredColorScheme(.dark))
             let minX = NSScreen.screens.map { $0.frame.minX }.min() ?? 0
-            let window = NSWindow(contentRect: NSRect(x: minX - 2000, y: 0, width: 850, height: 900), styleMask: .borderless, backing: .buffered, defer: false)
+            let window = NSWindow(contentRect: NSRect(x: minX - 2000, y: 0, width: 850, height: renderPieSample ? 420 : 900), styleMask: .borderless, backing: .buffered, defer: false)
             window.appearance = NSAppearance(named: .darkAqua)
             window.contentView = host
             window.orderBack(nil)
@@ -95,7 +113,7 @@ import SwiftUI
             host.cacheDisplay(in: host.bounds, to: bitmap)
             guard let png = bitmap.representation(using: .png, properties: [:]) else { fatalError("Fixture PNG unavailable") }
             let target = URL(fileURLWithPath: CommandLine.arguments[2])
-            let name = renderMap ? "space-map.png" : (renderHistory ? "history.png" : (renderReview ? "review.png" : target.lastPathComponent))
+            let name = renderPieSample ? "pie-sample.png" : renderTree ? "tree.png" : (renderPie ? "pie.png" : (renderMap ? "space-map.png" : (renderHistory ? "history.png" : (renderReview ? "review.png" : target.lastPathComponent))))
             try png.write(to: target.deletingLastPathComponent().appendingPathComponent(name))
             window.orderOut(nil)
         }

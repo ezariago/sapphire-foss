@@ -165,8 +165,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   system statistics already have public implementations. The [storage workspace
   and notch capacity views](docs/storage-workspace.md) now expose scans, file/category/
   duplicate inspection, a bounded selectable Space Map and reviewed per-item
-  Trash actions, scoped scan history and candidate review; native permission,
-  Trash recovery and tree/pie visualizations remain open.
+  Trash actions, scoped scan history and candidate review. A bounded tree of retained
+  records and a primary-category allocation pie now have public UI and fixture renders;
+  full recursive inventory, native permission/input and Trash recovery checks remain open.
   [Monitoring settings and delivery guards](docs/monitoring.md) now configure the
   public readout/alert engines; native permissions and alert delivery remain open.
   [Power display availability](docs/power-readings.md) now distinguishes missing
