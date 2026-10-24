@@ -43,12 +43,23 @@ import CoreGraphics
         var disabled = config; disabled.enabled = false; policy.configure(disabled); policy.configure(config)
         swallow(policy.handle(input(.up))); assert(!policy.accepts(copied, now: 100.2))
         policy = fresh(); swallow(policy.handle(input(.down))); policy.invalidate(retainConsumed: false); pass(policy.handle(input(.up)))
-        var unsupported = config; unsupported.actions[2] = "missionControl"
+        var unsupported = config; unsupported.actions[2] = "launchpad"
         policy = fresh(unsupported); pass(policy.handle(input(.down)))
         unsupported.actions[2] = "closeWindow"; unsupported.protectsClose = true
         policy = fresh(unsupported); pass(policy.handle(input(.down)))
         unsupported.closeExcluded = [app.id]; policy = fresh(unsupported)
         swallow(policy.handle(input(.down))); assert(request(policy.handle(input(.up))).command == .closeWindow)
+        var system = config; system.actions[2] = "missionControl"
+        policy = fresh(system); swallow(policy.handle(input(.down)))
+        let mission = request(policy.handle(input(.up, now: 100.1)))
+        assert(mission.command == .missionControl && mission.command.shortcut == nil)
+        assert(policy.accepts(mission, now: 100.2))
+        policy.invalidate(); assert(!policy.accepts(mission, now: 100.2))
+        system.modifierButtonEnabled = true; system.modifierButton = 3; system.modified[2] = "missionControl"
+        assert(system.usesModifierButton)
+        policy = fresh(system); swallow(policy.handle(input(.down, button: 3))); swallow(policy.handle(input(.down)))
+        assert(request(policy.handle(input(.up))).command == .missionControl)
+        swallow(policy.handle(input(.up, button: 3)))
         var excluded = config; excluded.excluded = [app.id]; policy = fresh(excluded); pass(policy.handle(input(.down)))
         config.modifierButtonEnabled = true; config.modifierButton = 3
         policy = fresh(); pass(policy.handle(input(.down, button: 3, flags: 1 << 20)))
@@ -68,12 +79,12 @@ import CoreGraphics
         assert(MouseButtonEventAdapter.input(type: .otherMouseDown, event: event, secureInput: false, now: 100)!.synthetic)
         assert(MouseButtonEventAdapter.input(type: .leftMouseDown, event: event, secureInput: false, now: 100) == nil)
         let tree = [0: [1, 2], 1: [3], 2: [4]]
-        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut, now: { 100 }, children: { tree[$0] }, command: { $0 == 3 ? .init(character: "C", modifiers: 0) : nil }) == 3)
+        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut!, now: { 100 }, children: { tree[$0] }, command: { $0 == 3 ? .init(character: "C", modifiers: 0) : nil }) == 3)
         var visits = 0
-        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut, now: { visits += 1; return Double(visits) / 100 }, children: { [$0 + 1] }, command: { _ in nil }) == nil)
+        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut!, now: { visits += 1; return Double(visits) / 100 }, children: { [$0 + 1] }, command: { _ in nil }) == nil)
         assert(visits < 128) // Depth bound also constrains this cycle-like chain.
         var slowClock = 100.0
-        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut, now: { slowClock }, children: { _ in nil }, command: { _ in
+        assert(MouseMenuSearch.find(0, shortcut: MouseRemapCommand.copy.shortcut!, now: { slowClock }, children: { _ in nil }, command: { _ in
             slowClock += 0.5; return MouseRemapCommand.copy.shortcut
         }) == nil)
         let req = MouseRemapRequest(epoch: 1, app: app, command: .copy, created: 100)

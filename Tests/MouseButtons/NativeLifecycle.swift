@@ -47,6 +47,21 @@ final class GlobalEventTap {
         SettingsModel.shared.settings.mouseButtonRemappingEnabled = false
         assert(manager.status == "Button remapping is off.")
         manager.start(); assert(hook.registrations == 2); manager.stop()
+        var opened = 0
+        let accepted: (URL) -> String? = { _ in "com.apple.exposelauncher" }
+        assert(MouseSystemActions.missionControlTarget(identity: { _ in "wrong.bundle" }) == nil)
+        assert(!MouseSystemActions.requestMissionControl(validate: { true }, identity: { _ in nil }, open: { _ in opened += 1; return true }))
+        assert(!MouseSystemActions.requestMissionControl(validate: { false }, identity: accepted, open: { _ in opened += 1; return true }))
+        assert(opened == 0)
+        assert(MouseSystemActions.requestMissionControl(validate: { true }, identity: accepted, open: { target in
+            assert(target.path == "/System/Applications/Mission Control.app"); opened += 1; return true
+        }))
+        assert(!MouseSystemActions.requestMissionControl(validate: { true }, identity: accepted, open: { _ in false }))
+        assert(opened == 1)
+        if let target = MouseSystemActions.missionControlTarget() {
+            assert(Bundle(url: target)?.bundleIdentifier == "com.apple.exposelauncher")
+        }
+        print("Passed fixed Mission Control target identity, missing/wrong target, stale validation, accepted/declined injected opener and read-only installed target metadata; Mission Control was not opened.")
         print("Passed real mouse manager/native AX adapter compilation and disabled/enable/configuration/reset/teardown lifecycle with fake settings and inert hooks. No real event tap, input or menu action.")
     }
 }

@@ -21,7 +21,7 @@ private final class MouseButtonRemapState: @unchecked Sendable {
     var policy = MouseButtonRemapPolicy()
     var deliveryPending = false
 }
-private struct MouseAXSelection: @unchecked Sendable { let element: AXUIElement }
+private enum MouseResolvedAction: @unchecked Sendable { case menu(AXUIElement), missionControl }
 
 @MainActor
 final class MouseButtonRemapManager: ObservableObject {
@@ -35,14 +35,21 @@ final class MouseButtonRemapManager: ObservableObject {
     private var sleeping = false
     private var locked = false
     private static let lookupQueue = DispatchQueue(label: "Sapphire.MouseMenuLookup", qos: .userInitiated)
-    private lazy var delivery = MouseMenuDelivery<MouseAXSelection>(clock: { ProcessInfo.processInfo.systemUptime },
+    private lazy var delivery = MouseMenuDelivery<MouseResolvedAction>(clock: { ProcessInfo.processInfo.systemUptime },
         validate: { [weak self] in self?.validate($0) == true }, resolve: { request in
             await withCheckedContinuation { continuation in Self.lookupQueue.async { continuation.resume(returning: Self.resolve(request)) } }
         }, perform: { [weak self] selection, request in
-            guard Self.attribute(selection.element, kAXEnabledAttribute) as Bool? == true,
-                  self?.validate(request) == true else { return false }
-            return AXUIElementPerformAction(selection.element, kAXPressAction as CFString) == .success
-        }, report: { [weak self] success in self?.status = success ? "Requested the enabled app menu command." : "No matching enabled menu command was available, or the app declined it." },
+            switch selection {
+            case .menu(let element):
+                guard request.command.shortcut != nil,
+                      Self.attribute(element, kAXEnabledAttribute) as Bool? == true,
+                      self?.validate(request) == true else { return false }
+                return AXUIElementPerformAction(element, kAXPressAction as CFString) == .success
+            case .missionControl:
+                guard request.command == .missionControl else { return false }
+                return MouseSystemActions.requestMissionControl(validate: { self?.validate(request) == true })
+            }
+        }, report: { [weak self] success in self?.status = success ? "Requested the configured mouse action." : "The configured action was unavailable or declined." },
         finished: { [weak self] in guard let self else { return }; self.state.lock.withLock { self.state.deliveryPending = false } })
     private init() {}
     func start() {
@@ -135,11 +142,15 @@ final class MouseButtonRemapManager: ObservableObject {
         guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success else { return nil }
         return value as? T
     }
-    private nonisolated static func resolve(_ request: MouseRemapRequest) -> MouseAXSelection? {
+    private nonisolated static func resolve(_ request: MouseRemapRequest) -> MouseResolvedAction? {
+        if request.command == .missionControl {
+            return MouseSystemActions.missionControlTarget() == nil ? nil : .missionControl
+        }
+        guard let shortcut = request.command.shortcut else { return nil }
         let root = AXUIElementCreateApplication(request.app.pid)
         AXUIElementSetMessagingTimeout(root, 0.04)
         guard let menu: AXUIElement = attribute(root, kAXMenuBarAttribute) else { return nil }
-        let result = MouseMenuSearch.find(menu, shortcut: request.command.shortcut, now: { ProcessInfo.processInfo.systemUptime }, children: { node in
+        let result = MouseMenuSearch.find(menu, shortcut: shortcut, now: { ProcessInfo.processInfo.systemUptime }, children: { node in
             AXUIElementSetMessagingTimeout(node, 0.04)
             return attribute(node, kAXChildrenAttribute)
         }, command: { node in
@@ -149,7 +160,7 @@ final class MouseButtonRemapManager: ObservableObject {
                   attribute(node, kAXEnabledAttribute) as Bool? == true else { return nil }
             return .init(character: character.uppercased(), modifiers: modifiers)
         })
-        return result.map { MouseAXSelection(element: $0) }
+        return result.map { .menu($0) }
     }
 }
 #endif

@@ -797,3 +797,11 @@ bindings and scripts remain unsupported. Injected policy/production-engine and
 native-adapter compilation pass, including permission loss during pending reads
 and query-start freshness. Full local Mac build and final packaged purpose-string check passed; native grant/revocation
 and Focus transitions remain human checks, with no Focus changes during tests.
+
+25 October: mapped Mission Control clicks now use the fixed OS launcher with
+expected bundle identity and a final current-request check. Menu actions retain
+their AX route; no synthetic keys or arbitrary commands are introduced. Policy,
+modifier, target/refusal/opener fixtures, native adapter compilation and actual
+read-only system bundle metadata pass, as does the full local Mac build. Physical
+mouse/driver and actual overview visibility remain unverified; other unsupported
+system actions still keep native behaviour. README updated for this subset.

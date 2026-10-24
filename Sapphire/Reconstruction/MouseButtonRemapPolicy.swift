@@ -4,23 +4,24 @@ import CoreGraphics
 
 enum MouseRemapCommand: String, CaseIterable {
     case back, forward, copy, paste, cut, undo, redo, selectAll
-    case closeWindow, minimize, newTab, newWindow, reload, fullScreen
-    var shortcut: MouseMenuShortcut {
+    case closeWindow, minimize, newTab, newWindow, reload, fullScreen, missionControl
+    var shortcut: MouseMenuShortcut? {
         switch self {
-        case .back: return .init(character: "[", modifiers: 0)
-        case .forward: return .init(character: "]", modifiers: 0)
-        case .copy: return .init(character: "C", modifiers: 0)
-        case .paste: return .init(character: "V", modifiers: 0)
-        case .cut: return .init(character: "X", modifiers: 0)
-        case .undo: return .init(character: "Z", modifiers: 0)
-        case .redo: return .init(character: "Z", modifiers: 1)
-        case .selectAll: return .init(character: "A", modifiers: 0)
-        case .closeWindow: return .init(character: "W", modifiers: 0)
-        case .minimize: return .init(character: "M", modifiers: 0)
-        case .newTab: return .init(character: "T", modifiers: 0)
-        case .newWindow: return .init(character: "N", modifiers: 0)
-        case .reload: return .init(character: "R", modifiers: 0)
-        case .fullScreen: return .init(character: "F", modifiers: 4)
+        case .back: return MouseMenuShortcut(character: "[", modifiers: 0)
+        case .forward: return MouseMenuShortcut(character: "]", modifiers: 0)
+        case .copy: return MouseMenuShortcut(character: "C", modifiers: 0)
+        case .paste: return MouseMenuShortcut(character: "V", modifiers: 0)
+        case .cut: return MouseMenuShortcut(character: "X", modifiers: 0)
+        case .undo: return MouseMenuShortcut(character: "Z", modifiers: 0)
+        case .redo: return MouseMenuShortcut(character: "Z", modifiers: 1)
+        case .selectAll: return MouseMenuShortcut(character: "A", modifiers: 0)
+        case .closeWindow: return MouseMenuShortcut(character: "W", modifiers: 0)
+        case .minimize: return MouseMenuShortcut(character: "M", modifiers: 0)
+        case .newTab: return MouseMenuShortcut(character: "T", modifiers: 0)
+        case .newWindow: return MouseMenuShortcut(character: "N", modifiers: 0)
+        case .reload: return MouseMenuShortcut(character: "R", modifiers: 0)
+        case .fullScreen: return MouseMenuShortcut(character: "F", modifiers: 4)
+        case .missionControl: return nil
         }
     }
     var label: String {
@@ -30,6 +31,7 @@ enum MouseRemapCommand: String, CaseIterable {
         case .newTab: return "New Tab"
         case .newWindow: return "New Window"
         case .fullScreen: return "Full Screen"
+        case .missionControl: return "Mission Control"
         default: return rawValue.prefix(1).uppercased() + rawValue.dropFirst()
         }
     }

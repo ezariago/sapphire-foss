@@ -15,8 +15,15 @@ metadata and child/enable attributes, not menu titles, selection contents or the
 clipboard. It invokes the native AX press action and posts no keyboard events.
 The requesting app owns save dialogs and the resulting command behaviour.
 
-Keep native and unsupported saved actions pass through. Mission Control,
-Launchpad, Show Desktop, app switcher, Spotlight, Lock Screen and opening Sapphire
+Mission Control now requests the fixed `/System/Applications/Mission Control.app`
+launcher after checking the expected `com.apple.exposelauncher` bundle identity.
+It uses Launch Services, not a guessed shortcut, menu search, shell or private
+Dock selector. The request is revalidated after target lookup and inherits the
+same pairing, expiry, focus, secure-input and shield guards as menu actions.
+Missing/mismatched targets or a declined open request report unavailable.
+Acceptance by Launch Services is not proof that the overview became visible.
+
+Keep native and unsupported saved actions pass through. Launchpad, Show Desktop, app switcher, Spotlight, Lock Screen and opening Sapphire
 settings are not implemented by this remapper and are omitted from new choices.
 Existing unsupported values are labelled rather than silently rewritten. A
 remapped Close Window request is skipped where Sapphire's ⌘W protection applies,
@@ -73,3 +80,14 @@ coexistence with drag/click filters, physical session transitions and actual app
 commands still need attended checks. Pointer acceleration and smooth/linear
 scrolling remain separate unimplemented features. This is a defined public subset,
 not complete system-button or upstream parity.
+
+## Mission Control request checkpoint — 25 October 2026
+
+Injected tests now cover Mission Control policy selection/modifiers, expiry/
+invalidation, fixed target identity, missing/wrong bundle, stale final validation
+and accepted/declined launch requests. Native adapter compilation and a read-only
+check of this Mac's installed system-app metadata pass. The full local Mac build
+passes. No test launched Mission Control, posted keys or changed user windows.
+Actual overview visibility and physical mapped-button behaviour remain native
+checks. Other system actions remain unsupported rather than being mapped to
+undocumented shortcuts or unrelated app interfaces.
