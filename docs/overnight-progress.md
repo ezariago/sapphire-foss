@@ -727,3 +727,12 @@ KEYCODE_SLEEP was sent as explicitly confirmed for the threshold, and wakefulnes
 was observed Dozing with mStayOn=false. No call action or persistent
 wake/notification setting was changed. The continuation automation remains PAUSED;
 no more implementation proceeds after the under-5% threshold.
+
+Resumed after another explicit usage reset and renewed phone-test authorization.
+Latest hosted logs show that the previous Space Map split cleared that expression,
+but the compiler then timed out on equivalent overloaded formatting in the pie
+view. Pie segment/legend controls and retained-tree rows now use smaller typed
+helpers with precomputed display strings. Focused real storage fixtures and
+Tree/multicolor Pie renders passed locally (`build/storage-pie-ci-fix.log` and
+`build/storage-tree-ci-fix.log`). Hosted verification remains separate from local
+success; the new run will be inspected before claiming a green pipeline.
