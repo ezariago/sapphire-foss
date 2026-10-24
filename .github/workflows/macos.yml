@@ -53,6 +53,7 @@ jobs:
           ./scripts/test-super-key.sh
           ./scripts/test-shortcut-dispatcher.sh
           ./scripts/test-snippets.sh
+          ./scripts/test-emoji-inline.sh
       - name: App Lock authentication lifecycle tests
         run: ./scripts/test-app-lock.sh
       - name: Isolated storage scan and refusal checks

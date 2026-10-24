@@ -174,6 +174,7 @@ extension SettingsIndex {
         .init(key: "dockLayoutsEnabled", title: "Enable DockLayouts", detail: "Allow switching Dock presets and keep preset hotkeys registered", section: .dockLayouts, range: nil, options: nil),
         .init(key: "emojiEnabled", title: "Enable Emoji", detail: "Allow Sapphire to detect :shortcode: patterns and show emoji suggestions as you type.", section: .emoji, range: nil, options: nil),
         .init(key: "emojiSkinTone", title: nil, detail: nil, section: .emoji, range: nil, options: EmojiSkinTone.allCases.map(\.rawValue)),
+        .init(key: "emojiInlineSuggestionsEnabled", title: "Suggest emoji while typing colon aliases", detail: "Opt-in local click-to-insert suggestions in compatible text editors.", section: .emoji, range: nil, options: nil),
         .init(key: "emojiSuggestOnColon", title: "Suggest as You Type", detail: "Show suggestions after typing : plus a letter. A bare colon never opens the popup.", section: .emoji, range: nil, options: nil),
         .init(key: "enableAlwaysHiddenSection", title: "Enable Always-Hidden Section", detail: nil, section: .appearance, range: nil, options: nil),
         .init(key: "enableBiweeklyCalibration", title: nil, detail: nil, section: nil, range: nil, options: nil),

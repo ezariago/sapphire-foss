@@ -210,6 +210,7 @@ extension SettingsField {
         SettingsField(\.snippetsList),
         SettingsField(\.emojiEnabled),
         SettingsField(\.emojiSuggestOnColon),
+        SettingsField(\.emojiInlineSuggestionsEnabled),
         SettingsField(\.emojiDisabledAppBundleIDs),
         SettingsField(\.emojiSkinTone),
         SettingsField(\.emojiPickerShortcut),

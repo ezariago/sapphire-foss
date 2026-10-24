@@ -22,6 +22,7 @@ final class EmojiShortcutManager: ObservableObject {
     func start() {
         guard !running else { return }
         running = true
+        EmojiInlineSuggestionsManager.shared.start()
         subscription = SettingsModel.shared.$settings.map {
             Configuration(enabled: $0.emojiEnabled, shortcut: $0.emojiPickerShortcut,
                 excluded: $0.emojiDisabledAppBundleIDs, disabled: $0.disabledShortcutIDs)
@@ -67,6 +68,7 @@ final class EmojiShortcutManager: ObservableObject {
         status = nil
     }
     func stopMonitoring() {
+        EmojiInlineSuggestionsManager.shared.stop()
         running = false; generation &+= 1; subscription = nil
         KeyboardShortcutManager.shared.unregisterExternalShortcutProvider(named: "FOSSEmojiPicker")
         unavailable = []
@@ -77,6 +79,7 @@ struct EmojiSettingsView: View {
     @ObservedObject private var settings = SettingsModel.shared
     @ObservedObject private var manager = EmojiShortcutManager.shared
     @ObservedObject private var recorder = GlobalShortcutRecorder.shared
+    @ObservedObject private var inline = EmojiInlineSuggestionsManager.shared
     var body: some View {
         Form {
             Section("Emoji & Symbols") {
@@ -115,7 +118,10 @@ struct EmojiSettingsView: View {
                 }
             }
             Section("Inline suggestions") {
-                Text("Colon-triggered suggestions are not implemented. Skin tone uses the macOS picker's own controls.").foregroundStyle(.secondary)
+                Toggle("Suggest emoji while typing colon aliases", isOn: $settings.settings.emojiInlineSuggestionsEnabled)
+                Text("A separate opt-in: type an alias such as :smi, then click a suggestion beside the caret. Uses a small local alias list and Accessibility text-range replacement. It reads at most 65 characters around the caret, never the clipboard. Requires a compatible text editor and keyboard layout; input-method composition is skipped.").foregroundStyle(.secondary)
+                Text("Suggestions expire after five seconds. Keyboard navigation and automatic colon expansion are not included. The macOS picker provides the full emoji library and skin-tone controls; inline choices use base emoji.").font(.caption).foregroundStyle(.secondary)
+                Text(inline.status).font(.caption).foregroundStyle(.secondary)
             }
         }.formStyle(.grouped)
     }

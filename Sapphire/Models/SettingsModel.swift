@@ -1407,6 +1407,7 @@ struct Settings: Codable, Equatable {
 
     var emojiEnabled: Bool = false
     var emojiSuggestOnColon: Bool = true
+    var emojiInlineSuggestionsEnabled: Bool = false
     var emojiDisabledAppBundleIDs: Set<String> = []
     var emojiSkinTone: EmojiSkinTone = .none
     var emojiPickerShortcut: KeyboardShortcut = KeyboardShortcut(key: "Space", modifiers: [.control, .command])

@@ -805,3 +805,26 @@ modifier, target/refusal/opener fixtures, native adapter compilation and actual
 read-only system bundle metadata pass, as does the full local Mac build. Physical
 mouse/driver and actual overview visibility remain unverified; other unsupported
 system actions still keep native behaviour. README updated for this subset.
+
+25 October: inline emoji suggestions now have a separate default-off opt-in, 24
+local aliases, a nonactivating click-to-insert popup and bounded (65-unit) AX
+range transactions. Parser/boundary/UTF-16/geometry and stale-edit tests, native
+manager/adapter lifecycle compilation and real offscreen popup render pass.
+Owned background native editor/secure-field checks passed for short and long
+Unicode prefixes, confirmed caret placement and no changes to preceding content.
+Full local app build passed. Real global typing/popup click routing, keyboard
+navigation and broader editor/IME behaviour remain open. No user document or
+clipboard was read, no keys posted and no phone sleep action sent. Focus native
+permission check remains pending user feedback; Sapphire was left running for it.
+
+Usage-threshold checkpoint: primary window reached 97% used (3% remaining),
+weekly 76% used. Further implementation stopped. The full emoji app build,
+focused tests, offscreen render and owned native insertion/caret/secure-field
+fixtures pass. Known remaining emoji interaction gap: inherited single-key input
+gating can suppress offers during key rollover; fix/test that before claiming
+complete inline interaction support. Native global popup routing remains open.
+The consolidated regression stopped at the native media fixture with Apple
+e5rt precompiled-compute error 13; no full-suite pass is claimed.
+The automation remains paused/expired. Per the human's newer instruction, no
+phone sleep/power command is sent at this threshold. Sapphire remains running
+for the user's optional shared Focus permission check; that result is pending.

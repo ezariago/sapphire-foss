@@ -145,7 +145,10 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   remain open. [Text snippets](docs/text-snippets.md) now have guarded Accessibility
   replacement and date/time/clipboard placeholders; native editor verification and
   emoji suggestions remain open. The [system Emoji & Symbols shortcut](docs/emoji-picker.md)
-  now has configuration and app exclusions; inline colon suggestions are unimplemented.
+  now has configuration and app exclusions. [Click-to-insert colon suggestions](docs/emoji-inline.md)
+  now have a separate opt-in, curated aliases and guarded bounded AX replacement;
+  native background editor/secure-field fixtures pass. Global popup clicking,
+  key rollover, keyboard navigation and broader editor/IME compatibility remain open.
   The [shared shortcut catalog](docs/keyboard-shortcuts.md) now replaces its settings
   placeholder with recording, clearing, disabling and dispatcher diagnostics.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning

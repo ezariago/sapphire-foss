@@ -28,3 +28,11 @@ into third-party apps, secure-input transitions and permission recovery remain
 attended native checks. An API request has no success result; the status text
 reports only that macOS was asked to present its picker. Inline colon suggestions
 remain on the README roadmap.
+
+## Inline colon suggestions
+
+The separate opt-in [click-to-insert inline implementation](emoji-inline.md) now
+provides a small local alias catalog and bounded Accessibility range edits. It
+does not change the system picker or its skin-tone/search controls. Policy,
+manager lifecycle, real offscreen popup render and owned background native editor
+fixtures pass; global popup/click routing remains a separate attended check.
