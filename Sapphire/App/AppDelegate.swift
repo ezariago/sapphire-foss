@@ -489,9 +489,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if CommandLine.arguments.contains("--phone-diagnostics") {
             ReconstructedPhoneLink.shared.enableDiagnostics()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-                self?.openSettingsWindow()
+                let headless = CommandLine.arguments.contains("--phone-diagnostics-headless")
+                if !headless { self?.openSettingsWindow() }
                 let phone = ReconstructedPhoneLink.shared
-                if phone.pairedName == nil { phone.beginPairing() } else { phone.start() }
+                if phone.pairedName == nil {
+                    if !headless { phone.beginPairing() }
+                } else { phone.start() }
             }
         }
         #endif

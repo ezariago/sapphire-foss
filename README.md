@@ -218,11 +218,15 @@ its individual findings need rechecking against the current source.
   and image/file clipboard delivery beyond the current text-only transport.
   [One-file Mac-to-phone BLE transfer](docs/phone-file-transfer.md) now stages
   verified files up to 5 MiB for phone-side Save/Discard. Wi-Fi/bulk, reverse
-  transfer, browsing and file clipboard remain open; live BLE/Save checks remain pending.
+  transfer, browsing and file clipboard remain open. Live encrypted BLE staging and
+  exact 4,097-byte phone verification/discard now pass; actual Save/provider and File
+  Shelf interaction checks remain pending.
 - [ ] Implement screen mirroring, extended display and phone camera/microphone
   streaming, including photo capture and document scanning.
-- [ ] Implement Android widgets/external live activities, handoff/browser-tab
+- [ ] Implement Android widgets/external live activities, full app-state/browser-tab
   sharing, universal keyboard/mouse, Focus synchronization and remote/relay access.
+  Explicit bidirectional HTTP(S) link handoff already has public code and recorded
+  fixture verification; full app-state and automatic browser-tab sharing remain open.
 - [ ] Implement phone-mediated earbud status/control/handoff and active-peer
   selection; these compatibility methods currently do nothing.
 

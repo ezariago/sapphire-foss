@@ -70,8 +70,46 @@ not a read-back verification of the document provider's eventual storage.
 - Full Mac app build/signature checks and Android app/helper builds and debug lint
   check integration. The normal companion was not installed by the isolated test.
 
-Live BLE file traffic between both running production apps, File Shelf feedback,
-actual document-picker/provider saving, cache/storage pressure and locked-phone/
-OEM behavior remain native checks. No user file was transferred or modified for
+### Live encrypted BLE staging check (24 October)
+
+The Samsung was updated in place from companion 0.3.0 to the built 0.5.0 debug APK
+with a matching signing certificate. Saved pairing was retained and the Mac
+reconnected securely without pairing approval or clearing app data. Both sides
+ran the production encrypted BLE, framing, acknowledgement, sender and receiver
+paths. An explicitly enabled Mac local diagnostic command can generate only the
+fixed `sapphire-file-transfer-fixture.bin` payload (4,097 bytes, byte i = i % 251);
+it cannot select an arbitrary source path. The debug-only phone fixture binds
+verification/discard to the exact transfer UUID, fixed name, size and digest.
+
+`test-phone-file-transfer-live.py` passed disabled-receive rejection, successful
+staging, an independent phone read and exact-byte/SHA-256 comparison, and discard
+of that owned transfer. It restored the original Files preference. No document
+picker, user file, browser, SMS composer or call was used. The normal companion
+was updated for this check, unlike the earlier isolated fixture. The Mac then
+exited diagnostic mode, its temporary files were removed, normal Sapphire startup
+was restored, and the phone was verified Dozing with USB stay-awake off. Evidence:
+`build/phone-file-live-device.log`.
+
+The harness refuses existing active/staged files and restores only its own
+preference snapshot. A fake-transport test covers blocked setup, verification
+failure, restoration failure and a wake during staging, always attempting sleep
+and preserving exact UUID case. No real ADB is used by that test. It runs in macOS CI. Debug fixture
+activity exclusion from the release manifest was checked; debug APKs retain
+development fixtures. The Mac and Android full builds/lint, 24 Android JVM cases,
+all 29 configured Mac shell scripts and separate fake-harness tests passed.
+Headless diagnostic startup will not open Settings or begin/approve pairing.
+
+File Shelf feedback, actual document-picker/provider saving, real maximum-size
+throughput, cache/storage pressure and locked-phone/OEM behavior remain native
+checks. No user file was transferred or modified for
 tests. Wi-Fi/high-throughput bulk transfer, multiple files, phone-to-Mac transfer,
 phone browsing and image/file clipboard delivery remain on the roadmap.
+
+
+A later optional `--sleep-during-transfer` probe observed a wake event and rejected
+its background-transfer claim. Its owned staging was discarded and preference
+restoration/final sleep verification completed. This does not establish why the
+phone woke; asleep/locked/OEM behaviour remains unverified. The harness checks
+sleep state and the last-wake timestamp rather than treating staging success as
+proof that the display stayed asleep. No persistent wake/notification setting was
+changed to make the probe pass. Evidence: `build/phone-file-background-device.log`.

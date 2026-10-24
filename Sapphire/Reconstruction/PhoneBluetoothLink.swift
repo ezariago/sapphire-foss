@@ -183,6 +183,8 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
     private var isSleeping = false
     private var recoveryTask: Task<Void, Never>?
     private var workspaceObservers: [NSObjectProtocol] = []
+    private var diagnosticFileID: String?
+    private var diagnosticFileReply = "idle"
     private var diagnosticDirectory: URL?
     private var diagnosticTimer: Timer?
     private var diagnosticSubscription: AnyCancellable?
@@ -219,6 +221,11 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         let fixtureMedia = media?.appId == "dev.sapphire.companion"
             && ["Sapphire media fixture 1", "Sapphire media fixture 2"].contains(media?.title ?? "")
         let snapshot: [String: Any] = [
+            "fileTransferSupported": fileTransferSupported, "fileTransferBusy": fileTransferID != nil,
+            "fileFixtureID": diagnosticFileID ?? "",
+            "fileFixtureReply": diagnosticFileReply,
+            "fileFixtureBusy": diagnosticFileID != nil && fileTransferID == diagnosticFileID,
+            "fileFixtureProgress": diagnosticFileID != nil ? fileTransferProgress : -1,
             "status": status, "error": lastError ?? "", "isScanning": isScanning,
             "isConnecting": isConnecting, "isSecure": isSecure, "pairingActive": pairing != nil,
             "isSleeping": isSleeping, "reconnectAllowed": reconnectAllowed,
@@ -280,6 +287,19 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         case "notification-test-reply": notificationFixtureCommand("reply")
         case "notification-test-dismiss": notificationFixtureCommand("dismiss")
         case "handoff-test-send": sendLinkToPhone("https://example.com/sapphire-handoff-test")
+        case "file-test-send":
+            guard fileTransferID == nil else { return }
+            let fixture = diagnosticDirectory.appendingPathComponent(PhoneFileTransferDiagnosticFixture.name)
+            do {
+                try PhoneFileTransferDiagnosticFixture.data.write(to: fixture, options: .atomic)
+                diagnosticFileReply = "pending"
+                sendFilesToPhone([fixture]); diagnosticFileID = fileTransferID
+                if diagnosticFileID == nil { diagnosticFileReply = "unavailable" }
+            } catch { diagnosticFileReply = "fixture-error" }
+        case "file-test-remove":
+            if let id = diagnosticFileID, fileTransferID == id { stopFileTransfer("Fixture cancelled.", notifyPhone: true) }
+            try? FileManager.default.removeItem(at: diagnosticDirectory.appendingPathComponent(PhoneFileTransferDiagnosticFixture.name))
+            diagnosticFileID = nil; diagnosticFileReply = "idle"
         case "notification-test-mute":
             SettingsModel.shared.settings.continuityNotificationMutedApps["dev.sapphire.companion"] = "Sapphire Companion"
         case "notification-test-unmute":
@@ -514,6 +534,11 @@ final class ReconstructedPhoneLink: NSObject, ObservableObject {
         guard var transfer = outgoingFile, fileTransferID == transfer.id else { return }
         guard PhoneFileTransferPolicy.phaseBudget(startedAt: fileStartedAt, now: ProcessInfo.processInfo.systemUptime) != nil else {
             stopFileTransfer("File transfer expired. Check your phone for a completed staged copy.", notifyPhone: true); return
+        }
+        if diagnosticDirectory != nil, diagnosticFileID == transfer.id,
+           payload["requestId"]?.string == transfer.id,
+           let state = payload["state"]?.string, ["ready", "chunk", "complete", "disabled", "busy", "invalid", "error", "expired", "cancelled"].contains(state) {
+            diagnosticFileReply = state
         }
         let transition = transfer.accept(payload)
         outgoingFile = transfer; fileTransferProgress = transfer.progress

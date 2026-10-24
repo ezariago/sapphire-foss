@@ -135,4 +135,9 @@ struct OutgoingPhoneFileTransfer: Sendable {
         return .send(.init(type: "file.chunk", payload: ["requestId": .string(id), "index": .number(Double(index)), "data": .string(bytes.base64EncodedString())]))
     }
 }
+/// Only the explicitly enabled local diagnostic mode sends these fixed bytes.
+enum PhoneFileTransferDiagnosticFixture {
+    static let name = "sapphire-file-transfer-fixture.bin"
+    static let data = Data((0..<4097).map { UInt8($0 % 251) })
+}
 #endif

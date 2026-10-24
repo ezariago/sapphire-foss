@@ -74,7 +74,7 @@ Implemented for device testing:
 - Share web links in either direction, with explicit opening on the receiving device.
 - Recover after Android Bluetooth radio off/on without restarting the companion.
 
-Not implemented: Wi-Fi/bulk transfer, file/storage browsing, screen mirroring, extended display, virtual camera/microphone, SMS/calls, Android widgets, image/file clipboard, full app-state handoff and universal keyboard/mouse. Their protocol identifiers may be visible in a binary, but each still requires substantial implementation and verification. No account/subscription backend is reconstructed or changed.
+Not implemented: Wi-Fi/bulk transfer, file/storage browsing, screen mirroring, extended display, virtual camera/microphone, full SMS inbox/call control (reviewed drafts are separate), Android widgets, image/file clipboard, full app-state handoff and universal keyboard/mouse. Their protocol identifiers may be visible in a binary, but each still requires substantial implementation and verification. No account/subscription backend is reconstructed or changed.
 
 ## Build and test
 
@@ -548,3 +548,16 @@ The separate fixture used only its own synthetic files and data; the production
 companion was not installed or instrumented. Live encrypted BLE transfer and
 actual user-selected document saving remain unverified. Wi-Fi/bulk transfer,
 reverse transfer, phone browsing and image/file clipboard are still incomplete.
+
+
+### Live one-file staging verification (24 October, resumed work)
+
+See [file-transfer evidence](docs/phone-file-transfer.md). The normal companion
+was upgraded in place from 0.3.0 to 0.5.0 with a matching certificate, retaining
+saved pairing. Both real apps re-established an encrypted BLE session. Fixed
+4,097-byte sender/receiver traffic passed disabled rejection, acknowledged
+staging, independent exact bytes/SHA-256 verification and owned discard. A
+debug-only fixture guards against existing transfers and restores the Files
+preference; release manifests exclude it. No actual document provider, personal
+file, message or call was used. Normal Mac startup and phone sleep were restored.
+Actual Save/File Shelf/OEM and maximum-size throughput checks remain pending.

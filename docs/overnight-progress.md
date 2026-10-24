@@ -672,3 +672,40 @@ app/signature/ZIP verification passed (`build/storage-visualization-build.log`).
 README and storage documentation describe retained-record limits and pending native
 input/accessibility/TCC/Trash checks. ADB was disconnected during the checkpoint;
 the user said they would reconnect it. Mac-only work continues meanwhile.
+
+Closed the live BLE staging gap for the existing one-file sender/receiver. Added
+fixed-byte local diagnostic commands and a headless mode that does not open
+Settings or begin/approve pairing. A debug-only Android fixture refuses existing
+active/staged files, journals/restores only the Files preference, and verifies/
+discards only an exact expected transfer ID/name/size/hash match. No arbitrary
+source file command or external document-provider action is exposed.
+
+The Samsung's installed 0.3.0 companion was updated in place to the built 0.5.0
+APK after signing-certificate comparison. Pairing was retained. The actual Mac
+app and phone securely reconnected and passed disabled-offer rejection, fixed
+4,097-byte encrypted BLE staging, independent phone byte/SHA-256 verification and
+owned discard (`build/phone-file-live-device.log`). Preferences were restored;
+Mac diagnostics and temporary state were removed; normal Sapphire startup was
+restored; phone verified Dozing/mStayOn=false. No user file, real message/call,
+browser or document picker was used. Native Save/File Shelf/OEM/maximum-size
+throughput checks remain pending.
+
+Mac full build/signature/ZIP checks passed (`build/phone-file-live-headless-build.log`).
+Android debug/release builds, debug lint and 24 JVM cases passed. Release manifest
+excludes the file fixture. All 29 configured Mac shell tests passed
+(`build/resumed-reset-full-regression.log`); separate fake-transport harness cases
+also passed for blocked setup, verification/restoration failure, exact UUID-case
+cleanup and sleep attempts (`build/phone-file-live-harness-tests.log`). Both
+READMEs/verification notes distinguish this native proof from full file parity.
+
+
+The optional screen-off file-staging probe detected a wake and correctly rejected
+its background-transfer assertion. Cleanup preserved exact UUID case, discarded
+only the owned completed staging, restored the Files preference and verified
+Dozing again. Cause was not attributed; asleep/locked/OEM checks remain pending.
+The harness now validates sleep/last-wake observations and its four isolated fake
+cases cover wake rejection as well as setup/verification/restoration failure.
+Further device checks were suspended at the user's request/context; the user
+explicitly retained display sleep at the usage threshold. Only Mac diagnostic
+cleanup and normal app restart followed; no further phone interactions occur
+until that threshold or later user direction.
