@@ -350,3 +350,19 @@ incomplete. See [storage evidence](storage-workspace.md).
 Hosted CI confirmed `2574bde` successful. The intermediate snippet-only run
 `af15a89` was cancelled while pending when a later checkpoint replaced it; it is
 not recorded as a passing hosted run. Later runs include that code and its tests.
+
+Connected Monitoring settings to the existing readout and alert engines. Added
+proper stop/restart subscription cleanup, bounded imported thresholds, fresh
+sustained windows after threshold changes and generation-guarded permission/disk
+callbacks. Invalid samples/clock rollback/overflow and battery/disk latch inputs
+are handled without integer conversion crashes or reviving stale deliveries.
+The settings accurately identify the monitored home-folder volume and GiB units.
+
+Monitoring policy/math fixtures and a snippet regression run passed; the final
+full app build/signature verification passed (`build/monitoring-final-build.log`).
+No notification, sound, artificial load or disk-pressure test was performed.
+Actual permission/readout/alert behavior remains on the native checklist in
+[monitoring notes](monitoring.md). Compatibility initialization paths retain their
+original full-build behavior; this is not a claim that unavailable private full
+build dependencies have been tested. Hosted `c4b4c33` succeeded, including the
+snippet code/tests from the previously cancelled pending checkpoint.

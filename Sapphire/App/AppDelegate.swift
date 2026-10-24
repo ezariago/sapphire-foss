@@ -714,7 +714,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         extraClickFilterManager.shutdown()
         keyboardDebounceManager.stopMonitoring()
         superKeyManager.stopMonitoring()
-        menuBarReadoutsManager.removeStatusItem()
+        menuBarReadoutsManager.stop()
         systemAlertsManager.stopMonitoring()
 
         subscriptionValidationTimer?.invalidate()
@@ -892,14 +892,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         _ = ocrScreenshotMonitor
         _ = AppLockPanicShortcut.shared
         requestScreenRecordingForSystemEnhanceIfNeeded()
+        #if SAPPHIRE_FULL_BUILD
+        _ = emojiShortcutManager
+        #else
         emojiShortcutManager.start()
+        #endif
         _ = clipboardPickerManager
         ClipboardManager.shared.startMonitoring()
         clipboardAutoClearManager.start()
         cleanURLManager.start()
         finderCutPasteManager.start()
         snippetManager.start()
+        #if SAPPHIRE_FULL_BUILD
+        _ = mouseControlManager
+        #else
         mouseControlManager.start()
+        #endif
         focusFollowsMouseManager.start()
         extraClickFilterManager.start()
         keyboardDebounceManager.start()

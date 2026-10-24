@@ -108,6 +108,15 @@ struct SustainedThresholdGate {
     }
 
     mutating func record(_ value: Double, threshold: Double, at uptime: TimeInterval) -> Double? {
+        guard uptime.isFinite, uptime >= 0 else {
+            resetWindow(); lastSampleTime = nil; lastFired = nil; return nil
+        }
+        if let lastSampleTime, uptime < lastSampleTime {
+            resetWindow(); self.lastSampleTime = nil; lastFired = nil
+        }
+        guard threshold.isFinite, value.isFinite else {
+            resetWindow(); lastSampleTime = uptime; return nil
+        }
         if let lastSampleTime, uptime <= lastSampleTime { return nil }
         let gap = lastSampleTime.map { uptime - $0 } ?? 0
         lastSampleTime = uptime
@@ -120,8 +129,10 @@ struct SustainedThresholdGate {
             resetWindow()
             windowStart = uptime
         }
+        let sum = valueSum + value
+        guard sum.isFinite else { resetWindow(); return nil }
         sampleCount += 1
-        valueSum += value
+        valueSum = sum
 
         guard let start = windowStart,
               uptime - start >= duration,
@@ -150,6 +161,7 @@ struct LowBatteryLatch {
             hasFired = false
             return false
         }
+        guard (0...100).contains(level), (0...100).contains(threshold) else { return false }
         if level > threshold + Self.rearmMargin { hasFired = false }
         guard level <= threshold, !hasFired else { return false }
         hasFired = true
@@ -165,7 +177,7 @@ struct LowDiskLatch {
     }
 
     mutating func update(freeGB: Double, thresholdGB: Double) -> Bool {
-        guard freeGB.isFinite else { return false }
+        guard freeGB.isFinite, freeGB >= 0, thresholdGB.isFinite, thresholdGB > 0 else { return false }
         if freeGB > thresholdGB + Self.rearmMargin(thresholdGB: thresholdGB) { hasFired = false }
         guard freeGB < thresholdGB, !hasFired else { return false }
         hasFired = true

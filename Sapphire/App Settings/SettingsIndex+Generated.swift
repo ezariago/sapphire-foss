@@ -365,7 +365,7 @@ extension SettingsIndex {
         .init(key: "monitoringAlertDiskThresholdGB", title: "Free Space Threshold", detail: nil, section: .monitoring, range: (2.0)...(50.0), options: nil),
         .init(key: "monitoringAlertLowBatteryEnabled", title: "Low Battery", detail: "Notify once per discharge when the battery reaches the threshold.", section: .monitoring, range: nil, options: nil),
         .init(key: "monitoringAlertLowBatteryThreshold", title: "Battery Threshold", detail: nil, section: .monitoring, range: (5.0)...(50.0), options: nil),
-        .init(key: "monitoringAlertLowDiskEnabled", title: "Low Disk Space", detail: "Notify when the startup disk is nearly full.", section: .monitoring, range: nil, options: nil),
+        .init(key: "monitoringAlertLowDiskEnabled", title: "Low Disk Space", detail: "Notify when the volume containing your home folder is nearly full.", section: .monitoring, range: nil, options: nil),
         .init(key: "monitoringAlertMemoryPressureEnabled", title: "Memory Pressure", detail: "Notify when macOS reports memory pressure.", section: .monitoring, range: nil, options: nil),
         .init(key: "monitoringAlertSustainedCPUEnabled", title: "Sustained CPU Load", detail: "Notify when CPU stays above the threshold for about a minute.", section: .monitoring, range: nil, options: nil),
         .init(key: "monitoringAlertTemperatureEnabled", title: "High Temperature", detail: "Notify when the CPU stays above the threshold for 30 seconds. Requires the Sapphire helper.", section: .monitoring, range: nil, options: nil),

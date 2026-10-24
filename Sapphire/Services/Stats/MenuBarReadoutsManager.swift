@@ -62,6 +62,7 @@ final class MenuBarReadoutsManager {
     }
 
     private func apply(_ configuration: MenuBarReadoutsConfiguration) {
+        guard isStarted else { return }
         guard configuration != self.configuration else { return }
         self.configuration = configuration
         guard configuration.isEnabled, configuration.showCPU || configuration.showMemory || configuration.showNetwork else {
@@ -106,6 +107,12 @@ final class MenuBarReadoutsManager {
             NSStatusBar.system.removeStatusItem(statusItem)
         }
         statusItem = nil
+    }
+
+    func stop() {
+        isStarted = false
+        settingsCancellables.removeAll()
+        removeStatusItem()
     }
 
     // MARK: - Network sampling

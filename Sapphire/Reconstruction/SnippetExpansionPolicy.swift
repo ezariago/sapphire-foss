@@ -1,4 +1,3 @@
-#if !SAPPHIRE_FULL_BUILD
 import Foundation
 
 struct SnippetInputGate {
@@ -115,4 +114,3 @@ enum SnippetEditTransaction {
         return success
     }
 }
-#endif

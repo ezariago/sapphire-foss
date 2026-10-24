@@ -25,14 +25,14 @@ private struct SystemAlertsConfiguration: Equatable {
     init(_ settings: Settings) {
         isEnabled = settings.monitoringAlertsEnabled
         sustainedCPUEnabled = settings.monitoringAlertSustainedCPUEnabled
-        cpuThreshold = settings.monitoringAlertCPUThreshold
+        cpuThreshold = MonitoringThresholds.cpu(settings.monitoringAlertCPUThreshold)
         memoryPressureEnabled = settings.monitoringAlertMemoryPressureEnabled
         lowDiskEnabled = settings.monitoringAlertLowDiskEnabled
-        diskThresholdGB = settings.monitoringAlertDiskThresholdGB
+        diskThresholdGB = MonitoringThresholds.disk(settings.monitoringAlertDiskThresholdGB)
         temperatureEnabled = settings.monitoringAlertTemperatureEnabled
-        temperatureThreshold = settings.monitoringAlertTemperatureThreshold
+        temperatureThreshold = MonitoringThresholds.temperature(settings.monitoringAlertTemperatureThreshold)
         lowBatteryEnabled = settings.monitoringAlertLowBatteryEnabled
-        lowBatteryThreshold = settings.monitoringAlertLowBatteryThreshold
+        lowBatteryThreshold = MonitoringThresholds.battery(settings.monitoringAlertLowBatteryThreshold)
     }
 
     var cpuActive: Bool { isEnabled && sustainedCPUEnabled }
@@ -56,9 +56,8 @@ final class SystemAlertsManager: ObservableObject {
     private static let maximumTemperatureKeys = 24
     private static let temperatureSampleInterval: TimeInterval = 12
 
-    private enum AlertKind: String {
-        case cpu, temperature, memoryPressure, lowDisk, lowBattery
-    }
+    private typealias AlertKind = MonitoringDeliveryPolicy.Kind
+    private var delivery = MonitoringDeliveryPolicy()
 
     private enum PressureLevel {
         case warning, critical
@@ -101,9 +100,19 @@ final class SystemAlertsManager: ObservableObject {
     }
 
     private func apply(_ new: SystemAlertsConfiguration) {
+        guard isStarted else { return }
         let old = configuration
         guard new != old else { return }
         configuration = new
+        var active = Set<AlertKind>()
+        if new.cpuActive { active.insert(.cpu) }
+        if new.temperatureActive { active.insert(.temperature) }
+        if new.memoryActive { active.insert(.memoryPressure) }
+        if new.diskActive { active.insert(.lowDisk) }
+        if new.batteryActive { active.insert(.lowBattery) }
+        delivery.configure(active)
+        if new.cpuThreshold != old?.cpuThreshold { cpuGate.resetWindow() }
+        if new.temperatureThreshold != old?.temperatureThreshold { temperatureGate.resetWindow() }
 
         if new.isEnabled, old?.isEnabled != true {
             requestNotificationAccess()
@@ -135,6 +144,9 @@ final class SystemAlertsManager: ObservableObject {
     }
 
     func stopMonitoring() {
+        isStarted = false
+        settingsCancellables.removeAll()
+        delivery.configure([])
         stopCPUMonitoring()
         stopMemoryPressureMonitoring()
         stopDiskMonitoring()
@@ -163,7 +175,8 @@ final class SystemAlertsManager: ObservableObject {
 
     private func sampleCPU(usage: Double, uptime: TimeInterval) {
         guard let configuration, configuration.cpuActive else { return }
-        guard let average = cpuGate.record(usage * 100, threshold: configuration.cpuThreshold, at: uptime) else { return }
+        guard let percent = MonitoringSampleMath.cpuPercent(usage) else { cpuGate.resetWindow(); return }
+        guard let average = cpuGate.record(percent, threshold: configuration.cpuThreshold, at: uptime) else { return }
         postAlert(
             kind: .cpu,
             title: "High CPU Load",
@@ -218,13 +231,13 @@ final class SystemAlertsManager: ObservableObject {
 
     private func sampleTemperature(_ sensors: [any Sensor_p], uptime: TimeInterval) {
         guard let configuration, configuration.temperatureActive else { return }
-        let readings = sensors.filter { temperatureKeys.contains($0.key) }.map(\.value)
-        guard let hottest = readings.max() else { return }
+        let readings = sensors.filter { temperatureKeys.contains($0.key) }.map(\.value).filter { $0.isFinite }
+        guard let hottest = readings.max() else { temperatureGate.resetWindow(); return }
         guard temperatureGate.record(hottest, threshold: configuration.temperatureThreshold, at: uptime) != nil else { return }
         postAlert(
             kind: .temperature,
             title: "High Temperature",
-            body: "The CPU has been running at about \(Int(hottest.rounded()))°C for 30 seconds."
+            body: "The CPU has been running at about \(String(format: "%.0f", hottest))°C for 30 seconds."
         )
     }
 
@@ -313,15 +326,16 @@ final class SystemAlertsManager: ObservableObject {
     }
 
     private func sampleDiskSpace() {
-        guard let configuration, configuration.diskActive else { return }
+        guard let configuration, configuration.diskActive, let ticket = delivery.ticket(for: .lowDisk) else { return }
         let thresholdGB = configuration.diskThresholdGB
         Task.detached(priority: .utility) {
             let url = URL(fileURLWithPath: NSHomeDirectory())
             let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-            guard let free = values?.volumeAvailableCapacityForImportantUsage else { return }
+            guard let free = values?.volumeAvailableCapacityForImportantUsage, free >= 0 else { return }
             let freeGB = Double(free) / (1024 * 1024 * 1024)
             await MainActor.run { [weak self] in
-                self?.reportDiskSpace(freeGB: freeGB, thresholdGB: thresholdGB)
+                guard let self, self.delivery.isCurrent(ticket) else { return }
+                self.reportDiskSpace(freeGB: freeGB, thresholdGB: thresholdGB)
             }
         }
     }
@@ -335,7 +349,7 @@ final class SystemAlertsManager: ObservableObject {
         postAlert(
             kind: .lowDisk,
             title: "Low Disk Space",
-            body: "Only \(String(format: "%.1f", freeGB)) GB free on your startup disk."
+            body: "Only \(String(format: "%.1f", freeGB)) GiB available on your home folder's disk."
         )
     }
 
@@ -371,7 +385,8 @@ final class SystemAlertsManager: ObservableObject {
             guard let info = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any],
                   (info[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType,
                   let current = info[kIOPSCurrentCapacityKey] as? Int,
-                  let maximum = info[kIOPSMaxCapacityKey] as? Int, maximum > 0 else { continue }
+                  let maximum = info[kIOPSMaxCapacityKey] as? Int, maximum > 0,
+                  current >= 0, current <= maximum else { continue }
             let level = Int((Double(current) / Double(maximum) * 100).rounded())
             let onBattery = (info[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue
             let threshold = Int(configuration.lowBatteryThreshold.rounded())
@@ -422,6 +437,7 @@ final class SystemAlertsManager: ObservableObject {
     }
 
     private func postAlert(kind: AlertKind, title: String, body: String) {
+        guard let ticket = delivery.ticket(for: kind) else { return }
         let identifier = "com.shariq.sapphire.monitoring.\(kind.rawValue)"
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
@@ -431,19 +447,15 @@ final class SystemAlertsManager: ObservableObject {
                 let access: NotificationAccess = allowed ? .allowed : (settings.authorizationStatus == .denied ? .denied : .unknown)
                 let manager = SystemAlertsManager.shared
                 if manager.notificationAccess != access { manager.notificationAccess = access }
+                guard allowed, manager.isStarted, manager.delivery.isCurrent(ticket) else { return }
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = body
+                content.sound = .default
+                content.threadIdentifier = identifier
+                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+                center.add(request)
             }
-            guard allowed else { return }
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            content.sound = .default
-            content.threadIdentifier = identifier
-            let request = UNNotificationRequest(
-                identifier: identifier,
-                content: content,
-                trigger: nil
-            )
-            center.add(request)
         }
     }
 }
