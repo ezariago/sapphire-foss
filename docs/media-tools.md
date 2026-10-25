@@ -33,7 +33,7 @@ is a separate opt-in; clipboard sharing can forward that text to the paired phon
 
 `./scripts/test-media-tools.sh` passed image compression/dimension/source-byte
 preservation, image/PDF OCR, PDF writing and silent audio compression fixtures.
-No audio was played. Actual video codecs, Screen Recording denial/approval,
+No audio was played. Additional video codecs, Screen Recording denial/approval,
 interactive region selection, Spotlight screenshot detection and full UI actions
 remain manual checks. Image-based Circle to Search remains unimplemented.
 
@@ -117,3 +117,21 @@ also rerun successfully. This supersedes the earlier failed consolidated run.
 The full local app build, signature verification and ZIP packaging also passed.
 Higher-accuracy/multilingual OCR and
 attended UI interactions remain open.
+
+## Native video and app error-state checks (25 October 2026)
+
+`test-media-tools.sh` now generates a private, one-second 1280×720 H.264 MOV from
+deterministic noise and runs the production optimizer. The resulting smaller MP4
+has one video track, the expected duration, bounded dimensions and a decodable
+frame; source bytes are unchanged. The fixture passed locally. It performs no
+playback, camera/screen/microphone capture or user-file access. This checks one
+synthetic H.264 path, not arbitrary codecs, rotation, HDR or audio/video sync.
+The fixture is included in the existing media CI step.
+
+The rebuilt normal Sapphire app was restarted and its compatibility explanation
+was verified in Media Optimizer settings. Its actual file picker was exercised
+with an owned unsupported `.txt` fixture and an owned blank PNG. The first showed
+the unsupported-file error; the second showed “No readable text” as a successful
+empty recognition. These cases do not copy text or change recognition settings.
+File Shelf errors, positive-text automatic copy, screenshot monitoring and user
+region selection remain separate interaction checks; no user file was selected.

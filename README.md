@@ -165,7 +165,9 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   passes image/PDF/region fixtures on this Mac; unsupported languages and runtime
   failures produce errors. Higher-accuracy recognition remains blocked by Apple's
   native runtime failure, and the compatibility recognizer has narrower language
-  and accuracy coverage. Opt-in single-image
+  and accuracy coverage. A generated H.264 video now also passes compression,
+  MP4 metadata/frame decoding and source-preservation checks; other video formats
+  and live capture interactions remain unverified. Opt-in single-image
   clipboard optimization now has public code and isolated pasteboard tests; native
   inter-app clipboard checks remain open. [Region text search](docs/region-text-search.md) now recognizes a selected region locally, lets you review/edit text and explicitly search Google. Image-based Circle to Search remains open. File conversion is separate.
 - [ ] Implement the DMG installer and its default-handler integration; complete
