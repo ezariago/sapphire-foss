@@ -7,10 +7,10 @@ import SwiftUI
 
 private final class EmojiInlineInput: @unchecked Sendable {
     let lock = NSLock()
-    var gate = SnippetInputGate()
+    var gate = EmojiInlineInputGate()
     var panelBounds: CGRect?
     func invalidate() { lock.withLock { gate.invalidate() } }
-    func current(_ ticket: SnippetInputGate.Ticket) -> Bool { lock.withLock { gate.isCurrent(ticket) } }
+    func current(_ ticket: EmojiInlineInputGate.Ticket) -> Bool { lock.withLock { gate.isCurrent(ticket) } }
 }
 private final class EmojiInlinePanel: NSPanel {
     override var canBecomeKey: Bool { false }
@@ -46,7 +46,7 @@ struct EmojiInlineChoicesView: View {
         let id = UUID()
         let target: AXUIElement
         let capture: EmojiInlineAX.Capture
-        let ticket: SnippetInputGate.Ticket
+        let ticket: EmojiInlineInputGate.Ticket
         let appID: String
         let launched: Date
         let created: TimeInterval
@@ -85,7 +85,7 @@ struct EmojiInlineChoicesView: View {
             input.invalidate(); DispatchQueue.main.async { self?.hide() }
         }) { [weak self] type, event in
             if [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(type), input.lock.withLock({ input.panelBounds?.contains(event.location) == true }) { return .pass }
-            let ticket: SnippetInputGate.Ticket? = input.lock.withLock {
+            let ticket: EmojiInlineInputGate.Ticket? = input.lock.withLock {
                 let code = event.getIntegerValueField(.keyboardEventKeycode)
                 let printable = ((0...51).contains(code) && code != 36 && code != 48) || [65,67,69,75,78,81,117].contains(code) || (82...95).contains(code)
                 let eligible = printable && event.flags.intersection([.maskCommand,.maskControl,.maskAlternate,.maskSecondaryFn]).isEmpty
@@ -114,7 +114,7 @@ struct EmojiInlineChoicesView: View {
         guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(), let raw = TISGetInputSourceProperty(source, kTISPropertyInputSourceType) else { return false }
         return CFEqual(Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue(), kTISTypeKeyboardLayout)
     }
-    private func ready(_ ticket: SnippetInputGate.Ticket, config: Configuration) -> NSRunningApplication? {
+    private func ready(_ ticket: EmojiInlineInputGate.Ticket, config: Configuration) -> NSRunningApplication? {
         guard config.enabled, Configuration(SettingsModel.shared.current) == config, input.current(ticket),
               AXIsProcessTrusted(), !IsSecureEventInputEnabled(), Self.unlocked(), Self.layoutInput(),
               !AppLockManager.shared.isLocked, NSEvent.pressedMouseButtons == 0,
@@ -125,7 +125,7 @@ struct EmojiInlineChoicesView: View {
               let id = app.bundleIdentifier, !config.excluded.contains(id) else { return nil }
         return app
     }
-    private func inspect(_ ticket: SnippetInputGate.Ticket) {
+    private func inspect(_ ticket: EmojiInlineInputGate.Ticket) {
         let config = Configuration(SettingsModel.shared.current)
         guard let app = ready(ticket, config: config), let launched = app.launchDate, let id = app.bundleIdentifier else { return }
         let system = AXUIElementCreateSystemWide(); AXUIElementSetMessagingTimeout(system,0.04)

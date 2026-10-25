@@ -148,7 +148,8 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   now has configuration and app exclusions. [Click-to-insert colon suggestions](docs/emoji-inline.md)
   now have a separate opt-in, curated aliases and guarded bounded AX replacement;
   native background editor/secure-field fixtures pass. Global popup clicking,
-  key rollover, keyboard navigation and broader editor/IME compatibility remain open.
+  keyboard navigation and broader editor/IME compatibility remain open. Overlapping
+  key releases now defer inspection until all observed keys are released.
   The [shared shortcut catalog](docs/keyboard-shortcuts.md) now replaces its settings
   placeholder with recording, clearing, disabling and dispatcher diagnostics.
 - [ ] Implement the clipboard picker, automatic clipboard clearing, URL cleaning

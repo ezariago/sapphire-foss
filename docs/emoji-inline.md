@@ -44,11 +44,11 @@ click-to-insert public subset, not full Slack-style keyboard/picker parity.
 
 ## Checkpoint limits
 
-The inherited input gate accepts one pending key at a time. Overlapping key
-presses can therefore suppress an offer until another clean key pair arrives;
-key rollover still needs a dedicated fix and test. The default-off feature should
-be treated as an incomplete interaction path until rollover and real popup
-click/focus routing are checked. Text-range insertion itself passes native tests.
+The input gate now tracks up to 16 observed keys and inspects only after all
+are released, including out-of-order releases. Repeated/unknown keys, overflow,
+context changes and stale offers invalidate the pending inspection. Dedicated
+rollover fixtures and the full local app build pass. Real popup click/focus
+routing remains unverified; text-range insertion itself passes native tests.
 
 At the final checkpoint the consolidated configured-script run stopped at
 `test-media-tools.sh`: Apple's media runtime returned

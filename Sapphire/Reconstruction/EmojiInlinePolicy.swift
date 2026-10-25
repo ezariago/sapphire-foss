@@ -2,6 +2,35 @@
 import Foundation
 import CoreGraphics
 
+/// Tracks a bounded chord of printable keys; offers are eligible only after all
+/// observed keys are released. Input/context changes invalidate queued offers.
+struct EmojiInlineInputGate {
+    struct Ticket: Equatable { let generation: UInt64; let pid: Int32 }
+    private var generation: UInt64 = 0
+    private var enabled = false
+    private var pid: Int32?
+    private var pressed: Set<Int64> = []
+    mutating func invalidate() { generation &+= 1; pressed.removeAll() }
+    mutating func configure(enabled: Bool) { self.enabled = enabled; invalidate() }
+    mutating func foreground(_ pid: Int32?) { self.pid = pid.flatMap { $0 > 0 ? $0 : nil }; invalidate() }
+    mutating func down(_ key: Int64, eligible: Bool, target: Int64 = 0) {
+        generation &+= 1
+        guard enabled, let pid, eligible, target == 0 || target == Int64(pid),
+              pressed.count < 16, !pressed.contains(key) else { pressed.removeAll(); return }
+        pressed.insert(key)
+    }
+    mutating func up(_ key: Int64, eligible: Bool, target: Int64 = 0) -> Ticket? {
+        generation &+= 1
+        guard enabled, let pid, eligible, target == 0 || target == Int64(pid),
+              pressed.remove(key) != nil else { pressed.removeAll(); return nil }
+        guard pressed.isEmpty else { return nil }
+        return Ticket(generation: generation, pid: pid)
+    }
+    func isCurrent(_ ticket: Ticket) -> Bool {
+        enabled && pressed.isEmpty && ticket.generation == generation && ticket.pid == pid
+    }
+}
+
 struct EmojiInlineChoice: Equatable, Identifiable {
     let id: String
     let emoji: String

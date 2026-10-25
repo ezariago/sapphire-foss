@@ -5,6 +5,23 @@ import CoreGraphics
         EmojiInlinePolicy.match(text:text,selection:NSRange(location:caret ?? text.utf16.count,length:0))
     }
     static func main() {
+        var gate = EmojiInlineInputGate()
+        gate.foreground(42); gate.down(1,eligible:true); assert(gate.up(1,eligible:true) == nil)
+        gate.configure(enabled:true)
+        gate.down(1,eligible:true); gate.down(2,eligible:true); gate.down(3,eligible:true)
+        assert(gate.up(2,eligible:true) == nil && gate.up(1,eligible:true) == nil)
+        let rolled = gate.up(3,eligible:true)!
+        assert(gate.isCurrent(rolled))
+        gate.down(4,eligible:true); assert(!gate.isCurrent(rolled)); assert(gate.up(4,eligible:true) != nil)
+        gate.down(1,eligible:true); gate.down(1,eligible:false); assert(gate.up(1,eligible:true) == nil)
+        gate.down(1,eligible:true); gate.down(2,eligible:true,target:99); assert(gate.up(1,eligible:true) == nil)
+        gate.down(1,eligible:true); assert(gate.up(99,eligible:true) == nil && gate.up(1,eligible:true) == nil)
+        for key in 0..<17 { gate.down(Int64(key),eligible:true) }
+        for key in 0..<17 { assert(gate.up(Int64(key),eligible:true) == nil) }
+        gate.down(1,eligible:true); gate.foreground(43); assert(gate.up(1,eligible:true) == nil)
+        gate.down(1,eligible:true); gate.invalidate(); assert(gate.up(1,eligible:true) == nil)
+        gate.down(1,eligible:true); gate.configure(enabled:false); assert(gate.up(1,eligible:true) == nil)
+        print("Passed overlapping-key release order, stale tickets, repeat/rejected/unknown input, bounded chord, focus/configuration and reset refusal.")
         assert(token(":smi")?.choices.map(\.id) == ["smile","smiley"])
         assert(token("Hi (:SMI")?.choices.first?.id == "smile")
         assert(token(":smile:")?.choices.map(\.id) == ["smile"])
