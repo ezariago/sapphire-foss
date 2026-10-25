@@ -192,7 +192,13 @@ struct PermissionStatusRowView: View {
             let status = permissionsManager.status(for: permission.type)
             switch status {
             case .granted: Image(systemName: "checkmark.circle.fill").font(.title2).foregroundColor(.green)
-            case .denied: Image(systemName: "xmark.circle.fill").font(.title2).foregroundColor(.red)
+            case .denied:
+                if permission.type == .screenRecording {
+                    Button("Allow…") { permissionsManager.requestPermission(.screenRecording) }
+                        .buttonStyle(.bordered).tint(.accentColor)
+                } else {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundColor(.red)
+                }
             case .notRequested: Button("Request") { permissionsManager.requestPermission(permission.type) }.buttonStyle(.bordered).tint(.accentColor)
             }
             PermissionFeatureInfoButton(permission: permission)
@@ -579,6 +585,14 @@ private struct SystemEnhanceHingeAnimationSettingsCard: View {
             if settings.settings.systemEnhanceHingeAnimationEnabled {
                 #if !SAPPHIRE_FULL_BUILD
                 Text(hingeAnimation.status).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
+                if hingeAnimation.needsScreenRecordingPermission {
+                    Button("Allow Screen Recording…") {
+                        permissionsManager.requestPermission(.screenRecording)
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
                 Text("Uses one in-memory built-in display snapshot per closing gesture, up to 2048 px and four seconds. This is a temporary frozen-image dim/blur effect, not live desktop blur. Requires a supported sensor and Screen Recording permission. Open at least 5° past the activation angle to rearm. It does not prevent system sleep or change brightness. Physical lid/permission verification remains pending.")
                     .font(.caption).foregroundStyle(.secondary).padding()
                 #endif

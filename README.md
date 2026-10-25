@@ -126,8 +126,10 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
   records remaining UI variants and device verification. [Selection Services](docs/selection-services.md)
   now provide opt-in text cleanup and URL tracking removal; native menu delivery
   remains open. A [bounded hinge snapshot effect](docs/hinge-animation.md) now has
-  public code and injected tests; real sensor, capture, visual and physical lid
-  verification remain open. [Display scoping](docs/dock-display-scope.md)
+  public code, injected tests and an inline Screen Recording request button. On
+  this Mac, sensor cadence and permission recognition were checked, and the user
+  confirmed dim/blur appears on partial lowering and clears on reopening. Full
+  lid-close/sleep, broader hardware and Spaces verification remain open. [Display scoping](docs/dock-display-scope.md)
   now limits Sapphire previews/clicks to a selected monitor; native hot-plug/input
   verification and native Dock placement locking remain open.
 - [ ] Implement mouse controls, focus-follows-mouse, extra-click filtering,

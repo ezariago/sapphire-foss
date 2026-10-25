@@ -272,8 +272,12 @@ class PermissionsManager: NSObject, ObservableObject, @MainActor CLLocationManag
         case .screenRecording:
             UserDefaults.standard.set(Date(), forKey: screenRecordingRequestedAtKey)
             UserDefaults.standard.set(true, forKey: "screenRecordingRequested")
-            CGRequestScreenCaptureAccess()
+            let granted = CGRequestScreenCaptureAccess()
             checkScreenRecordingStatus()
+            if !granted,
+               let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
 
         case .automation:
             triggerAutomationPermissionRequest()

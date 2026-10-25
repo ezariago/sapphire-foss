@@ -58,8 +58,9 @@ found, reporting true and angle within 0–180°. Its sensor client was released
 immediately afterward. This establishes one valid hardware report, not cadence
 or a closing gesture; it is not part of the CI script.
 
-Broader sensor/OEM availability and cadence, Screen Recording approval/revocation,
-image accuracy, visual blur/dim, keyboard/mouse transparency, full-screen/Spaces,
+Beyond the attended Mac check recorded below, broader sensor/OEM availability
+and cadence, Screen Recording revocation, image accuracy, keyboard/mouse
+transparency, full-screen/Spaces,
 macOS lock/sleep notification ordering and performance remain unverified. Physical
 Mac lid-close/sleep checks have not been performed. These require an attended
 hardware smoke test; build success and injected fixtures do not establish them.
@@ -67,3 +68,34 @@ The README item therefore remains open.
 
 The capture adapter uses Apple's [display content filter](https://developer.apple.com/documentation/screencapturekit/sccontentfilter)
 with the existing single-image ScreenCaptureKit API; it does not create a stream.
+
+## Reported failure investigation (25 October 2026)
+
+The running `/Applications/Sapphire.app` had different binary contents and omitted
+this implementation’s status text. After normally quitting it and launching the
+current local development build, System Enhance reported a live 111° sensor angle
+and “Allow Screen Recording in Permissions before using hinge animation.” This
+establishes a permission blocker in the current build, not a verified visual fix.
+The hinge card now offers an explicit permission request button when the engine
+reports that blocker. The Permissions Overview also retains an Allow button after
+a denial. Either button requests access and opens the macOS Screen Recording pane
+if access is still unavailable. It does not approve access automatically. If the
+app is absent from that pane, use its + button to add the exact development app.
+The user added and enabled the development app in macOS Settings. After a normal
+restart its status changed to “Ready for a closing gesture,” with a live 108°
+reading. The user then confirmed that dim/blur appeared during partial lowering
+and cleared on reopening. Permission recognition, arming and this attended
+visible gesture are verified on this Mac; no full lid-close/sleep test was
+performed.
+
+An attended-session read-only `HardwareAvailability.swift --cadence` probe also
+sustained 20 standby sensor updates over two seconds; its largest observed gap was
+0.122 seconds, within the half-second freshness limit. This probe requests no
+screen image or lid movement and releases its sensor client on exit. It does not
+establish visual capture or lid-close behavior.
+
+The final local app build and hinge policy/engine/native-adapter checks passed.
+After restarting that final build, its hinge status remained “Ready for a closing
+gesture,” confirming permission survived the rebuild. The user’s adjusted
+intensity setting was retained. The new permission-retry buttons compile; access
+was not revoked merely to retest them.

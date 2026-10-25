@@ -28,11 +28,13 @@ struct Settings {
         let manager = SystemEnhanceHingeAnimationManager.shared
         manager.start(); manager.start()
         assert(manager.status == HingeAnimationPhase.disabled.message)
+        assert(!manager.needsScreenRecordingPermission)
         // Invalid opt-in configuration must not query/capture the real desktop
         // or acquire the fake sensor. Native UI/capture adapters still compile.
         SettingsModel.shared.settings.systemEnhanceHingeAnimationBlur = .infinity
         SettingsModel.shared.settings.systemEnhanceHingeAnimationEnabled = true
         assert(manager.status == HingeAnimationPhase.invalidConfiguration.message)
+        assert(!manager.needsScreenRecordingPermission)
         assert(LidAngleSensor.shared.acquisitions == 0)
         manager.stop()
         SettingsModel.shared.settings.systemEnhanceHingeAnimationEnabled = false

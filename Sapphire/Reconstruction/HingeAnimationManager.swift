@@ -62,6 +62,7 @@ private struct HingeEffectView: View {
 final class SystemEnhanceHingeAnimationManager: ObservableObject {
     static let shared = SystemEnhanceHingeAnimationManager()
     @Published private(set) var status = HingeAnimationPhase.disabled.message
+    var needsScreenRecordingPermission: Bool { engine.phase == .permissionRequired }
     private let renderer = HingeEffectRenderer()
     private var subscriptions = Set<AnyCancellable>()
     private var workspaceObservers: [NSObjectProtocol] = []
