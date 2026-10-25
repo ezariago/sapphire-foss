@@ -5,6 +5,7 @@ import PDFKit
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 Task { @MainActor in
+    var phase = "fixture setup"
     do {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("SapphireMediaFixture-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -18,6 +19,7 @@ Task { @MainActor in
         let source = root.appendingPathComponent("Fixture.tiff")
         let original = bitmap.tiffRepresentation!
         try original.write(to: source)
+        phase = "image compression"
         let result = try await NativeMediaProcessor.optimize(source, maxDimension: 500)
         assert(result.savedBytes > 0 && result.savedPercent > 0 && result.outputURL != source)
         let stillOriginal = try Data(contentsOf: source)
@@ -25,6 +27,7 @@ Task { @MainActor in
         let compressed = CGImageSourceCreateWithURL(result.outputURL as CFURL, nil)!
         let image = CGImageSourceCreateImageAtIndex(compressed, 0, nil)!
         assert(max(image.width, image.height) <= 500)
+        phase = "image OCR"
         let text = try NativeMediaProcessor.recognizeText(in: source)
         assert(text.contains("SAPPHIRE") && text.contains("2468"), "OCR result: \(text)")
         let pdf = PDFDocument()
@@ -32,8 +35,10 @@ Task { @MainActor in
         pdf.insert(PDFPage(image: nsImage)!, at: 0)
         let pdfURL = root.appendingPathComponent("Fixture.pdf")
         assert(pdf.write(to: pdfURL))
+        phase = "PDF OCR"
         let pdfText = try NativeMediaProcessor.recognizeText(in: pdfURL)
         assert(pdfText.contains("SAPPHIRE") && pdfText.contains("2468"))
+        phase = "PDF compression"
         do {
             let optimizedPDF = try await NativeMediaProcessor.optimize(pdfURL)
             assert(PDFDocument(url: optimizedPDF.outputURL)?.pageCount == 1)
@@ -47,10 +52,18 @@ Task { @MainActor in
             let audio = try AVAudioFile(forWriting: wav, settings: format.settings)
             try audio.write(from: buffer)
         }
+        phase = "audio compression"
         let audioResult = try await NativeMediaProcessor.optimize(wav)
         assert(audioResult.kind == .audio && audioResult.savedBytes > 0 && audioResult.outputURL.pathExtension == "m4a")
         print("Passed image compression/dimensions/source preservation, image/PDF OCR, PDF export and silent audio compression fixtures.")
         exit(0)
-    } catch { fputs("Media fixture failure: \(error)\n", stderr); exit(1) }
+    } catch {
+        let detail = error as NSError
+        fputs("Media fixture failure during \(phase): \(error) [domain=\(detail.domain), code=\(detail.code)]\n", stderr)
+        if let underlying = detail.userInfo[NSUnderlyingErrorKey] as? NSError {
+            fputs("Underlying error domain=\(underlying.domain), code=\(underlying.code)\n", stderr)
+        }
+        exit(1)
+    }
 }
 app.run()

@@ -73,3 +73,13 @@ explicit Google text search. It does not upload images or implement visual
 Circle to Search. See [scope and verification](region-text-search.md). Policy,
 native compilation/generated-image fixtures and a full local build passed;
 real screen selection, permissions and browser interaction remain unverified.
+
+## Current regression blocker (25 October 2026)
+
+A rerun with generated fixtures reaches image compression, then fails during
+**image OCR** with `TextRecognition.CRImageReaderError` code 1 and the Apple
+runtime’s `e5rt_execution_stream_operation_create_precompiled_compute_operation_with_options`
+error 13. The fixture now reports its phase and error domain/code (and underlying
+error metadata when supplied), so this failure is no longer ambiguous with PDF
+or audio export. This is diagnostic coverage, not an OCR repair. Later media
+stages and the consolidated regression remain unverified in this run.
