@@ -16,9 +16,10 @@ has a 60-second selection timeout. The generated image is removed after success
 or failure. A cancelled job remains single-flight until its provider finishes;
 late results are rejected after clearing, leaving the view, disabling, locking or
 sleeping. Selection/delivery also check the active unlocked console and secure
-input. The region path uses Vision's CPU mode: the generated-image check stalled
-in Apple's neural-engine model compilation on this machine before CPU mode was
-selected. Other media OCR retains its existing default. Vision itself is a
+input. Region and other media OCR now share Vision's fast recognizer with explicit
+supported CPU-device selection. The accurate recognizer failed in Apple's native
+runtime even with CPU selection; see the [compatibility path and accuracy/language
+limits](media-tools.md#working-ocr-compatibility-path-25-october-2026). Vision itself is a
 synchronous operation; cancellation discards its result after it returns.
 
 `./scripts/test-region-text-search.sh` passes query bounds/encoding, explicit

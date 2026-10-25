@@ -161,7 +161,11 @@ Evidence: [subscription shim](Sapphire/Stubs/SubscriptionCore.swift),
 - [ ] Implement media optimization and OCR, screenshot text monitoring and Circle
   to Search. Native image/PDF/audio/video compression, local OCR and opt-in
   screenshot text monitoring are added; [test coverage and remaining checks](docs/media-tools.md)
-  distinguish fixtures from live screen/video verification. Opt-in single-image
+  distinguish fixtures from live screen/video verification. Fast CPU OCR now
+  passes image/PDF/region fixtures on this Mac; unsupported languages and runtime
+  failures produce errors. Higher-accuracy recognition remains blocked by Apple's
+  native runtime failure, and the compatibility recognizer has narrower language
+  and accuracy coverage. Opt-in single-image
   clipboard optimization now has public code and isolated pasteboard tests; native
   inter-app clipboard checks remain open. [Region text search](docs/region-text-search.md) now recognizes a selected region locally, lets you review/edit text and explicitly search Google. Image-based Circle to Search remains open. File conversion is separate.
 - [ ] Implement the DMG installer and its default-handler integration; complete

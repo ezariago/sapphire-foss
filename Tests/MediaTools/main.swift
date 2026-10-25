@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import ImageIO
 import PDFKit
+import CoreText
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 Task { @MainActor in
@@ -38,6 +39,42 @@ Task { @MainActor in
         phase = "PDF OCR"
         let pdfText = try NativeMediaProcessor.recognizeText(in: pdfURL)
         assert(pdfText.contains("SAPPHIRE") && pdfText.contains("2468"))
+        phase = "unsupported OCR language"
+        do {
+            _ = try NativeMediaProcessor.recognizeText(in: source, language: "zz-ZZ")
+            fatalError("Unsupported recognition language was silently accepted")
+        } catch MediaOptimizeError.operationFailed(let message) {
+            assert(message.contains("supports:") && message.contains("en-US"))
+        }
+        phase = "cancelled OCR"
+        let cancelled = Task { @MainActor in try NativeMediaProcessor.recognizeText(in: source) }
+        cancelled.cancel()
+        do { _ = try await cancelled.value; fatalError("Cancelled recognition returned text") }
+        catch is CancellationError { }
+        phase = "existing PDF text"
+        let data = NSMutableData()
+        var box = CGRect(x: 0, y: 0, width: 600, height: 200)
+        let consumer = CGDataConsumer(data: data as CFMutableData)!
+        let pdfContext = CGContext(consumer: consumer, mediaBox: &box, nil)!
+        pdfContext.beginPDFPage(nil)
+        pdfContext.textPosition = CGPoint(x: 20, y: 100)
+        CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: "SAPPHIRE existing café 2468", attributes: [.font: NSFont.systemFont(ofSize: 24)])), pdfContext)
+        pdfContext.endPDFPage(); pdfContext.closePDF()
+        let textPDF = root.appendingPathComponent("ExistingText.pdf")
+        try (data as Data).write(to: textPDF)
+        let preserved = try NativeMediaProcessor.recognizeText(in: textPDF, language: "zz-ZZ")
+        assert(preserved.contains("SAPPHIRE existing café 2468"), "Existing PDF text was not retained")
+        let afterOCR = try Data(contentsOf: source)
+        assert(afterOCR == original)
+        phase = "blank image OCR"
+        let blank = NSImage(size: NSSize(width: 600, height: 200))
+        blank.lockFocus()
+        NSColor.white.setFill(); NSRect(x: 0, y: 0, width: 600, height: 200).fill()
+        blank.unlockFocus()
+        let blankURL = root.appendingPathComponent("Blank.tiff")
+        try blank.tiffRepresentation!.write(to: blankURL)
+        let empty = try NativeMediaProcessor.recognizeText(in: blankURL)
+        assert(empty.isEmpty, "Blank input should be a successful empty result")
         phase = "PDF compression"
         do {
             let optimizedPDF = try await NativeMediaProcessor.optimize(pdfURL)
@@ -55,7 +92,7 @@ Task { @MainActor in
         phase = "audio compression"
         let audioResult = try await NativeMediaProcessor.optimize(wav)
         assert(audioResult.kind == .audio && audioResult.savedBytes > 0 && audioResult.outputURL.pathExtension == "m4a")
-        print("Passed image compression/dimensions/source preservation, image/PDF OCR, PDF export and silent audio compression fixtures.")
+        print("Passed image compression/dimensions/source preservation, CPU fast image/PDF OCR, unsupported-language refusal, cancellation, existing PDF text retention, blank-image empty success, PDF export and silent audio compression fixtures.")
         exit(0)
     } catch {
         let detail = error as NSError

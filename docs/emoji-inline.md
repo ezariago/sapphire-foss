@@ -56,3 +56,8 @@ At the final checkpoint the consolidated configured-script run stopped at
 error 13. The full 31-script regression is not a pass. Feature-specific emoji,
 profile and mouse checks and their full local app builds passed; the media
 runtime failure needs investigation after usage is available again.
+
+The later 25 October OCR compatibility checkpoint reran all 31 configured shell
+checks and the isolated file-transfer harness successfully (32 checks). This
+supersedes the media-blocked consolidated run above; it does not establish real
+global typing/popup or third-party editor compatibility.

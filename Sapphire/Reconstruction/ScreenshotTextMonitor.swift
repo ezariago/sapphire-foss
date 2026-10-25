@@ -110,9 +110,17 @@ final class OCRScreenshotMonitor: ObservableObject {
         let language = SettingsModel.shared.current.mediaToolsOCRLanguage
         Task {
             defer { isProcessing = false; if removeAfter { try? FileManager.default.removeItem(at: url) } }
-            let text = try? await Task.detached(priority: .utility) { try NativeMediaProcessor.recognizeText(in: url, language: language) }.value
+            let text: String
+            do {
+                text = try await Task.detached(priority: .utility) { try NativeMediaProcessor.recognizeText(in: url, language: language) }.value
+            } catch {
+                if monitoring && (stamp != generation || !SettingsModel.shared.current.ocrScreenshotMonitorEnabled) { return }
+                recognizedText = ""
+                status = error.localizedDescription
+                return
+            }
             if monitoring && (stamp != generation || !SettingsModel.shared.current.ocrScreenshotMonitorEnabled) { return }
-            recognizedText = text ?? ""
+            recognizedText = text
             status = recognizedText.isEmpty ? "No text recognized." : "Recognized \(recognizedText.count) characters locally."
             if !recognizedText.isEmpty && SettingsModel.shared.current.ocrScreenshotCopyTextAutomatically {
                 ClipboardManager.shared.copyToClipboard(recognizedText)

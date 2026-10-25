@@ -44,7 +44,7 @@ enum RegionTextCapture {
             try select(output)
             try Task.checkCancellation()
             guard let size = try output.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0, size <= 64 * 1024 * 1024 else { throw CancellationError() }
-            let text = try NativeMediaProcessor.recognizeText(in: output, language: language, useCPUOnly: true)
+            let text = try NativeMediaProcessor.recognizeText(in: output, language: language)
             try Task.checkCancellation()
             return text
         }

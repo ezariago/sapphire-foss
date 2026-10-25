@@ -5,6 +5,7 @@ import ImageIO
 import PDFKit
 import UniformTypeIdentifiers
 import Vision
+import CoreML
 
 enum MediaOptimizeKind: String {
     case image, pdf, video, audio
@@ -98,7 +99,8 @@ enum NativeMediaProcessor {
         return MediaOptimizeResult(sourceURL: source, outputURL: output, kind: kind, originalBytes: Int64(bytes), optimizedBytes: Int64(optimized))
     }
 
-    static func recognizeText(in source: URL, language: String = "en-US", useCPUOnly: Bool = false) throws -> String {
+    static func recognizeText(in source: URL, language: String = "en-US") throws -> String {
+        try Task.checkCancellation()
         guard source.isFileURL, MediaOptimizer.canOCR(source),
               let bytes = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize,
               bytes > 0, bytes <= 300 * 1024 * 1024 else { throw MediaOptimizeError.unsupportedFile }
@@ -120,21 +122,39 @@ enum NativeMediaProcessor {
                 context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: width, height: height))
                 context.concatenate(reference.getDrawingTransform(.mediaBox, rect: CGRect(x: 0, y: 0, width: width, height: height), rotate: 0, preserveAspectRatio: true))
                 context.drawPDFPage(reference)
-                if let image = context.makeImage() { pages.append(try recognize(image, language: language, useCPUOnly: useCPUOnly)) }
+                if let image = context.makeImage() { pages.append(try recognize(image, language: language)) }
             }
             return String(pages.joined(separator: "\n\n").prefix(1_000_000))
         }
         guard let input = CGImageSourceCreateWithURL(source as CFURL, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(input, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 4096] as CFDictionary) else { throw MediaOptimizeError.unsupportedFile }
-        return try recognize(image, language: language, useCPUOnly: useCPUOnly)
+        return try recognize(image, language: language)
     }
-    private static func recognize(_ image: CGImage, language: String, useCPUOnly: Bool) throws -> String {
+    private static func recognize(_ image: CGImage, language: String) throws -> String {
+        try Task.checkCancellation()
         let request = VNRecognizeTextRequest()
-        request.usesCPUOnly = useCPUOnly
-        request.recognitionLevel = .accurate
+        // The accurate recognizer currently fails or stalls in Apple's native
+        // model runtime on tested hardware. Keep this path on the working fast
+        // recognizer; do not retry a potentially stuck accurate request.
+        request.recognitionLevel = .fast
         request.usesLanguageCorrection = true
-        if (try? request.supportedRecognitionLanguages().contains(language)) == true { request.recognitionLanguages = [language] }
+        let languages = try request.supportedRecognitionLanguages()
+        guard let selected = languages.first(where: { $0.caseInsensitiveCompare(language) == .orderedSame }) else {
+            throw MediaOptimizeError.operationFailed("This Mac's fast text recognizer supports: " + languages.joined(separator: ", ") + ". Choose one of these recognition languages.")
+        }
+        request.recognitionLanguages = [selected]
+        let stages = try request.supportedComputeStageDevices
+        guard !stages.isEmpty else {
+            throw MediaOptimizeError.operationFailed("CPU text recognition is unavailable on this Mac.")
+        }
+        for (stage, devices) in stages {
+            guard let cpu = devices.first(where: { if case .cpu = $0 { return true }; return false }) else {
+                throw MediaOptimizeError.operationFailed("CPU text recognition is unavailable on this Mac.")
+            }
+            request.setComputeDevice(cpu, for: stage)
+        }
         try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
+        try Task.checkCancellation()
         return (request.results ?? []).sorted {
             let rowA = Int(($0.boundingBox.midY * 50).rounded())
             let rowB = Int(($1.boundingBox.midY * 50).rounded())

@@ -15,7 +15,8 @@ Compression is lossy and is intended for screen viewing, not archival masters.
 Video uses AVFoundation's medium-quality MP4 export and audio uses M4A export;
 unsupported native formats report an error.
 
-OCR uses Vision on this Mac. Image text and scanned PDF pages are recognized;
+OCR uses Vision’s fast recognizer with explicit supported CPU-device assignments
+on this Mac. Image text and scanned PDF pages are recognized;
 existing PDF text is retained in the extraction result. PDF OCR is bounded to
 100 pages. File selection and a configurable screenshot-region shortcut are
 available in Media Optimizer settings. Interactive screen capture uses the
@@ -34,7 +35,7 @@ is a separate opt-in; clipboard sharing can forward that text to the paired phon
 preservation, image/PDF OCR, PDF writing and silent audio compression fixtures.
 No audio was played. Actual video codecs, Screen Recording denial/approval,
 interactive region selection, Spotlight screenshot detection and full UI actions
-remain manual checks. Circle to Search remains unimplemented.
+remain manual checks. Image-based Circle to Search remains unimplemented.
 
 ## Automatic clipboard image optimization
 
@@ -83,3 +84,36 @@ error 13. The fixture now reports its phase and error domain/code (and underlyin
 error metadata when supplied), so this failure is no longer ambiguous with PDF
 or audio export. This is diagnostic coverage, not an OCR repair. Later media
 stages and the consolidated regression remain unverified in this run.
+
+## Working OCR compatibility path (25 October 2026)
+
+The failure above also reproduced with the deprecated CPU-only flag, explicit
+CPU assignment and recognition revision 2. The accurate engine failed for the
+region fixture after a long delay as well. Changing to Vision’s fast recognizer
+with explicit per-stage supported CPU selection passed the generated image,
+scanned PDF and region fixtures. All local OCR entry points now share that path;
+there is no retry into the failing accurate engine. Empty/missing CPU capabilities
+fail explicitly. Cancellation is checked before decoding/recognition and after
+native recognition; it cannot interrupt a synchronous native request in progress.
+
+This is a compatibility workaround, not a repair of Apple’s accurate engine.
+Apple documents the [speed/accuracy tradeoff](https://developer.apple.com/documentation/vision/vnrecognizetextrequest/recognitionlevel).
+Small or complex text may be missed, and language coverage is narrower. The
+runtime reports en-US, fr-FR, it-IT, de-DE, es-ES and pt-BR on this Mac. Unsupported
+choices report the available languages instead of silently using another one.
+Settings explain the tradeoff. File Shelf, file selection and screenshot processing
+now distinguish a recognition error from a successful empty result. Existing
+selectable PDF text is retained without OCR, even with an unsupported recognition
+language selected.
+
+Generated fixtures pass image/PDF OCR, existing accented PDF text retention,
+source-byte preservation, unsupported-language refusal, cancellation, blank-image
+empty success, PDF export
+and silent audio export. The region fixture also passes private temporary-directory
+permissions and cleanup. No user files, screenshots, general clipboard, browser
+or phone were used. All 31 shell checks configured in macOS CI plus the isolated
+file-transfer harness passed locally (32 checks); the expanded media fixture was
+also rerun successfully. This supersedes the earlier failed consolidated run.
+The full local app build, signature verification and ZIP packaging also passed.
+Higher-accuracy/multilingual OCR and
+attended UI interactions remain open.

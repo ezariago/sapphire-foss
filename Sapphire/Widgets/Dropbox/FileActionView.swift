@@ -402,9 +402,18 @@ struct FileActionView: View {
         optimizerFailed = false
         optimizerMessage = "Reading text in \(url.lastPathComponent)…"
         Task {
-            let text = await MediaOptimizerManager.shared.recognizeText(in: url)
+            let result = await MediaOptimizerManager.shared.recognizeText(in: url)
             isRunningOptimizer = false
-            guard let text, !text.isEmpty else {
+            let text: String
+            switch result {
+            case .success(let recognized): text = recognized
+            case .failure(let error):
+                optimizerFailed = true
+                optimizerMessage = error.localizedDescription
+                NSSound.beep()
+                return
+            }
+            guard !text.isEmpty else {
                 optimizerFailed = true
                 optimizerMessage = "No text found in \(url.lastPathComponent)"
                 NSSound.beep()

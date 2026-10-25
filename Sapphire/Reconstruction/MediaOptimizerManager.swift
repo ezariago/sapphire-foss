@@ -21,9 +21,14 @@ final class MediaOptimizerManager: ObservableObject {
         } catch let error as MediaOptimizeError { return .failure(error) }
         catch { return .failure(.operationFailed(error.localizedDescription)) }
     }
-    func recognizeText(in url: URL) async -> String? {
+    func recognizeText(in url: URL) async -> Result<String, MediaOptimizeError> {
         let language = SettingsModel.shared.current.mediaToolsOCRLanguage
-        return try? await Task.detached(priority: .userInitiated) { try NativeMediaProcessor.recognizeText(in: url, language: language) }.value
+        do {
+            return .success(try await Task.detached(priority: .userInitiated) {
+                try NativeMediaProcessor.recognizeText(in: url, language: language)
+            }.value)
+        } catch let error as MediaOptimizeError { return .failure(error) }
+        catch { return .failure(.operationFailed(error.localizedDescription)) }
     }
     func chooseFiles(ocr: Bool) {
         let panel = NSOpenPanel()
@@ -35,10 +40,13 @@ final class MediaOptimizerManager: ObservableObject {
             defer { isProcessing = false }
             for url in urls {
                 if ocr {
-                    if let text = await recognizeText(in: url), !text.isEmpty {
+                    switch await recognizeText(in: url) {
+                    case .success(let text) where !text.isEmpty:
                         ClipboardManager.shared.copyToClipboard(text)
                         status = "Copied \(text.count) characters from \(url.lastPathComponent)."
-                    } else { status = "No readable text in \(url.lastPathComponent)." }
+                    case .success: status = "No readable text in \(url.lastPathComponent)."
+                    case .failure(let error): status = error.localizedDescription
+                    }
                 } else {
                     switch await optimizeFile(url) {
                     case .success(let result): status = "Saved \(result.savedPercent)%: \(result.outputURL.lastPathComponent)"; NSWorkspace.shared.activateFileViewerSelecting([result.outputURL])
@@ -85,6 +93,7 @@ struct MediaOptimizerSettingsView: View {
             Section("Local text recognition") {
                 Text("Uses Apple's Vision framework. Images and PDFs are processed on this Mac.").foregroundStyle(.secondary)
                 TextField("Preferred recognition language", text: $settings.settings.mediaToolsOCRLanguage)
+                Text("Uses the on-device fast recognizer for compatibility. It can miss small or complex text and supports fewer languages. Unsupported language choices report the languages available on this Mac.").font(.caption).foregroundStyle(.secondary)
                 Button("Extract text from files…") { manager.chooseFiles(ocr: true) }.disabled(manager.isProcessing)
             }
             Section("Screen text search") {
